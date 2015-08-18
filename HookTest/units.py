@@ -128,18 +128,19 @@ class INVUnit(TESTUnit):
     def capitain(self):
         """ Load the file in MyCapytain
         """
-        textgroup = "textgroup" in self.xml.getroot().tag
-        work = not textgroup and "work" in self.xml.getroot().tag
-        if textgroup:
-            self.type = "textgroup"
-            self.log("TextGroup detected")
-            self.Text = MyCapytain.resources.inventory.TextGroup(resource=self.xml.getroot())
-        elif work:
-            self.type = "work"
-            self.log("Work detected")
-            self.Text = MyCapytain.resources.inventory.Work(resource=self.xml.getroot())
-        else:
-            self.log("Nothing detected")
+        if self.xml:
+            textgroup = "textgroup" in self.xml.getroot().tag
+            work = not textgroup and "work" in self.xml.getroot().tag
+            if textgroup:
+                self.type = "textgroup"
+                self.log("TextGroup detected")
+                self.Text = MyCapytain.resources.inventory.TextGroup(resource=self.xml.getroot())
+            elif work:
+                self.type = "work"
+                self.log("Work detected")
+                self.Text = MyCapytain.resources.inventory.Work(resource=self.xml.getroot())
+            else:
+                self.log("Nothing detected")
 
         if self.Text:
             yield True
@@ -147,78 +148,80 @@ class INVUnit(TESTUnit):
             yield False
 
     def metadata(self):
-        if self.type == "textgroup":
+        status = False
+        if self.xml and self.Text:
 
-            groups = len(self.Text.metadata["groupname"].children)
-            self.log("{0} groupname found".format(str(groups)))
-            yield groups > 0
+            if self.type == "textgroup":
 
-        elif self.type == "work":
+                groups = len(self.Text.metadata["groupname"].children)
+                self.log("{0} groupname found".format(str(groups)))
+                status = groups > 0
 
-            titles = len(self.Text.metadata["title"].children)
-            self.log("{0} titles found".format(titles))
-            status = titles > 0
+            elif self.type == "work":
+                titles = len(self.Text.metadata["title"].children)
+                self.log("{0} titles found".format(titles))
+                status = titles > 0
 
-            texts = len(self.Text.texts)
-            labels = len(
-                [
-                    text for text in self.Text.texts.values()
-                    if len(text.metadata["label"].children) > 0
-                ]
-            )
+                texts = len(self.Text.texts)
+                labels = len(
+                    [
+                        text for text in self.Text.texts.values()
+                        if len(text.metadata["label"].children) > 0
+                    ]
+                )
 
-            self.log("{0}/{1} file(s) with labels".format(labels, texts))
-            status = status and labels == texts
+                self.log("{0}/{1} file(s) with labels".format(labels, texts))
+                status = status and labels == texts
 
-            descs = len(
-                [
-                    text for text in self.Text.texts.values()
-                    if len(text.metadata["description"].children) > 0
-                ]
-            )
-            self.log("{0}/{1} file(s) with descs".format(descs, texts))
-            status = status and labels == descs
+                descs = len(
+                    [
+                        text for text in self.Text.texts.values()
+                        if len(text.metadata["description"].children) > 0
+                    ]
+                )
+                self.log("{0}/{1} file(s) with descs".format(descs, texts))
+                status = status and labels == descs
 
-            yield status
-        else:
-            yield False
+        yield status
 
     def check_urns(self):
-        if self.type == "textgroup":
-            urns = [
-                urn
-                for urn in self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)
-                if len(MyCapytain.common.reference.URN(urn)) == 3
-            ]
-            self.log("Group urn :" + "".join(self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)))
-            yield len(urns) == 1
-        elif self.type == "work":
-            worksUrns = [
+        status = False
+        if self.xml:
+            if self.type == "textgroup":
+                urns = [
                     urn
-                    for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
-                    if len(MyCapytain.common.reference.URN(urn)) == 4
-                ] + [
-                    urn
-                    for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
+                    for urn in self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)
                     if len(MyCapytain.common.reference.URN(urn)) == 3
                 ]
-            self.log("Group urn : " + "".join(self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)))
-            self.log("Work urn : " + "".join(self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)))
+                self.log("Group urn :" + "".join(self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)))
+                status = len(urns) == 1
+            elif self.type == "work":
+                worksUrns = [
+                        urn
+                        for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
+                        if len(MyCapytain.common.reference.URN(urn)) == 4
+                    ] + [
+                        urn
+                        for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
+                        if len(MyCapytain.common.reference.URN(urn)) == 3
+                    ]
+                self.log("Group urn : " + "".join(self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)))
+                self.log("Work urn : " + "".join(self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)))
 
-            texts = self.xml.xpath("//ti:edition|//ti:translation", namespaces=TESTUnit.NS)
-            workUrnsText = []
+                texts = self.xml.xpath("//ti:edition|//ti:translation", namespaces=TESTUnit.NS)
+                workUrnsText = []
 
-            for text in texts:
-                self.urns.append(text.get("urn"))
-                workUrnsText.append(text.get("workUrn"))
+                for text in texts:
+                    self.urns.append(text.get("urn"))
+                    workUrnsText.append(text.get("workUrn"))
 
-            workUrnsText = [urn for urn in workUrnsText if len(MyCapytain.common.reference.URN(urn)) == 4]
-            self.urns = [urn for urn in self.urns if len(MyCapytain.common.reference.URN(urn)) == 5]
-            self.log("Editions and translations urns : " + " ".join(self.urns))
-            
-            yield len(worksUrns) == 2 and (len(texts)*2)==len(self.urns + workUrnsText)
-        else:
-            yield False
+                workUrnsText = [urn for urn in workUrnsText if len(MyCapytain.common.reference.URN(urn)) == 4]
+                self.urns = [urn for urn in self.urns if len(MyCapytain.common.reference.URN(urn)) == 5]
+                self.log("Editions and translations urns : " + " ".join(self.urns))
+
+                status= len(worksUrns) == 2 and (len(texts)*2)==len(self.urns + workUrnsText)
+
+        yield status
 
     def test(self):
         """ Test a file with various checks
@@ -231,15 +234,9 @@ class INVUnit(TESTUnit):
 
         for test in INVUnit.tests:
             # Show the logs and return the status
-            self.flush()
-            try:
-                for status in getattr(self, test)():
-                    yield (INVUnit.readable[test], status, self.logs)
-                    self.flush()
-            except Exception as E:
-                status = False
-                self.error(E)
+            for status in getattr(self, test)():
                 yield (INVUnit.readable[test], status, self.logs)
+                self.flush()
 
 
 class CTSUnit(TESTUnit):
