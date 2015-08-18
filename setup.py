@@ -18,8 +18,9 @@ setup(
     package_data={
         'HookTest': ['resources/*.rng']
     },
-    tests_require=[
-    ],
+    entry_points={
+        'console_scripts': ['hooktest=HookTest.cmd:cmd'],
+    },
     test_suite="tests",
     zip_safe=False
 )

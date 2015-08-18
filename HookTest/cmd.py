@@ -1,7 +1,6 @@
 import argparse
 import sys
 import HookTest.test
-# import HookTest.test
 
 
 def cmd():
