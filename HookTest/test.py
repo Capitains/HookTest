@@ -246,7 +246,7 @@ class Test(object):
                     self.write(log)
 
         # We load a thread pool which has 5 maximum workers
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.workers) as executor:
             # We create a dictionary of tasks which
             tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.files}
             # We iterate over a dictionary of completed tasks
