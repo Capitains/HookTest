@@ -2,20 +2,22 @@ from lxml import etree
 import MyCapytain.resources.texts.local
 import MyCapytain.resources.inventory
 import MyCapytain.common.reference
-import os
 
-import jingtrang
 import pkg_resources
 import subprocess
 
-curr_dir = os.path.dirname(__file__)
 
-EPIDOC = os.path.join(curr_dir, "../data/external/tei-epidoc.rng")
-TEI_ALL = os.path.join(curr_dir, "../data/external/tei_all.rng")
-JING = pkg_resources.resource_filename("jingtrang", "jing.jar")
-
-ns = {"tei" : "http://www.tei-c.org/ns/1.0", "ti":"http://chs.harvard.edu/xmlns/cts"}
 class TESTUnit(object):
+    """ TestUnit Metaclass
+
+    :param path: path of the current file
+    """
+
+    EPIDOC = pkg_resources.resource_filename("HookTest", "epidoc.rng")
+    TEI_ALL = pkg_resources.resource_filename("HookTest", "tei.rng")
+    JING = pkg_resources.resource_filename("jingtrang", "jing.jar")
+    NS = {"tei": "http://www.tei-c.org/ns/1.0", "ti": "http://chs.harvard.edu/xmlns/cts"}
+
     def __init__(self, path):
         self.path = path
         self.xml = None
@@ -30,10 +32,10 @@ class TESTUnit(object):
         return self.__logs
     
     def log(self, message):
-        self.__logs.append(">>>>>> "+ message )
+        self.__logs.append(">>>>>> " + message)
     
     def error(self, error):
-        self.__logs.append(">>>>>> "+ str(type(error)) + " : " + str(error) )
+        self.__logs.append(">>>>>> " + str(type(error)) + " : " + str(error))
 
     def flush(self):
         self.__archives = self.__archives + self.__logs
@@ -44,7 +46,6 @@ class TESTUnit(object):
 
         :returns: Indicator of success and messages
         :rtype: boolean
-
         """
         try:
             f = open(self.path)
@@ -74,6 +75,10 @@ class INVUnit(TESTUnit):
         "metadata" : "Metadata availability",
         "check_urns" : "URNs testing"
     }
+
+    def __init__(self, *args, **kwargs):
+        super(INVUnit, self).__init__(*args, **kwargs)
+        self.urns = []
 
     def capitain(self):
         """ Load the file in MyCapytain
@@ -137,25 +142,25 @@ class INVUnit(TESTUnit):
         if self.type == "textgroup":
             urns = [
                 urn
-                for urn in self.xml.xpath("//ti:textgroup/@urn", namespaces=ns)
+                for urn in self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)
                 if len(MyCapytain.common.reference.URN(urn)) == 3
             ]
-            self.log("Group urn :" + "".join(self.xml.xpath("//ti:textgroup/@urn", namespaces=ns)))
+            self.log("Group urn :" + "".join(self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)))
             yield len(urns) == 1
         elif self.type == "work":
             worksUrns = [
                     urn
-                    for urn in self.xml.xpath("//ti:work/@urn", namespaces=ns)
+                    for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
                     if len(MyCapytain.common.reference.URN(urn)) == 4
                 ] + [
                     urn
-                    for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=ns)
+                    for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
                     if len(MyCapytain.common.reference.URN(urn)) == 3
                 ]
-            self.log("Group urn : " + "".join(self.xml.xpath("//ti:work/@groupUrn", namespaces=ns)))
-            self.log("Work urn : " + "".join(self.xml.xpath("//ti:work/@urn", namespaces=ns)))
+            self.log("Group urn : " + "".join(self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)))
+            self.log("Work urn : " + "".join(self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)))
 
-            texts = self.xml.xpath("//ti:edition|//ti:translation", namespaces=ns)
+            texts = self.xml.xpath("//ti:edition|//ti:translation", namespaces=TESTUnit.NS)
             workUrnsText = []
 
             for text in texts:
@@ -191,6 +196,7 @@ class INVUnit(TESTUnit):
                 self.error(E)
                 yield (INVUnit.readable[test], status, self.logs)
 
+
 class CTSUnit(TESTUnit):
     """ CTS testing object
 
@@ -200,16 +206,21 @@ class CTSUnit(TESTUnit):
     """
     tests = ["parsable", "capitain", "has_urn", "naming_convention", "refsDecl", "passages", "inventory"]
     readable = {
-        "parsable" : "File parsing",
-        "capitain" : "File ingesting in MyCapytain",
-        "refsDecl" : "RefsDecl parsing",
-        "passages" : "Passage level parsing",
-        "epidoc" : "Epidoc DTD validation",
-        "tei" : "TEI DTD Validation",
-        "has_urn" : "URN informations",
-        "naming_convention" : "Naming conventions",
-        "inventory" : "Available in inventory"
+        "parsable": "File parsing",
+        "capitain": "File ingesting in MyCapytain",
+        "refsDecl": "RefsDecl parsing",
+        "passages": "Passage level parsing",
+        "epidoc": "Epidoc DTD validation",
+        "tei": "TEI DTD Validation",
+        "has_urn": "URN informations",
+        "naming_convention": "Naming conventions",
+        "inventory": "Available in inventory"
     }
+
+    def __init__(self, *args, **kwargs):
+        super(CTSUnit, self).__init__(*args, **kwargs)
+        self.inventory = []
+
     def capitain(self):
         """ Load the file in MyCapytain
         """
@@ -286,28 +297,25 @@ class CTSUnit(TESTUnit):
         """ Check the naming convention of the file
         """
         if self.urn:
-            yield self.urn in self.inv
+            yield self.urn in self.inventory
         else:
             yield False
 
-    def test(self, tei, epidoc, inv=None):
+    def test(self, scheme, inventory=None):
         """ Test a file with various checks
 
-        :param tei: Test with TEI DTD
-        :type tei: bool
-        :param epidoc: Test with EPIDOC DTD
-        :type epidoc: bool
-        
+        :param scheme: Test with TEI DTD
+        :type scheme: str
+        :param inventory: URNs to be matched against
+        :type inventory: list
+        :returns: Iterator containing human readable test name, boolean status and logs
+        :rtype: iterator(str, bool, list(str))
         """
-        if inv is None:
-            inv = []
-        self.inv = inv
+        if inventory is not None:
+            self.inventory = inventory
 
         tests = CTSUnit.tests
-        if tei:
-            tests.append("tei")
-        if epidoc:
-            tests.append("epidoc")
+        tests.append(scheme)
 
         for test in CTSUnit.tests:
             # Show the logs and return the status
