@@ -271,10 +271,10 @@ class CTSUnit(TESTUnit):
         """ Load the file in MyCapytain
         """
         if self.xml:
-            self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
-            if self.Text:
+            try:
+                self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
                 yield True
-            else:
+            except IndexError as E:
                 yield False
         else:
             yield False
@@ -376,13 +376,6 @@ class CTSUnit(TESTUnit):
 
         for test in tests:
             # Show the logs and return the status
-            self.flush()
-            try:
-                for status in getattr(self, test)():
-                    yield (CTSUnit.readable[test], status, self.logs)
-                    self.flush()
-            except Exception as E:
-                status = False
-                self.error(E)
+            for status in getattr(self, test)():
                 yield (CTSUnit.readable[test], status, self.logs)
                 self.flush()
