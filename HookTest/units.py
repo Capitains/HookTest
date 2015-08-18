@@ -239,22 +239,28 @@ class CTSUnit(TESTUnit):
 
     def __init__(self, *args, **kwargs):
         super(CTSUnit, self).__init__(*args, **kwargs)
-        self.inventory = []
+        self.inv = list()
 
     def capitain(self):
         """ Load the file in MyCapytain
         """
-        self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
-        if self.Text:
-            yield True
+        if self.xml:
+            self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
+            if self.Text:
+                yield True
+            else:
+                yield False
         else:
             yield False
 
     def refsDecl(self):
         """ Contains refsDecl informations
         """
-        self.log(str(len(self.Text.citation)) + " citations found")
-        yield len(self.Text.citation) > 0
+        if self.Text:
+            self.log(str(len(self.Text.citation)) + " citations found")
+            yield len(self.Text.citation) > 0
+        else:
+            yield False
 
     def epidoc(self):
         test = subprocess.Popen(
@@ -286,22 +292,28 @@ class CTSUnit(TESTUnit):
         yield len(out) == 0 and len(error) == 0
 
     def passages(self):
-        for i in range(0, len(self.Text.citation)):
-            passages = self.Text.getValidReff(level=i+1)
-            status = len(passages) > 0
-            self.log(str(len(passages)) + " found")
-            yield status
+        if self.Text:
+            for i in range(0, len(self.Text.citation)):
+                passages = self.Text.getValidReff(level=i+1)
+                status = len(passages) > 0
+                self.log(str(len(passages)) + " found")
+                yield status
+        else:
+            yield False
 
     def has_urn(self):
         """ Test that a file has its urn saved
         """
-        urns = self.xml.xpath("//tei:text[starts-with(@n, 'urn:cts:')]", namespaces=ns)
-        urns += self.xml.xpath("//tei:div[starts-with(@n, 'urn:cts:')]", namespaces=ns)
-        status = len(urns) > 0
-        if status:
-            logs = urns[0].get("n")
-            self.log(logs)
-            self.urn = logs
+        if self.xml:
+            urns = self.xml.xpath("//tei:text[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+            urns += self.xml.xpath("//tei:div[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+            status = len(urns) > 0
+            if status:
+                logs = urns[0].get("n")
+                self.log(logs)
+                self.urn = logs
+        else:
+            status = False
         yield status
 
     def naming_convention(self):
@@ -315,8 +327,8 @@ class CTSUnit(TESTUnit):
     def inventory(self):
         """ Check the naming convention of the file
         """
-        if self.urn:
-            yield self.urn in self.inventory
+        if self.urn and self.inv:
+            yield self.urn in self.inv
         else:
             yield False
 
@@ -331,7 +343,7 @@ class CTSUnit(TESTUnit):
         :rtype: iterator(str, bool, list(str))
         """
         if inventory is not None:
-            self.inventory = inventory
+            self.inv = inventory
 
         tests = [] + CTSUnit.tests
         tests.append(scheme)
