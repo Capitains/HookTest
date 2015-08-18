@@ -6,6 +6,7 @@ import MyCapytain.common.reference
 import pkg_resources
 import subprocess
 import re
+from collections import defaultdict
 
 
 class TESTUnit(object):
@@ -19,7 +20,9 @@ class TESTUnit(object):
     JING = pkg_resources.resource_filename("jingtrang", "jing.jar")
     RNG_ERROR = re.compile("([0-9]+):([0-9]+):(.*);")
     RNG_FAILURE = re.compile("([0-9]+):([0-9]+):(\s*fatal.*)")
+    SPACE_REPLACER = re.compile("(\s{2,})")
     NS = {"tei": "http://www.tei-c.org/ns/1.0", "ti": "http://chs.harvard.edu/xmlns/cts"}
+    PARSER = etree.XMLParser(no_network=True, resolve_entities=False)
 
     def __init__(self, path):
         self.path = path
@@ -35,10 +38,12 @@ class TESTUnit(object):
         return self.__logs
     
     def log(self, message):
-        self.__logs.append(">>>>>> " + message)
+        if isinstance(message, str) and not message.isspace() and len(message) > 0:
+            self.__logs.append(">>>>>> " + TESTUnit.SPACE_REPLACER.sub(" ", message))
     
     def error(self, error):
-        self.__logs.append(">>>>>> " + str(type(error)) + " : " + str(error))
+        if isinstance(error, Exception):
+            self.__logs.append(">>>>>> " + str(type(error)) + " : " + str(error))
 
     def flush(self):
         self.__archives = self.__archives + self.__logs
@@ -52,7 +57,7 @@ class TESTUnit(object):
         """
         try:
             f = open(self.path)
-            xml = etree.parse(f)
+            xml = etree.parse(f, TESTUnit.PARSER)
             self.xml = xml
             self.testable = True
             self.log("Parsed")
@@ -68,16 +73,37 @@ class TESTUnit(object):
         """ Return a rng free line
 
         :param line: Line of logs
-        :return: Line without all unnecessary information
+        :return: LineColumn code, Error
+        :rtype: (str, str)
         """
         found = TESTUnit.RNG_ERROR.findall(line)
-        if len(found) > 0:
-            line = "DTD l{0} c{1} : {2}".format(*found[0])
-        else:
+        identifier, code = "", line
+
+        if len(found) == 0:
             found = TESTUnit.RNG_FAILURE.findall(line)
-            if len(found) > 0:
-                line = "DTD l{0} c{1} : {2}".format(*found[0])
-        return line
+
+        if len(found) > 0:
+            identifier, code = "(L{0} C{1})".format(*found[0]), found[0][-1]
+
+        return code, identifier
+
+    @staticmethod
+    def rng_logs(logs):
+        """ Return a rng free line
+
+        :param logs: Sum of logs
+        :type logs: str or bytes
+        :return: LineColumn code, Error
+        :rtype: (str, str)
+        """
+        logs = [TESTUnit.rng(log) for log in logs.decode("utf-8").split("\n") if bool(log.strip())]
+        filtered_logs = defaultdict(list)
+
+        for key, value in logs:
+            filtered_logs[key].append(value)
+
+        for key, value in filtered_logs.items():
+            yield "{0} [In {1}]".format(key, "; ".join(value))
 
 
 class INVUnit(TESTUnit):
@@ -273,8 +299,8 @@ class CTSUnit(TESTUnit):
         out, error = test.communicate()
 
         if len(out) > 0:
-            for error in out.decode("utf-8").split("\n"):
-                self.log(TESTUnit.rng(error))
+            for error in TESTUnit.rng_logs(out):
+                self.log(error)
         yield len(out) == 0 and len(error) == 0
 
     def tei(self):
@@ -287,8 +313,8 @@ class CTSUnit(TESTUnit):
 
         out, error = test.communicate()
         if len(out) > 0:
-            for error in out.decode("utf-8").split("\n"):
-                self.log(TESTUnit.rng(error))
+            for error in TESTUnit.rng_logs(out):
+                self.log(error)
         yield len(out) == 0 and len(error) == 0
 
     def passages(self):

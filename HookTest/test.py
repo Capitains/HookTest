@@ -156,14 +156,13 @@ class Test(object):
         """
         if data is None:
             print(self.download, flush=True)
-        else:
+        elif isinstance(data, str) and not data.isspace():
             if self.repository:
                 data = data.replace(self.directory, self.repository)
             else:
                 data = data.replace(self.directory, "")
 
-            if isinstance(data, str):
-                self.logs.append(data)
+            self.logs.append(data)
 
             if self.print:
                 print(data, flush=True)
@@ -191,7 +190,7 @@ class Test(object):
 
                 logs.append(">>>>> " + name + status_str)
 
-                if self.verbose:
+                if self.verbose and len(unitlogs) > 0:
                     logs.append("\n".join([log for log in unitlogs if log]))
 
                 self.results[filepath][name] = status
@@ -212,7 +211,7 @@ class Test(object):
 
                 logs.append(">>>>> " + name + status_str)
 
-                if self.verbose:
+                if self.verbose and len(unitlogs) > 0:
                     logs.append("\n".join([log for log in unitlogs if log]))
 
                 self.results[filepath][name] = status
