@@ -104,6 +104,36 @@ class Test(object):
         self.progress = None
 
     @property
+    def successes(self):
+        """ Get the number of successful tests
+
+        :returns: Number of successful tests
+        :rtype: int
+        """
+        return len([True for status in self.passing.values() if status is True])
+
+    @property
+    def json(self):
+        """ Get Json representation of object report
+
+        :return: JSON representing the complete test
+        :rtype:
+        """
+        return json.dumps(self.report)
+
+    @property
+    def report(self):
+        """ Get the report of the Test
+        :return: Report of the test
+        :rtype: dict
+        """
+        return {
+            "status": self.successes == len(self.passing),
+            "units": self.results,
+            "coverage": statistics.mean([test["coverage"] for test in self.results.values()])
+        }
+
+    @property
     def directory(self):
         """ Directory
         :return: Path of the full directory
@@ -117,46 +147,26 @@ class Test(object):
         else:
             return self.path
 
-    @staticmethod
-    def cover(test):
-        """ Given a dictionary, compute the coverage of one item
-
-        :param test: Dictionary where keys represents test done on a file and value a boolean indicating passing status
-        :type test: boolean
-        :returns: Passing status
-        :rtype: dict
-        """
-        results = list(test.values())
-        if len(results) > 0:
-            return {
-                "units": test,
-                "coverage": len([v for v in results if v is True])/len(results)*100,
-                "status": False not in results
-            }
-        else:
-            return {
-                "units": [],
-                "coverage": 0,
-                "status": False
-            }
-
-    def write(self, data):
+    def write(self, data=None):
         """ Print data and flush the stdout to be able to retrieve information line by line on another tool
 
         :param data: Data to be printed
         :type data: str
 
         """
-        if self.repository:
-            data = data.replace(self.directory, self.repository)
+        if data is None:
+            print(self.download, flush=True)
         else:
-            data = data.replace(self.directory, "")
+            if self.repository:
+                data = data.replace(self.directory, self.repository)
+            else:
+                data = data.replace(self.directory, "")
 
-        if isinstance(data, str):
-            self.logs.append(data)
+            if isinstance(data, str):
+                self.logs.append(data)
 
-        if self.print:
-            print(data, flush=True)
+            if self.print:
+                print(data, flush=True)
 
     def unit(self, filepath):
         """ Do test for a file and print the results
@@ -274,48 +284,6 @@ class Test(object):
             self.status = "failure"
         return self.status
 
-    @property
-    def successes(self):
-        """ Get the number of successful tests
-
-        :returns: Number of successful tests
-        :rtype: int
-        """
-        return len([True for status in self.passing.values() if status is True])
-
-    @property
-    def json(self):
-        """ Get Json representation of object report
-
-        :return: JSON representing the complete test
-        :rtype:
-        """
-        return json.dumps(self.report)
-
-    @property
-    def report(self):
-        """ Get the report of the Test
-        :return: Report of the test
-        :rtype: dict
-        """
-        return {
-            "status": self.successes == len(self.passing),
-            "units": self.results,
-            "coverage": statistics.mean([test["coverage"] for test in self.results.values()])
-        }
-
-    @staticmethod
-    def files(directory):
-        """ Find CTS files in a directory
-        :param directory: Path of the directory
-        :type directory: str
-
-        :returns: Path of xml text files, Path of __cts__.xml files
-        :rtype: (list, list)
-        """
-        data = glob.glob(os.path.join(directory, "data/*/*/*.xml")) + glob.glob(os.path.join(directory, "data/*/*.xml"))
-        return [f for f in data if "__cts__.xml" not in f], [f for f in data if "__cts__.xml" in f]
-
     def clone(self):
         """ Clone the repository
 
@@ -343,6 +311,41 @@ class Test(object):
 
     def clean(self):
         shutil.rmtree(self.directory, ignore_errors=True)
+
+    @staticmethod
+    def files(directory):
+        """ Find CTS files in a directory
+        :param directory: Path of the directory
+        :type directory: str
+
+        :returns: Path of xml text files, Path of __cts__.xml files
+        :rtype: (list, list)
+        """
+        data = glob.glob(os.path.join(directory, "data/*/*/*.xml")) + glob.glob(os.path.join(directory, "data/*/*.xml"))
+        return [f for f in data if "__cts__.xml" not in f], [f for f in data if "__cts__.xml" in f]
+
+    @staticmethod
+    def cover(test):
+        """ Given a dictionary, compute the coverage of one item
+
+        :param test: Dictionary where keys represents test done on a file and value a boolean indicating passing status
+        :type test: boolean
+        :returns: Passing status
+        :rtype: dict
+        """
+        results = list(test.values())
+        if len(results) > 0:
+            return {
+                "units": test,
+                "coverage": len([v for v in results if v is True])/len(results)*100,
+                "status": False not in results
+            }
+        else:
+            return {
+                "units": [],
+                "coverage": 0,
+                "status": False
+            }
 
 
 class Progress(git.RemoteProgress):
@@ -377,6 +380,7 @@ class Progress(git.RemoteProgress):
 
         if isinstance(self.parent, Test):
             self.parent.download = self.json
+            self.parent.write()
 
     @property
     def json(self):

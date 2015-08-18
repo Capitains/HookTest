@@ -5,6 +5,7 @@ import MyCapytain.common.reference
 
 import pkg_resources
 import subprocess
+import re
 
 
 class TESTUnit(object):
@@ -13,9 +14,11 @@ class TESTUnit(object):
     :param path: path of the current file
     """
 
-    EPIDOC = pkg_resources.resource_filename("HookTest", "epidoc.rng")
-    TEI_ALL = pkg_resources.resource_filename("HookTest", "tei.rng")
+    EPIDOC = pkg_resources.resource_filename("HookTest", "resources/epidoc.rng")
+    TEI_ALL = pkg_resources.resource_filename("HookTest", "resources/tei.rng")
     JING = pkg_resources.resource_filename("jingtrang", "jing.jar")
+    RNG_ERROR = re.compile("([0-9]+):([0-9]+):(.*);")
+    RNG_FAILURE = re.compile("([0-9]+):([0-9]+):(\s*fatal.*)")
     NS = {"tei": "http://www.tei-c.org/ns/1.0", "ti": "http://chs.harvard.edu/xmlns/cts"}
 
     def __init__(self, path):
@@ -60,6 +63,22 @@ class TESTUnit(object):
         finally:
             yield self.testable
 
+    @staticmethod
+    def rng(line):
+        """ Return a rng free line
+
+        :param line: Line of logs
+        :return: Line without all unnecessary information
+        """
+        found = TESTUnit.RNG_ERROR.findall(line)
+        if len(found) > 0:
+            line = "DTD l{0} c{1} : {2}".format(*found[0])
+        else:
+            found = TESTUnit.RNG_FAILURE.findall(line)
+            if len(found) > 0:
+                line = "DTD l{0} c{1} : {2}".format(*found[0])
+        return line
+
 
 class INVUnit(TESTUnit):
     """ CTS testing object
@@ -70,10 +89,10 @@ class INVUnit(TESTUnit):
 
     tests = ["parsable", "capitain", "metadata", "check_urns"]
     readable = {
-        "parsable" : "File parsing",
-        "capitain" : "MyCapytain parsing",
-        "metadata" : "Metadata availability",
-        "check_urns" : "URNs testing"
+        "parsable": "File parsing",
+        "capitain": "MyCapytain parsing",
+        "metadata": "Metadata availability",
+        "check_urns": "URNs testing"
     }
 
     def __init__(self, *args, **kwargs):
@@ -204,6 +223,7 @@ class CTSUnit(TESTUnit):
     :type path: basestring
 
     """
+
     tests = ["parsable", "capitain", "has_urn", "naming_convention", "refsDecl", "passages", "inventory"]
     readable = {
         "parsable": "File parsing",
@@ -238,7 +258,7 @@ class CTSUnit(TESTUnit):
 
     def epidoc(self):
         test = subprocess.Popen(
-            ["java", "-jar", JING, EPIDOC, self.path],
+            ["java", "-jar", TESTUnit.JING, TESTUnit.EPIDOC, self.path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False
@@ -248,22 +268,21 @@ class CTSUnit(TESTUnit):
 
         if len(out) > 0:
             for error in out.decode("utf-8").split("\n"):
-                self.log(error)
+                self.log(TESTUnit.rng(error))
         yield len(out) == 0 and len(error) == 0
 
     def tei(self):
         test = subprocess.Popen(
-            ["java", "-jar", JING, TEI_ALL, self.path],
+            ["java", "-jar", TESTUnit.JING, TESTUnit.TEI_ALL, self.path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False
         )
 
         out, error = test.communicate()
-
         if len(out) > 0:
             for error in out.decode("utf-8").split("\n"):
-                self.log(error)
+                self.log(TESTUnit.rng(error))
         yield len(out) == 0 and len(error) == 0
 
     def passages(self):
@@ -314,10 +333,10 @@ class CTSUnit(TESTUnit):
         if inventory is not None:
             self.inventory = inventory
 
-        tests = CTSUnit.tests
+        tests = [] + CTSUnit.tests
         tests.append(scheme)
 
-        for test in CTSUnit.tests:
+        for test in tests:
             # Show the logs and return the status
             self.flush()
             try:
@@ -328,3 +347,4 @@ class CTSUnit(TESTUnit):
                 status = False
                 self.error(E)
                 yield (CTSUnit.readable[test], status, self.logs)
+                self.flush()
