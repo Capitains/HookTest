@@ -7,6 +7,8 @@ import statistics
 from collections import defaultdict
 import concurrent.futures
 import json
+import git
+import shutil
 
 import HookTest.units
 
@@ -35,9 +37,9 @@ class Test(object):
     }
 
     def __init__(self, path,
-                 repository=None, branch=None, uuid=None, workers=1, scheme="tei",
-                 verbose=False, ping=False
-        ):
+         repository=None, branch=None, uuid=None, workers=1, scheme="tei",
+         verbose=False, ping=False
+    ):
         """ Create a Test object
 
         :param path: Path where the test should happen
@@ -76,6 +78,8 @@ class Test(object):
             self.ping = ping
         self.scheme = "tei"
 
+        self.download = []
+
         if scheme:
             if scheme not in Test.SCHEMES:
                 raise ValueError(
@@ -97,6 +101,7 @@ class Test(object):
         self.cts_files = []
         self.logs = []
         self.print = False
+        self.progress = None
 
     @property
     def directory(self):
@@ -310,3 +315,73 @@ class Test(object):
         """
         data = glob.glob(os.path.join(directory, "data/*/*/*.xml")) + glob.glob(os.path.join(directory, "data/*/*.xml"))
         return [f for f in data if "__cts__.xml" not in f], [f for f in data if "__cts__.xml" in f]
+
+    def clone(self):
+        """ Clone the repository
+
+        :return: Indicator of success
+        :rtype: bool
+        """
+        self.progress = Progress(parent=self)
+        repo = git.repo.base.Repo.clone_from(
+            url="https://github.com/{0}.git".format(self.repository),
+            to_path=self.directory,
+            progress=self.progress
+        )
+
+        if self.branch is None:
+            self.branch = "master"
+
+        if self.branch.isnumeric():
+            ref = "refs/pull/{0}/head:refs/pull/origin/{0}".format(self.branch)
+        else:
+            ref = "refs/heads/{ref}".format(ref=self.branch)
+
+        repo.remote().pull(ref, progress=self.progress)
+
+        return repo is None
+
+    def clean(self):
+        shutil.rmtree(self.directory, ignore_errors=True)
+
+
+class Progress(git.RemoteProgress):
+    """ Progress object for HookTest
+    """
+    def __init__(self, parent=None):
+        super(Progress, self).__init__()
+        self.parent = parent
+        self.start = ["Cloning repository"]
+        self.end = []
+        self.download = ""
+        self.progress = None
+
+        self.current = 0
+        self.maximum = 0
+
+    def update(self, op_code, cur_count, max_count=None, message=''):
+        self.current = cur_count
+        self.maximum = max_count
+
+        if message:
+            if message[-2:] == "/s":
+                if self.progress is None:
+                    self.progress = True
+                self.download = message
+            else:
+                if self.progress:
+                    self.progress = False
+                    self.end.append(message)
+                else:
+                    self.start.append(message)
+
+        if isinstance(self.parent, Test):
+            self.parent.download = self.json
+
+    @property
+    def json(self):
+        return [
+            "\n".join(self.start),
+            "Downloaded {0}/{1} ({2})".format(self.current, self.maximum, self.download),
+            "\n".join(self.end)
+        ]

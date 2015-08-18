@@ -36,7 +36,15 @@ def cmd():
     args = parser.parse_args()
 
     test = HookTest.test.Test(**vars(args))
+
+    if args.repository:
+        test.clone()
+
     status, logs, report = test.run(printing=True)
+
+    if args.repository:
+        test.clean()
+
     if status is False:
         test.write(test.json)
         sys.exit(1)
