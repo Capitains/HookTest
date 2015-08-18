@@ -39,7 +39,7 @@ class TESTUnit(object):
     
     def log(self, message):
         if isinstance(message, str) and not message.isspace() and len(message) > 0:
-            self.__logs.append(">>>>>> " + TESTUnit.SPACE_REPLACER.sub(" ", message))
+            self.__logs.append(">>>>>> " + TESTUnit.SPACE_REPLACER.sub(" ", message.lstrip()))
     
     def error(self, error):
         if isinstance(error, Exception):
