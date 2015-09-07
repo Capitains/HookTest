@@ -8,7 +8,7 @@ class TestTest(unittest.TestCase):
     def setUp(self):
         self.test = HookTest.test.Test(
             "./",
-            repository="PerseusDL",
+            repository="PerseusDL/tests",
             branch="master",
             uuid="1234",
             ping="http://services.perseids.org/Hook",
@@ -154,9 +154,78 @@ class TestTest(unittest.TestCase):
         self.assertEqual(self.test.json, report)
 
     def test_directory(self):
-        """ Check the directory
+        """ Check the directory forming
         """
+        self.test.repository = False
+        self.assertEqual(self.test.directory, "./")
+        self.test.repository = "PerseusDL/canonical-farsiLit"
+        self.test.uuid = None
+        self.assertEqual(self.test.directory, "./canonical-farsiLit")
+        self.test.uuid = "1234"
+        self.assertEqual(self.test.directory, "./1234")
+
+    def test_unit(self):
         pass
+
+    def test_run(self):
+        pass
+
+    def test_clone(self):
+        pass
+
+    def test_clean(self):
+        pass
+
+    def test_files(self):
+        pass
+
+    def test_cover(self):
+        """ Test covering dict generation """
+        test = {
+            "One test": True,
+            "Two test": False
+        }
+        test2 = {
+            "One test": True,
+            "Two test": True
+        }
+        test3 = {
+            "One test": False,
+            "Two test": False
+        }
+        self.assertEqual(
+            HookTest.test.Test.cover(test),
+            {
+                "units": {
+                    "One test": True,
+                    "Two test": False
+                },
+                "coverage": 50.0,
+                "status": False
+            }
+        )
+        self.assertEqual(
+            HookTest.test.Test.cover(test2),
+            {
+                "units": {
+                    "One test": True,
+                    "Two test": True
+                },
+                "coverage": 100.0,
+                "status": True
+            }
+        )
+        self.assertEqual(
+            HookTest.test.Test.cover(test3),
+            {
+                "units": {
+                    "One test": False,
+                    "Two test": False
+                },
+                "coverage": 0.0,
+                "status": False
+            }
+        )
 
 
 class TestProgress(unittest.TestCase):
