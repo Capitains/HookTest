@@ -121,7 +121,12 @@ class TestTest(unittest.TestCase):
     def test_successes(self):
         """ Test successes property
         """
-        pass
+        self.test.passing = {"1": True, "2": True, "3": False}
+        self.assertEqual(self.test.successes, 2)
+        self.test.passing = {"1": True, "2": False, "3": False}
+        self.assertEqual(self.test.successes, 1)
+        self.test.passing = {}
+        self.assertEqual(self.test.successes, 0)
 
     def test_finish(self):
         """ Check that finishes return a consistent status
