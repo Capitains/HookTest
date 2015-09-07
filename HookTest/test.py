@@ -11,6 +11,7 @@ import git
 import shutil
 import requests
 import hashlib
+import hmac
 
 import HookTest.units
 
@@ -78,7 +79,7 @@ class Test(object):
         self.ping = None
         if ping:
             self.ping = ping
-        self.secret = secret
+        self.secret = bytes(secret, "utf-8")
         self.scheme = "tei"
 
         self.download = []
@@ -191,7 +192,8 @@ class Test(object):
                 data = json.dumps(data)
             else:
                 data = json.dumps({"log": data})
-            hashed = hashlib.sha1("key={0};{1}".format(self.secret, data))
+            data = bytes(data, "utf-8")
+            hashed = hmac.new(self.secret, data, hashlib.sha1).hexdigest()
             requests.post(
                 self.ping,
                 data=data,

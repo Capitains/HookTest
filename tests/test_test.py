@@ -1,8 +1,7 @@
 import unittest
 import HookTest.test
 import mock
-import hashlib
-
+import json
 
 
 class TestTest(unittest.TestCase):
@@ -82,10 +81,30 @@ class TestTest(unittest.TestCase):
         self.test.flush()
         mocked.assert_called_with(25 * ["2"])
 
-
-    def test_printing(self):
+    @mock.patch('HookTest.test.requests.post', create=True)
+    def test_printing_over_http(self, mocked):
         """ Test printing function """
-        pass
+        self.test.printing(["5"] * 50)
+        mocked.assert_called_with(
+            "http://services.perseids.org/Hook",
+            data=bytes(json.dumps({"log": ["5"] * 50}), "utf-8"),
+            headers={
+                "HookTest-Secure-X": "76f6c41bc0f4df0eddae51f2739f0bf244a83a53",
+                'HookTest-UUID': '1234'
+            }
+        )
+
+        data = {"this": "is a dict"}
+        self.test.printing(data)
+        mocked.assert_called_with(
+            "http://services.perseids.org/Hook",
+            data=bytes(json.dumps(data), "utf-8"),
+            headers={
+                "HookTest-Secure-X": "1af4394c8b251da317b461b6051eeebd125b837c",
+                'HookTest-UUID': '1234'
+            }
+        )
+
 
     def test_send_report(self):
         """ Test sending report """
