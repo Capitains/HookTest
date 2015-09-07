@@ -177,7 +177,7 @@ class TestTest(unittest.TestCase):
         pass
 
     def test_files(self):
-        reading, metadata = HookTest.test.Test.files("./")
+        reading, metadata = HookTest.test.Test.files("./tests")
         self.assertEqual(len(metadata), 2)
         self.assertEqual(len(reading), 3) # eng far ger
 
