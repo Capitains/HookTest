@@ -1,5 +1,102 @@
 import unittest
 import HookTest.test
+import mock
+import hashlib
+
+
+
+class TestTest(unittest.TestCase):
+    def setUp(self):
+        self.test = HookTest.test.Test(
+            "./",
+            repository="PerseusDL",
+            branch="master",
+            uuid="1234",
+            ping="http://services.perseids.org/Hook",
+            secret="PerseusDL"
+        )
+        self.test_print = HookTest.test.Test(
+            "./",
+            repository="PerseusDL",
+            branch="master",
+            uuid="1234",
+            secret="PerseusDL"
+        )
+
+    @mock.patch('HookTest.test.print', create=True)
+    def test_write_with_print(self, mocked):
+        """ Test writing function """
+        # Test normal use
+
+        # When print is not set to True
+        self.test_print.write("This is a log")
+        mocked.assert_not_called()
+
+        # When it is
+        self.test_print.print = True
+        self.test_print.write("This is a log")
+        mocked.assert_called_with("This is a log", flush=True)
+
+    @mock.patch('HookTest.test.sending', create=True)
+    def test_write_with_request(self, mocked):
+        """ Test writing function when sending request param """
+        self.test.print = True
+        self.test.printing = mocked
+        self.test.logs = ["1"] * 48  # Up to 49 it should send nothing
+        self.test.write("1")
+        mocked.assert_not_called()
+
+        self.test.write("1")
+        mocked.assert_called_with(["1"] * 50)
+
+        self.test.logs += ["2"] * 48
+        self.test.write("2")
+        mocked.assert_not_called()
+        self.test.write("2")
+        mocked.assert_called_with(["2"] * 50)
+
+        self.test.logs += ["3"] * 480
+        self.test.write("3")
+        mocked.assert_called_with(["3"] * 481)
+        self.test.write("4")
+        mocked.assert_not_called()
+
+    @mock.patch('HookTest.test.sending', create=True)
+    def test_flush(self, mocked):
+        """ Test the flush method, which sends the remaining logs to be treated
+        """
+        self.test.print = True
+        self.test.printing = mocked
+
+        # Test with normal logs
+        self.test.logs = ["1"] * 49
+        self.test.write("1")
+        mocked.assert_called_with(50 * ["1"])
+
+        # And now increment and flush
+        self.test.logs += ["2"] * 25
+        self.test.flush()
+        mocked.assert_called_with(25 * ["2"])
+
+
+
+
+    def test_printing(self):
+        """ Test printing function """
+        pass
+
+    def test_send_report(self):
+        """ Test sending report """
+        #  Check it does nothing if no ping
+        self.test.ping = None
+        printing = self.test.printing
+        self.test.printing = lambda x: True
+        self.assertIsNone(self.test.send_report(None))
+
+        #  Check it does when there is a ping
+        self.test.ping = "http://services.perseids.org/Hook"
+        self.assertEqual(self.test.send_report(None), True)
+        self.test.printing = printing
 
 
 class TestProgress(unittest.TestCase):

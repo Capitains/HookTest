@@ -9,6 +9,8 @@ import concurrent.futures
 import json
 import git
 import shutil
+import requests
+import hashlib
 
 import HookTest.units
 
@@ -38,7 +40,7 @@ class Test(object):
 
     def __init__(self, path,
          repository=None, branch=None, uuid=None, workers=1, scheme="tei",
-         verbose=False, ping=False
+         verbose=False, ping=False, secret=""
     ):
         """ Create a Test object
 
@@ -73,9 +75,10 @@ class Test(object):
         self.workers = 1
         if workers:
             self.workers = workers
-        self.ping = False
+        self.ping = None
         if ping:
             self.ping = ping
+        self.secret = secret
         self.scheme = "tei"
 
         self.download = []
@@ -102,6 +105,7 @@ class Test(object):
         self.logs = []
         self.print = False
         self.progress = None
+        self.last = 0
 
     @property
     def successes(self):
@@ -155,7 +159,7 @@ class Test(object):
 
         """
         if data is None:
-            print(self.download, flush=True)
+            self.printing(self.download, flush=True)
         elif isinstance(data, str) and not data.isspace():
             if self.repository:
                 data = data.replace(self.directory, self.repository)
@@ -165,7 +169,48 @@ class Test(object):
             self.logs.append(data)
 
             if self.print:
-                print(data, flush=True)
+                if self.ping:
+                    dozen = len(self.logs)
+                    if dozen > self.last + 49:
+                        self.printing(self.logs[self.last:])
+                        self.last = len(self.logs)
+                else:
+                    self.printing(data, flush=True)
+
+
+    def flush(self):
+        """ Flush the remaining logs to the endpoint
+        """
+        if self.ping and self.last + 1 > len(self.logs):
+            self.printing(self.logs[self.last:])
+
+    def printing(self, data, **kwargs):
+        """ Decides to use HTTP connection or print system
+
+        :return:
+        """
+        if self.ping:
+            if isinstance(data, dict):
+                data = json.dumps(data)
+            else:
+                data = json.dumps({"log": data})
+            hashed = hashlib.sha1("key={0};{1}".format(self.secret, data))
+            requests.post(
+                self.ping,
+                data=data,
+                headers={"HookTest-Secure-X": hashed, "HookTest-UUID": self.uuid}
+            )
+        else:
+            print(data, **kwargs)
+        return True
+
+    def send_report(self, report):
+        """ Send the report through HTTP
+        :param report:
+        :return:
+        """
+        if self.ping is not None:
+            return self.printing(report)
 
     def unit(self, filepath):
         """ Do test for a file and print the results
@@ -266,6 +311,8 @@ class Test(object):
 
         self.print = False
 
+        self.flush()
+        self.send_report()
         return self.status, self.logs, self.report
 
     def finish(self):
