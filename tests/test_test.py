@@ -177,7 +177,9 @@ class TestTest(unittest.TestCase):
         pass
 
     def test_files(self):
-        pass
+        reading, metadata = HookTest.test.Test.files("./")
+        self.assertEqual(len(metadata), 2)
+        self.assertEqual(len(reading), 3) # eng far ger
 
     def test_cover(self):
         """ Test covering dict generation """
