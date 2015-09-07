@@ -26,15 +26,31 @@ class TestTest(unittest.TestCase):
     def test_write_with_print(self, mocked):
         """ Test writing function """
         # Test normal use
-
         # When print is not set to True
         self.test_print.write("This is a log")
         mocked.assert_not_called()
 
         # When it is
         self.test_print.print = True
+        self.test_print.download = {"test": True}
+        self.test_print.write(None)
+        mocked.assert_called_with({"test": True}, flush=True)
+
         self.test_print.write("This is a log")
         mocked.assert_called_with("This is a log", flush=True)
+
+        self.test.print = True
+        self.test.ping = None
+        self.test.write("./1234/file1.xml is good")  # Check its uuid is replaced
+        mocked.assert_called_with("PerseusDL/tests/file1.xml is good", flush=True)
+
+        self.test.uuid = None
+        self.test.write("./1234/file2.xml is good")  # Check its uuid is replaced
+        mocked.assert_called_with("./1234/file2.xml is good", flush=True)
+
+        self.test.repository = None
+        self.test.write("./file3.xml is good")  # Check its uuid is replaced
+        mocked.assert_called_with("file3.xml is good", flush=True)
 
     @mock.patch('HookTest.test.sending', create=True)
     def test_write_with_request(self, mocked):
