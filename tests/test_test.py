@@ -68,6 +68,10 @@ class TestTest(unittest.TestCase):
         self.test.print = True
         self.test.printing = mocked
 
+        # Empty flushing
+        self.test.flush()
+        mocked.assert_not_called()
+
         # Test with normal logs
         self.test.logs = ["1"] * 49
         self.test.write("1")
@@ -77,8 +81,6 @@ class TestTest(unittest.TestCase):
         self.test.logs += ["2"] * 25
         self.test.flush()
         mocked.assert_called_with(25 * ["2"])
-
-
 
 
     def test_printing(self):

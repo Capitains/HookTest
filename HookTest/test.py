@@ -103,7 +103,6 @@ class Test(object):
         self.files = []
         self.cts_files = []
         self.logs = []
-        self.print = False
         self.progress = None
         self.last = 0
 
@@ -177,11 +176,9 @@ class Test(object):
                 else:
                     self.printing(data, flush=True)
 
-
     def flush(self):
-        """ Flush the remaining logs to the endpoint
-        """
-        if self.ping and self.last + 1 > len(self.logs):
+        """ Flush the remaining logs to the endpoint """
+        if self.ping and len(self.logs) > self.last + 1:
             self.printing(self.logs[self.last:])
 
     def printing(self, data, **kwargs):
