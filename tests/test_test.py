@@ -105,7 +105,6 @@ class TestTest(unittest.TestCase):
             }
         )
 
-
     def test_send_report(self):
         """ Test sending report """
         #  Check it does nothing if no ping
@@ -118,6 +117,41 @@ class TestTest(unittest.TestCase):
         self.test.ping = "http://services.perseids.org/Hook"
         self.assertEqual(self.test.send_report(None), True)
         self.test.printing = printing
+
+    def test_successes(self):
+        """ Test successes property
+        """
+        pass
+
+    def test_finish(self):
+        """ Check that finishes return a consistent status
+        """
+        self.test.passing = {"001" : True}
+        self.test.files = [1]
+        self.test.cts_files = [1]
+
+        self.assertEqual(self.test.finish(), "error")  # 1/2 passing
+        self.test.passing["002"] = False
+        self.assertEqual(self.test.finish(), "failure")  # 1/2 successes
+        self.test.passing["002"] = True
+        self.assertEqual(self.test.finish(), "success")  # 2/2 successes
+
+    def test_json(self):
+        """ Check that json return is stable
+        """
+        report = json.dumps({
+            "status": False,
+            "units": {"001": {"coverage": 0.5}, "002": {"coverage": 0.5}},
+            "coverage": 0.5
+        })
+        self.test.passing = {"001": True, "002": False}
+        self.test.results = {"001": {"coverage": 0.5}, "002": {"coverage": 0.5}}
+        self.assertEqual(self.test.json, report)
+
+    def test_directory(self):
+        """ Check the directory
+        """
+        pass
 
 
 class TestProgress(unittest.TestCase):
