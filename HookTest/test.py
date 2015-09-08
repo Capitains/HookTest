@@ -367,7 +367,12 @@ class Test(object):
         :rtype: (list, list)
         """
         data = glob.glob(os.path.join(directory, "data/*/*/*.xml")) + glob.glob(os.path.join(directory, "data/*/*.xml"))
-        return [f for f in data if "__cts__.xml" not in f], [f for f in data if "__cts__.xml" in f]
+        files, cts = [f for f in data if "__cts__.xml" not in f], [f for f in data if "__cts__.xml" in f]
+
+        # For unit testing and human readable progression
+        cts.sort()
+        files.sort()
+        return files, cts
 
     @staticmethod
     def cover(test):

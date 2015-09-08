@@ -238,7 +238,7 @@ class TestTest(unittest.TestCase):
             './tests/data/hafez/divan/hafez.divan.perseus-eng1.xml'
         )
 
-        on_complete.assert_called_with({"This is a call": './tests/data/hafez/divan/hafez.divan.perseus-eng1.xml'})
+        on_complete.assert_called_with({"This is a call": './tests/data/hafez/divan/hafez.divan.perseus-ger1.xml'})
         result.assert_called_with()
 
         write.assert_has_calls(
