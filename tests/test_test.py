@@ -2,6 +2,7 @@ import unittest
 import HookTest.test
 import mock
 import json
+import concurrent.futures
 
 
 class TestTest(unittest.TestCase):
@@ -183,8 +184,80 @@ class TestTest(unittest.TestCase):
     def test_unit(self):
         pass
 
-    def test_run(self):
-        pass
+    @mock.patch(
+        "HookTest.test.concurrent.futures.ThreadPoolExecutor",
+        spec=concurrent.futures.ThreadPoolExecutor,
+        create=True
+    )
+    @mock.patch(
+        "HookTest.test.concurrent.futures.as_completed",
+        spec=concurrent.futures.as_completed,
+        create=True
+    )
+    def test_run(self, on_complete, thread):
+        """ Test that run make every call in the right order """
+
+        # Mocking methods
+        send_report = mock.MagicMock()
+        flush = mock.PropertyMock()
+        write = mock.MagicMock()
+        self.test.uuid = "tests"
+        self.test.send_report = send_report
+        self.test.flush = flush
+        self.test.write = write
+        self.test.results = {"001": {"coverage": 100.00}, "002": {"coverage": 50.00}}
+
+        #mocking concurrent
+        result = mock.MagicMock(return_value=["1", "2", "3"])
+        future = mock.MagicMock()
+        future.result = result
+        on_complete.return_value = [future]
+
+        # Running
+        thread().__enter__().submit.return_value = "This is a call"
+        self.test.run()
+        thread.assert_called_with(max_workers=1)
+        thread().__enter__().submit.assert_any_call(
+            self.test.unit,
+            './tests/data/hafez/__cts__.xml'
+        )
+        thread().__enter__().submit.assert_any_call(
+            self.test.unit,
+            './tests/data/hafez/divan/__cts__.xml'
+        )
+        thread().__enter__().submit.assert_any_call(
+            self.test.unit,
+            './tests/data/hafez/divan/hafez.divan.perseus-ger1.xml'
+        )
+        thread().__enter__().submit.assert_any_call(
+            self.test.unit,
+            './tests/data/hafez/divan/hafez.divan.perseus-far1.xml'
+        )
+        thread().__enter__().submit.assert_any_call(
+            self.test.unit,
+            './tests/data/hafez/divan/hafez.divan.perseus-eng1.xml'
+        )
+
+        on_complete.assert_called_with({"This is a call": './tests/data/hafez/divan/hafez.divan.perseus-eng1.xml'})
+        result.assert_called_with()
+
+        write.assert_has_calls(
+            [
+                mock.call(">>> Starting tests !"),
+                mock.call("files=5"),
+                mock.call("1"),
+                mock.call("2"),
+                mock.call("3"),
+                mock.call("1"),
+                mock.call("2"),
+                mock.call("3"),
+                mock.call(">>> Finished tests !"),
+                mock.call('[error] 0 over 0 texts have fully passed the tests')
+            ]
+        )
+
+        flush.assert_called_with()
+        send_report.assert_called_with()
 
     @mock.patch("HookTest.test.Progress")
     @mock.patch("HookTest.test.git.repo.base.Remote")
