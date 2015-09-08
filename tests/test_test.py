@@ -9,7 +9,7 @@ class TestTest(unittest.TestCase):
         self.test = HookTest.test.Test(
             "./",
             repository="PerseusDL/tests",
-            branch="master",
+            branch="dev",
             uuid="1234",
             ping="http://services.perseids.org/Hook",
             secret="PerseusDL"
@@ -186,11 +186,80 @@ class TestTest(unittest.TestCase):
     def test_run(self):
         pass
 
-    def test_clone(self):
-        pass
+    @mock.patch("HookTest.test.Progress")
+    @mock.patch("HookTest.test.git.repo.base.Remote")
+    @mock.patch("HookTest.test.git.repo.base.Repo.clone_from")
+    @mock.patch("HookTest.test.git.repo.base.Repo")
+    def test_clone(self, repo_mocked, clone_from_mocked, remote_mocked, progress_mocked):
+        """ Check that the cloning is done correctly, ie. right branch, right path, etc. """
+        # Finish mocking stuff
+        pull = mock.MagicMock(return_value=True)
+        remote_met = mock.MagicMock(return_value=remote_mocked)
+        remote_mocked.pull = pull
+        repo_mocked.remote = remote_met
+        type(clone_from_mocked).return_value = repo_mocked
 
-    def test_clean(self):
-        pass
+        # With a branch defined
+        self.test.clone()
+        progress_mocked.assert_called_with(parent=self.test)
+        clone_from_mocked.assert_called_with(
+            url="https://github.com/PerseusDL/tests.git",
+            to_path="./1234",
+            progress=self.test.progress
+        )
+        self.assertEqual(self.test.branch, "dev")
+        repo_mocked.remote.assert_called_with()
+        remote_met.assert_called_with()
+        pull.assert_called_with("refs/heads/dev", progress=self.test.progress)
+
+        # With a branch as None
+        self.test.branch = None
+        self.test.clone()
+        progress_mocked.assert_called_with(parent=self.test)
+        clone_from_mocked.assert_called_with(
+            url="https://github.com/PerseusDL/tests.git",
+            to_path="./1234",
+            progress=self.test.progress
+        )
+        self.assertEqual(self.test.branch, "master")
+        repo_mocked.remote.assert_called_with()
+        remote_met.assert_called_with()
+        pull.assert_called_with("refs/heads/master", progress=self.test.progress)
+
+        # With a PR number as int
+        self.test.branch = 4
+        self.test.clone()
+        progress_mocked.assert_called_with(parent=self.test)
+        clone_from_mocked.assert_called_with(
+            url="https://github.com/PerseusDL/tests.git",
+            to_path="./1234",
+            progress=self.test.progress
+        )
+        self.assertEqual(self.test.branch, 4)
+        repo_mocked.remote.assert_called_with()
+        remote_met.assert_called_with()
+        pull.assert_called_with("refs/pull/4/head:refs/pull/origin/4", progress=self.test.progress)
+
+        # With a PR number as numeric string
+        self.test.branch = "5"
+        self.test.clone()
+        progress_mocked.assert_called_with(parent=self.test)
+        clone_from_mocked.assert_called_with(
+            url="https://github.com/PerseusDL/tests.git",
+            to_path="./1234",
+            progress=self.test.progress
+        )
+        self.assertEqual(self.test.branch, "5")
+        repo_mocked.remote.assert_called_with()
+        remote_met.assert_called_with()
+        pull.assert_called_with("refs/pull/5/head:refs/pull/origin/5", progress=self.test.progress)
+
+
+    @mock.patch("HookTest.test.shutil.rmtree", create=True)
+    def test_clean(self, mocked):
+        """ Test remove is called """
+        self.test.clean()
+        mocked.assert_called_with("./1234", ignore_errors=True)
 
     def test_files(self):
         reading, metadata = HookTest.test.Test.files("./tests")

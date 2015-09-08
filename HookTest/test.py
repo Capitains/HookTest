@@ -345,7 +345,7 @@ class Test(object):
         if self.branch is None:
             self.branch = "master"
 
-        if self.branch.isnumeric():
+        if isinstance(self.branch, int) or self.branch.isnumeric():
             ref = "refs/pull/{0}/head:refs/pull/origin/{0}".format(self.branch)
         else:
             ref = "refs/heads/{ref}".format(ref=self.branch)
