@@ -98,7 +98,7 @@ class Test(object):
             self.verbose = verbose
 
         self.results = defaultdict(dict)
-        self.passing = defaultdict(dict)
+        self.passing = defaultdict(bool)
         self.inventory = []
         self.status = "pending"  # Can be pending, success, failure, error
         self.files = []
@@ -240,7 +240,7 @@ class Test(object):
                 self.results[filepath][name] = status
 
             self.results[filepath] = Test.cover(self.results[filepath])
-            self.passing[filepath.replace("/", ".")] = True == self.results[filepath]["status"]
+            self.passing[filepath.replace("/", ".")] = self.results[filepath]["status"]
             self.inventory += unit.urns
 
         else:
@@ -263,7 +263,7 @@ class Test(object):
             self.results[filepath] = Test.cover(self.results[filepath])
             self.passing[filepath.split("/")[-1]] = True == self.results[filepath]["status"]
 
-        return logs + ["test+=1"]
+        return logs
 
     def run(self, printing=False):
         """ Run the tests
