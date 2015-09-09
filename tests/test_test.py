@@ -247,10 +247,63 @@ class TestTest(unittest.TestCase):
 
             self.assertEqual(self.test.passing[".phi1294.phi002.__cts__.xml"], True)
 
-    @mock.patch("HookTest.test.HookTest.units.CTSUnit", create=True, spec=HookTest.units.CTSUnit)
-    def test_unit_text(self, textunit):
-        pass
+    def test_unit_text_mute(self):
+        test = mock.MagicMock()
+        test.return_value = [
+            ("MyCapytain", True, []),
+            ("Folder Name", True, ["It should be in a subfolder"])
+        ]
+        INVObject = mock.Mock(
+            test=test
+        )
+        ctsunit = mock.Mock(
+            return_value=INVObject
+        )
+        with mock.patch("HookTest.test.HookTest.units.CTSUnit", ctsunit):
+            logs = self.test.unit("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml")
+            self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs)
+            self.assertIn(">>>>> MyCapytain passed", logs)
+            self.assertIn(">>>>> Folder Name passed", logs)
 
+            self.assertEqual(self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"], {
+                'coverage': 100.0,
+                'status': True,
+                'units': {
+                    'Folder Name': True,
+                    'MyCapytain': True
+                }
+            })
+            self.assertEqual(self.test.passing["phi1294.phi002.perseus-lat2.xml"], True)
+
+    def test_unit_text_verbose(self):
+        self.test.verbose = True
+        test = mock.MagicMock()
+        test.return_value = [
+            ("MyCapytain", True, []),
+            ("Folder Name", True, ["It should be in a subfolder"])
+        ]
+        INVObject = mock.Mock(
+            test=test
+        )
+        ctsunit = mock.Mock(
+            return_value=INVObject
+        )
+        with mock.patch("HookTest.test.HookTest.units.CTSUnit", ctsunit):
+            logs = self.test.unit("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml")
+            self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs)
+            self.assertIn(">>>>> MyCapytain passed", logs)
+            self.assertIn(">>>>> Folder Name passed", logs)
+            self.assertIn("It should be in a subfolder", logs)
+
+            self.assertEqual(self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"], {
+                'coverage': 100.0,
+                'status': True,
+                'units': {
+                    'Folder Name': True,
+                    'MyCapytain': True
+                }
+            })
+            self.assertEqual(self.test.passing["phi1294.phi002.perseus-lat2.xml"], True)
 
     @mock.patch(
         "HookTest.test.concurrent.futures.ThreadPoolExecutor",
