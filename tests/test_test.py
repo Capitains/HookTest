@@ -1,5 +1,6 @@
 import unittest
 import HookTest.test
+import HookTest.units
 import mock
 import json
 import concurrent.futures
@@ -181,8 +182,75 @@ class TestTest(unittest.TestCase):
         self.test.uuid = "1234"
         self.assertEqual(self.test.directory, "./1234")
 
-    def test_unit(self):
+    def test_unit_inv_verbose(self):
+        """ Test unit when __cts__.xml """
+        test = mock.MagicMock()
+        test.return_value = [
+            ("MyCapytain", True, []),
+            ("Folder Name", False, ["It should be in a subfolder"])
+        ]
+        INVObject = mock.Mock(
+            test=test,
+            urns=["urn:cts:latinLit:phi1294.phi002.perseus-lat2"]
+        )
+        invunit = mock.Mock(
+            return_value=INVObject
+        )
+        self.test.verbose = True
+        with mock.patch("HookTest.test.HookTest.units.INVUnit", invunit):
+            logs = self.test.unit("__cts__.xml")
+            self.assertIn(">>>> Testing __cts__.xml", logs)
+            self.assertIn(">>>>> MyCapytain passed", logs)
+            self.assertIn(">>>>> Folder Name failed", logs)
+            self.assertIn("It should be in a subfolder", logs)
+            self.assertIn("urn:cts:latinLit:phi1294.phi002.perseus-lat2", self.test.inventory)
+
+            self.assertEqual(self.test.results["__cts__.xml"], {
+                'coverage': 50.0,
+                'status': False,
+                'units': {
+                    'Folder Name': False,
+                    'MyCapytain': True
+                }
+            })
+            self.assertEqual(self.test.passing["__cts__.xml"], False)
+
+    def test_unit_inv_non_verbose(self):
+        """ Test unit when __cts__.xml """
+        test = mock.MagicMock()
+        test.return_value = [
+            ("MyCapytain", True, []),
+            ("Folder Name", True, ["It should be in a subfolder"])
+        ]
+        INVObject = mock.Mock(
+            test=test,
+            urns=["urn:cts:latinLit:phi1294.phi002.perseus-lat2"]
+        )
+        invunit = mock.Mock(
+            return_value=INVObject
+        )
+        with mock.patch("HookTest.test.HookTest.units.INVUnit", invunit):
+            logs = self.test.unit("/phi1294/phi002/__cts__.xml")
+            self.assertIn(">>>> Testing /phi1294/phi002/__cts__.xml", logs)
+            self.assertIn(">>>>> MyCapytain passed", logs)
+            self.assertIn(">>>>> Folder Name passed", logs)
+            self.assertIn("urn:cts:latinLit:phi1294.phi002.perseus-lat2", self.test.inventory)
+
+            self.assertEqual(self.test.results["/phi1294/phi002/__cts__.xml"], {
+                'coverage': 100.0,
+                'status': True,
+                'units': {
+                    'Folder Name': True,
+                    'MyCapytain': True
+                }
+            })
+
+            self.assertEqual(self.test.passing[".phi1294.phi002.__cts__.xml"], True)
+
+    @mock.patch("HookTest.test.HookTest.units.CTSUnit", create=True, spec=HookTest.units.CTSUnit)
+    def test_unit_text(self, textunit):
         pass
+
 
     @mock.patch(
         "HookTest.test.concurrent.futures.ThreadPoolExecutor",
