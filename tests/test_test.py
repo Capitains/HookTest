@@ -24,6 +24,9 @@ class TestTest(unittest.TestCase):
             secret="PerseusDL"
         )
 
+    def test_dump(self):
+        self.assertEqual(Test.dump(), "{'Test':")
+
     @mock.patch('HookTest.test.print', create=True)
     def test_write_with_print(self, mocked):
         """ Test writing function """
@@ -149,15 +152,15 @@ class TestTest(unittest.TestCase):
     def test_finish(self):
         """ Check that finishes return a consistent status
         """
-        self.test.passing = {"001" : True}
-        self.test.files = [1]
+        self.test.passing = {"001": True}
+        self.test.text_files = [1]
         self.test.cts_files = [1]
 
-        self.assertEqual(self.test.finish(), "error")  # 1/2 passing
+        self.assertEqual(self.test.status, "error")  # 1/2 passing
         self.test.passing["002"] = False
-        self.assertEqual(self.test.finish(), "failure")  # 1/2 successes
+        self.assertEqual(self.test.status, "failure")  # 1/2 successes
         self.test.passing["002"] = True
-        self.assertEqual(self.test.finish(), "success")  # 2/2 successes
+        self.assertEqual(self.test.status, "success")  # 2/2 successes
 
     def test_json(self):
         """ Check that json return is stable
@@ -448,15 +451,14 @@ class TestTest(unittest.TestCase):
         remote_met.assert_called_with()
         pull.assert_called_with("refs/pull/5/head:refs/pull/origin/5", progress=self.test.progress)
 
-
     @mock.patch("HookTest.test.shutil.rmtree", create=True)
     def test_clean(self, mocked):
         """ Test remove is called """
         self.test.clean()
         mocked.assert_called_with("./1234", ignore_errors=True)
 
-    def test_files(self):
-        reading, metadata = HookTest.test.Test.files("./tests")
+    def test_find(self):
+        reading, metadata = HookTest.test.Test.find("./tests")
         self.assertEqual(len(metadata), 2)
         self.assertEqual(len(reading), 3) # eng far ger
 
@@ -544,3 +546,11 @@ class TestProgress(unittest.TestCase):
         P.update(1, 2, max_count=3, message="Ending Download")
         self.assertEqual(P.progress, False)
         self.assertEqual(P.end, ["Ending Download"])
+
+
+class TestUnitLogs(unittest.TestCase):
+    def test_init(self):
+        pass
+
+    def test_dict(self):
+        pass

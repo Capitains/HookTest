@@ -12,6 +12,7 @@ import shutil
 import requests
 import hashlib
 import hmac
+import time
 
 import HookTest.units
 
@@ -34,6 +35,11 @@ class Test(object):
     :param verbose: Log also rng and unit logs details
     :type verbose: bool
     """
+    STACK_TRIGGER_SIZE = 10
+    FAILURE = "failure"
+    ERROR = "error"
+    SUCCESS = "success"
+    PENDING = "pending"
     SCHEMES = {
         "tei": "tei.rng",
         "epidoc": "epidoc.rng"
@@ -41,7 +47,7 @@ class Test(object):
 
     def __init__(self, path,
          repository=None, branch=None, uuid=None, workers=1, scheme="tei",
-         verbose=False, ping=False, secret=""
+         verbose=False, ping=None, secret="", triggering_size=None
     ):
         """ Create a Test object
 
@@ -62,50 +68,34 @@ class Test(object):
         :param ping: URI to ping with data
         :type ping: str
         """
-        self.print = True
+        self.print = False
         self.path = path
-        self.repository = None
-        if repository:
-            self.repository = repository
-        self.branch = None
-        if branch:
-            self.branch = branch
-        self.uuid = None
-        if uuid:
-            self.uuid = uuid
-        self.workers = 1
-        if workers:
-            self.workers = workers
-        self.ping = None
-        if ping:
-            self.ping = ping
+        self.repository = repository
+        self.branch = branch
+        self.uuid = uuid
+        self.workers = workers
+        self.ping = ping
         self.secret = bytes(secret, "utf-8")
-        self.scheme = "tei"
+        self.scheme = scheme
+        self.verbose = verbose
+        self.__triggering_size = None
+        if isinstance(triggering_size, int):
+            self.__triggering_size = triggering_size
 
-        self.download = []
-
-        if scheme:
-            if scheme not in Test.SCHEMES:
-                raise ValueError(
-                    "Scheme {0} unknown, please use one of the following : {1}".format(
-                        scheme,
-                        ", ".join(Test.SCHEMES.keys())
-                     )
+        if scheme is not "tei" and scheme not in Test.SCHEMES:
+            raise ValueError(
+                "Scheme {0} unknown, please use one of the following : {1}".format(
+                    scheme,
+                    ", ".join(Test.SCHEMES.keys())
                 )
-            self.scheme = scheme
-        self.verbose = False
-        if verbose:
-            self.verbose = verbose
+            )
 
-        self.results = defaultdict(dict)
+        self.results = defaultdict(UnitLog)
         self.passing = defaultdict(bool)
         self.inventory = []
-        self.status = "pending"  # Can be pending, success, failure, error
-        self.files = []
+        self.text_files = []
         self.cts_files = []
-        self.logs = []
         self.progress = None
-        self.last = 0
 
     @property
     def successes(self):
@@ -134,7 +124,7 @@ class Test(object):
         return {
             "status": self.successes == len(self.passing),
             "units": self.results,
-            "coverage": statistics.mean([test["coverage"] for test in self.results.values()])
+            "coverage": statistics.mean([test.coverage for test in self.results.values()])
         }
 
     @property
@@ -151,80 +141,90 @@ class Test(object):
         else:
             return self.path
 
-    def write(self, data=None):
-        """ Print data and flush the stdout to be able to retrieve information line by line on another tool
+    @property
+    def stack(self):
+        """ Get the current stack of unsent item
 
-        :param data: Data to be printed
-        :type data: str
-
+        :return: Unset UnitLog
+        :rtype: [UnitLog]
         """
-        if data is None:
-            self.printing(self.download, flush=True)
-        elif isinstance(data, str) and not data.isspace():
-            if self.repository:
-                data = data.replace(self.directory, self.repository)
-            else:
-                data = data.replace(self.directory, "")
+        return [result for result in self.results.values() if result.sent is False]
 
-            self.logs.append(data)
+    @property
+    def status(self):
+        """  Updated the status string based on available informations
 
-            if self.print:
-                if self.ping:
-                    dozen = len(self.logs)
-                    if dozen > self.last + 49:
-                        self.printing(self.logs[self.last:])
-                        self.last = len(self.logs)
-                else:
-                    self.printing(data, flush=True)
+        :return: Status string updated
+        :rtype: str
+        """
+        if len(self.passing) != self.count_files:
+            return Test.ERROR
+        elif self.successes == len(self.passing):
+            return Test.SUCCESS
+        else:
+            return Test.FAILURE
+
+    @property
+    def triggering_size(self):
+        """
+
+        :return:
+        """
+        percentage = int(self.count_files / 20)
+
+        if self.__triggering_size is not None:
+            return self.__triggering_size
+        elif percentage > Test.STACK_TRIGGER_SIZE:
+            return percentage
+        else:
+            Test.STACK_TRIGGER_SIZE
+
+    @property
+    def files(self):
+        return self.text_files, self.cts_files
+
+    @property
+    def count_files(self):
+        return len(self.text_files) + len(self.cts_files)
 
     def flush(self):
         """ Flush the remaining logs to the endpoint """
-        if self.ping and len(self.logs) > self.last + 1:
-            self.printing(self.logs[self.last:])
+        self.send(self.stack)
 
-    def printing(self, data, **kwargs):
-        """ Decides to use HTTP connection or print system
+    def send(self, data):
+        """
 
+        :param data:
         :return:
         """
-        if self.ping:
-            if isinstance(data, dict):
-                data = json.dumps(data)
-            else:
-                data = json.dumps({"log": data})
-            data = bytes(data, "utf-8")
-            hashed = hmac.new(self.secret, data, hashlib.sha1).hexdigest()
-            requests.post(
-                self.ping,
-                data=data,
-                headers={"HookTest-Secure-X": hashed, "HookTest-UUID": self.uuid}
-            )
+        if isinstance(data, dict):
+            data = json.dumps(data)
+        elif isinstance(data, UnitLog):
+            data = json.dumps(dict(data))
         else:
-            print(data, **kwargs)
-        return True
+            data = json.dumps({"log": data})
 
-    def send_report(self, report):
-        """ Send the report through HTTP
-        :param report:
-        :return:
-        """
-        if self.ping is not None:
-            return self.printing(report)
+        data = bytes(data, "utf-8")
+        hashed = hmac.new(self.secret, data, hashlib.sha1).hexdigest()
+        requests.post(
+            self.ping,
+            data=data,
+            headers={"HookTest-Secure-X": hashed, "HookTest-UUID": self.uuid}
+        )
 
     def unit(self, filepath):
         """ Do test for a file and print the results
 
         :param filepath: Path of the file to be tested
         :type filepath: str
-
-        :returns: List of status information
-        :rtype: list
+        :returns: A UnitLog
+        :rtype: UnitLog
         """
         logs = []
+        results = {}
         if filepath.endswith("__cts__.xml"):
             unit = HookTest.units.INVUnit(filepath)
             logs.append(">>>> Testing " + filepath)
-
             for name, status, unitlogs in unit.test():
 
                 if status:
@@ -237,10 +237,10 @@ class Test(object):
                 if self.verbose and len(unitlogs) > 0:
                     logs.append("\n".join([log for log in unitlogs if log]))
 
-                self.results[filepath][name] = status
+                results[name] = status
 
-            self.results[filepath] = Test.cover(self.results[filepath])
-            self.passing[filepath.replace("/", ".")] = self.results[filepath]["status"]
+            self.results[filepath] = self.cover(filepath, results, logs=logs)
+            self.passing[filepath.replace("/", ".")] = self.results[filepath].status
             self.inventory += unit.urns
 
         else:
@@ -258,76 +258,88 @@ class Test(object):
                 if self.verbose and len(unitlogs) > 0:
                     logs.append("\n".join([log for log in unitlogs if log]))
 
-                self.results[filepath][name] = status
+                results[name] = status
 
-            self.results[filepath] = Test.cover(self.results[filepath])
-            self.passing[filepath.split("/")[-1]] = True == self.results[filepath]["status"]
+            self.results[filepath] = self.cover(filepath, results, logs=logs)
+            self.passing[filepath.split("/")[-1]] = self.results[filepath].status
 
-        return logs
+        return self.results[filepath]
 
-    def run(self, printing=False):
+    def run(self):
         """ Run the tests
 
         :returns: Status of the test, List of logs, Report
         :rtype: (string, list, dict)
         """
-        if printing is True:
-            self.print = True
 
-        self.files, self.cts_files = Test.files(self.directory)
+        self.text_files, self.cts_files = Test.find(self.directory)
+        self.start()
 
-        self.write(">>> Starting tests !")
-        self.write("files="+str(len(self.files) + len(self.cts_files)))
-
-        # We load a thread pool which has {self.workers} maximum workers
+        # We deal with Inventory files first to get a list of urns
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.workers) as executor:
             # We create a dictionary of tasks which
             tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.cts_files}
             # We iterate over a dictionary of completed tasks
             for future in concurrent.futures.as_completed(tasks):
-                logs = future.result()
-                for log in logs:
-                    self.write(log)
+                unit = future.result()
+                self.log(unit)
 
         # We load a thread pool which has 5 maximum workers
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.workers) as executor:
             # We create a dictionary of tasks which
-            tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.files}
+            tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.text_files}
             # We iterate over a dictionary of completed tasks
             for future in concurrent.futures.as_completed(tasks):
-                logs = future.result()
-                for log in logs:
-                    self.write(log)
+                unit = future.result()
+                self.log(unit)
 
-        self.write(">>> Finished tests !")
+        self.end()
+        return self.status, self.report
 
-        self.finish()
-        self.write(
-            "[{2}] {0} over {1} texts have fully passed the tests".format(
-                self.successes, len(self.passing), self.status
-            )
-        )
+    def log(self, log):
+        """ Deal with middle process situation
 
-        self.print = False
-
-        self.flush()
-        self.send_report()
-        return self.status, self.logs, self.report
-
-    def finish(self):
-        """  Updated the status string based on available informations
-
-        :return: Status string updated
-        :rtype: str
         """
+        if self.print:
+            print(str(log))
+        elif self.ping and len(self.stack) >= self.triggering_size:
+                self.send({
+                    "units": self.stack
+                })
 
-        if len(self.passing) != len(self.files + self.cts_files):
-            self.status = "error"
-        elif self.successes == len(self.passing):
-            self.status = "success"
-        else:
-            self.status = "failure"
-        return self.status
+    def start(self):
+        """ Deal with the start of the process
+
+        """
+        if self.print:
+            print(">>> Starting tests !", flush=True)
+            print(">>> Files to test : "+str(len(self.text_files) + len(self.cts_files)), flush=True)
+        elif self.ping:
+            self.send({
+                "log": [
+                    ">>> Starting tests !"
+                ],
+                "files": self.count_files,
+                "texts": len(self.text_files),
+                "inventories": len(self.cts_files)
+            })
+
+    def download(self):
+        if self.print:
+            print("\n".join([f for f in self.progress.json if f]))
+
+    def end(self):
+        """ Deal with end logs
+        """
+        if self.print:
+            print(
+                ">>> End of the test !\n" \
+                ">>> [{2}] {0} over {1} texts have fully passed the tests".format(
+                    self.successes, len(self.passing), self.status
+                )
+            )
+        elif self.ping:
+            self.flush()
 
     def clone(self):
         """ Clone the repository
@@ -358,7 +370,7 @@ class Test(object):
         shutil.rmtree(self.directory, ignore_errors=True)
 
     @staticmethod
-    def files(directory):
+    def find(directory):
         """ Find CTS files in a directory
         :param directory: Path of the directory
         :type directory: str
@@ -374,28 +386,46 @@ class Test(object):
         files.sort()
         return files, cts
 
-    @staticmethod
-    def cover(test):
+    def cover(self, name, test, logs=None):
         """ Given a dictionary, compute the coverage of one item
 
+        :param name:
+        :type name:
         :param test: Dictionary where keys represents test done on a file and value a boolean indicating passing status
         :type test: boolean
+        :param logs: List of logs for one unit
+        :type logs: list
         :returns: Passing status
         :rtype: dict
         """
         results = list(test.values())
+        if logs is None:
+            logs = list()
+
         if len(results) > 0:
-            return {
-                "units": test,
-                "coverage": len([v for v in results if v is True])/len(results)*100,
-                "status": False not in results
-            }
+            return UnitLog(
+                directory=self.directory,
+                name=name,
+                units=test,
+                coverage=len([v for v in results if v is True])/len(results)*100,
+                status=False not in results,
+                logs=logs,
+                repository=self.repository
+            )
         else:
-            return {
-                "units": [],
-                "coverage": 0,
-                "status": False
-            }
+            return UnitLog(
+                directory=self.directory,
+                name=name,
+                units=list(),
+                coverage=0.0,
+                status=False,
+                logs=logs,
+                repository=self.repository
+            )
+
+    @staticmethod
+    def dump(obj):
+        return json.dumps(obj, indent=0, separators=(',', ':'))
 
 
 class Progress(git.RemoteProgress):
@@ -429,8 +459,7 @@ class Progress(git.RemoteProgress):
                     self.start.append(message)
 
         if isinstance(self.parent, Test):
-            self.parent.download = self.json
-            self.parent.write()
+            self.parent.download()
 
     @property
     def json(self):
@@ -439,3 +468,68 @@ class Progress(git.RemoteProgress):
             "Downloaded {0}/{1} ({2})".format(self.current, self.maximum, self.download),
             "\n".join(self.end)
         ]
+
+
+class UnitLog(object):
+    """ Initiate the object
+
+    :param name: Name of the tested unit
+    :param units:
+    :param coverage: Percentage of successful tests
+    :param status: Status of the unit
+    :param logs: Logs
+    :param sent: Status regarding the logging
+    """
+
+    def __init__(self, directory, name, units, coverage, status, logs=None, sent=False, repository=None):
+        """ Initiate the object
+
+        :param name: Name of the tested unit
+        :param units:
+        :param coverage: Percentage of successful tests
+        :param status: Status of the unit
+        :param logs: Logs
+        :param sent: Status regarding the logging
+        """
+        self.directory = directory
+        self.name = name
+        self.units = units
+        self.coverage = coverage
+        self.status = status
+        self.__logs = list()
+        self.sent = sent
+        self.time = time.strftime("%Y-%m-%d %H:%M:%S")
+        self.repository = repository
+
+        self.logs = logs
+
+    @property
+    def logs(self):
+        return self.__logs
+
+    @logs.setter
+    def logs(self, logs):
+        if isinstance(logs, list):
+            if self.repository:
+                self.__logs = [data.replace(self.directory, self.repository) for data in logs]
+            else:
+                self.__logs = [data.replace(self.directory, "") for data in logs]
+
+    @property
+    def __dict__(self):
+        """ Get the dictionary version of the object
+
+        :return: Dictionary representation of the object
+        :rtype: dict
+        """
+        return {
+            "name": self.name,
+            "units": self.units,
+            "coverage": self.coverage,
+            "status": self.status,
+            "logs": self.logs,
+            "at": self.time
+        }
+
+    def __str__(self):
+        return "\n".join(self.logs)
