@@ -51,7 +51,8 @@ class Test(object):
 
     def __init__(self, path,
          repository=None, branch=None, uuid=None, workers=1, scheme="tei",
-         verbose=False, ping=None, secret="", triggering_size=None, console=False
+         verbose=False, ping=None, secret="", triggering_size=None, console=False,
+        **kwargs
     ):
         """ Create a Test object
 
@@ -459,6 +460,10 @@ class Test(object):
 
         if kwargs.repository:
             test.clean()
+
+        if kwargs.json:
+            with open(kwargs.json, "w") as json_file:
+                json.dump(test.report, json_file)
 
         return report
 

@@ -7,7 +7,7 @@ import pkg_resources
 import subprocess
 import re
 from collections import defaultdict
-
+from lxml.etree import XPathEvalError
 
 class TESTUnit(object):
     """ TestUnit Metaclass
@@ -268,10 +268,14 @@ class CTSUnit(TESTUnit):
         """ Load the file in MyCapytain
         """
         if self.xml:
+            print(self.path, flush=True)
             try:
                 self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
                 yield True
-            except IndexError as E:
+            except IndexError:
+                yield False
+            except XPathEvalError:
+                self.log("XPath given for citation can't be parsed")
                 yield False
         else:
             yield False
