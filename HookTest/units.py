@@ -268,7 +268,6 @@ class CTSUnit(TESTUnit):
         """ Load the file in MyCapytain
         """
         if self.xml:
-            print(self.path, flush=True)
             try:
                 self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
                 yield True
