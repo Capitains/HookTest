@@ -6,6 +6,27 @@ import json
 import concurrent.futures
 
 
+def unitlog_dict():
+    with mock.patch("HookTest.test.time.strftime", return_value="Time"):
+        a = ((
+            "001", HookTest.test.UnitLog(
+                directory=".",
+                name="001",
+                units={},
+                coverage=100.0,
+                status=False
+            )), (
+            "002", HookTest.test.UnitLog(
+                directory=".",
+                name="002",
+                units={},
+                coverage=50.0,
+                status=False
+            ))
+        )
+    return dict(a)
+
+
 class TestTest(unittest.TestCase):
     def setUp(self):
         self.test = HookTest.test.Test(
@@ -25,12 +46,18 @@ class TestTest(unittest.TestCase):
         )
 
     def test_dump(self):
-        self.assertEqual(Test.dump(), "{'Test':")
+        """ Check that light json is sent
+        """
+        self.assertEqual(
+            HookTest.test.Test.dump({"Test": 1, "File": "file.xml"}),
+            '{"File":"file.xml","Test":1}'
+        )
 
     @mock.patch('HookTest.test.print', create=True)
-    def test_write_with_print(self, mocked):
+    def test_log(self, mocked):
         """ Test writing function """
-        # Test normal use
+        pass
+        #  Test normal use
         # When print is not set to True
         self.test_print.write("This is a log")
         mocked.assert_not_called()
@@ -57,87 +84,82 @@ class TestTest(unittest.TestCase):
         self.test.write("./file3.xml is good")  # Check its uuid is replaced
         mocked.assert_called_with("file3.xml is good", flush=True)
 
-    @mock.patch('HookTest.test.sending', create=True)
-    def test_write_with_request(self, mocked):
-        """ Test writing function when sending request param """
-        self.test.print = True
-        self.test.printing = mocked
-        self.test.logs = ["1"] * 48  # Up to 49 it should send nothing
-        self.test.write("1")
-        mocked.assert_not_called()
-
-        self.test.write("1")
-        mocked.assert_called_with(["1"] * 50)
-
-        self.test.logs += ["2"] * 48
-        self.test.write("2")
-        mocked.assert_not_called()
-        self.test.write("2")
-        mocked.assert_called_with(["2"] * 50)
-
-        self.test.logs += ["3"] * 480
-        self.test.write("3")
-        mocked.assert_called_with(["3"] * 481)
-        self.test.write("4")
-        mocked.assert_not_called()
-
-    @mock.patch('HookTest.test.sending', create=True)
+    @mock.patch('HookTest.test.send', create=True)
     def test_flush(self, mocked):
         """ Test the flush method, which sends the remaining logs to be treated
         """
-        self.test.print = True
-        self.test.printing = mocked
+        self.test.send = mocked
 
-        # Empty flushing
+        #  Empty flushing
         self.test.flush()
-        mocked.assert_not_called()
+        self.assertEqual(len(mocked.mock_calls), 0)
 
-        # Test with normal logs
-        self.test.logs = ["1"] * 49
-        self.test.write("1")
-        mocked.assert_called_with(50 * ["1"])
-
-        # And now increment and flush
-        self.test.logs += ["2"] * 25
+        # Test with nothing sent
+        results = unitlog_dict()
+        self.test.results = results
         self.test.flush()
-        mocked.assert_called_with(25 * ["2"])
+        mocked.assert_called_with({"units": [n.dict for n in results.values()]})
+
+        # Test after sent has been updated
+        self.test.flush()
+        self.assertEqual(len(mocked.mock_calls), 1)
+
+        # Test when partially sent
+        results = unitlog_dict()
+        self.test.results = results
+        self.test.results["002"].sent = True
+        self.test.flush()
+        mocked.assert_called_with({"units": [results["001"].dict]})
+
+    def test_stack(self):
+        """ Test the stack property """
+        self.test.results = {}
+        self.assertEqual(self.test.stack, [], msg="When no result available, stack is empty")
+
+        results = unitlog_dict()
+        self.test.results = results
+        self.assertEqual(
+            self.test.stack,
+            list(results.values()),
+            msg="When no result has been sent, stack containing everything"
+        )
+
+        results = unitlog_dict()
+        self.test.results = results
+        self.test.results["002"].sent = True
+        self.assertEqual(
+            self.test.stack,
+            [results["001"]],
+            msg="When 1 result has been sent, it should not be in stack"
+        )
 
     @mock.patch('HookTest.test.requests.post', create=True)
-    def test_printing_over_http(self, mocked):
+    def test_send(self, mocked):
         """ Test printing function """
-        self.test.printing(["5"] * 50)
+        self.test.send(["5"] * 50)
+
+        data = HookTest.test.Test.dump({
+            "log": ["5"] * 50
+        })
         mocked.assert_called_with(
             "http://services.perseids.org/Hook",
-            data=bytes(json.dumps({"log": ["5"] * 50}), "utf-8"),
+            data=bytes(data, "utf-8"),
             headers={
-                "HookTest-Secure-X": "76f6c41bc0f4df0eddae51f2739f0bf244a83a53",
+                "HookTest-Secure-X": "3940cfc539b30e3f04dae173e37835100f08a9ec",
                 'HookTest-UUID': '1234'
             }
         )
 
-        data = {"this": "is a dict"}
-        self.test.printing(data)
+        data = HookTest.test.Test.dump({"this": "is a dict"})
+        self.test.send({"this": "is a dict"})
         mocked.assert_called_with(
             "http://services.perseids.org/Hook",
-            data=bytes(json.dumps(data), "utf-8"),
+            data=bytes(data, "utf-8"),
             headers={
-                "HookTest-Secure-X": "1af4394c8b251da317b461b6051eeebd125b837c",
+                "HookTest-Secure-X": "46e8b5645de78bdcf3bad24e4f3ca5d7de95b01e",
                 'HookTest-UUID': '1234'
             }
         )
-
-    def test_send_report(self):
-        """ Test sending report """
-        #  Check it does nothing if no ping
-        self.test.ping = None
-        printing = self.test.printing
-        self.test.printing = lambda x: True
-        self.assertIsNone(self.test.send_report(None))
-
-        #  Check it does when there is a ping
-        self.test.ping = "http://services.perseids.org/Hook"
-        self.assertEqual(self.test.send_report(None), True)
-        self.test.printing = printing
 
     def test_successes(self):
         """ Test successes property
@@ -149,7 +171,7 @@ class TestTest(unittest.TestCase):
         self.test.passing = {}
         self.assertEqual(self.test.successes, 0)
 
-    def test_finish(self):
+    def test_status(self):
         """ Check that finishes return a consistent status
         """
         self.test.passing = {"001": True}
@@ -167,11 +189,27 @@ class TestTest(unittest.TestCase):
         """
         report = json.dumps({
             "status": False,
-            "units": {"001": {"coverage": 0.5}, "002": {"coverage": 0.5}},
-            "coverage": 0.5
-        })
+            "units": [{
+                    "at": "Time",
+                    "coverage": 100.0,
+                    "logs": [],
+                    "name": "001",
+                    "status": False,
+                    "units": {}
+                },
+                {
+                    "at": "Time",
+                    "coverage": 50.0,
+                    "logs": [],
+                    "name": "002",
+                    "status": False,
+                    "units": {}
+                }
+            ],
+            "coverage": 75.0
+        }, sort_keys=True, separators=(",", ":"))
         self.test.passing = {"001": True, "002": False}
-        self.test.results = {"001": {"coverage": 0.5}, "002": {"coverage": 0.5}}
+        self.test.results = unitlog_dict()
         self.assertEqual(self.test.json, report)
 
     def test_directory(self):
@@ -185,7 +223,8 @@ class TestTest(unittest.TestCase):
         self.test.uuid = "1234"
         self.assertEqual(self.test.directory, "./1234")
 
-    def test_unit_inv_verbose(self):
+    @mock.patch("HookTest.test.time.strftime", return_value="Time")
+    def test_unit_inv_verbose(self, time_mocked):
         """ Test unit when __cts__.xml """
         test = mock.MagicMock()
         test.return_value = [
@@ -202,23 +241,32 @@ class TestTest(unittest.TestCase):
         self.test.verbose = True
         with mock.patch("HookTest.test.HookTest.units.INVUnit", invunit):
             logs = self.test.unit("__cts__.xml")
-            self.assertIn(">>>> Testing __cts__.xml", logs)
-            self.assertIn(">>>>> MyCapytain passed", logs)
-            self.assertIn(">>>>> Folder Name failed", logs)
-            self.assertIn("It should be in a subfolder", logs)
+            self.assertIn(">>>> Testing __cts__.xml", logs.logs)
+            self.assertIn(">>>>> MyCapytain passed", logs.logs)
+            self.assertIn(">>>>> Folder Name failed", logs.logs)
+            self.assertIn("It should be in a subfolder", logs.logs)
             self.assertIn("urn:cts:latinLit:phi1294.phi002.perseus-lat2", self.test.inventory)
 
-            self.assertEqual(self.test.results["__cts__.xml"], {
+            self.assertEqual(self.test.results["__cts__.xml"].dict, {
+                'at' : 'Time',
+                'name': "__cts__.xml",
                 'coverage': 50.0,
                 'status': False,
                 'units': {
                     'Folder Name': False,
                     'MyCapytain': True
-                }
+                },
+                "logs": [
+                    ">>>> Testing __cts__.xml",
+                    ">>>>> MyCapytain passed",
+                    ">>>>> Folder Name failed",
+                    "It should be in a subfolder"
+                ]
             })
             self.assertEqual(self.test.passing["__cts__.xml"], False)
 
-    def test_unit_inv_non_verbose(self):
+    @mock.patch("HookTest.test.time.strftime", return_value="Time")
+    def test_unit_inv_non_verbose(self, mocked_time):
         """ Test unit when __cts__.xml """
         test = mock.MagicMock()
         test.return_value = [
@@ -234,23 +282,31 @@ class TestTest(unittest.TestCase):
         )
         with mock.patch("HookTest.test.HookTest.units.INVUnit", invunit):
             logs = self.test.unit("/phi1294/phi002/__cts__.xml")
-            self.assertIn(">>>> Testing /phi1294/phi002/__cts__.xml", logs)
-            self.assertIn(">>>>> MyCapytain passed", logs)
-            self.assertIn(">>>>> Folder Name passed", logs)
+            self.assertIn(">>>> Testing /phi1294/phi002/__cts__.xml", logs.logs)
+            self.assertIn(">>>>> MyCapytain passed", logs.logs)
+            self.assertIn(">>>>> Folder Name passed", logs.logs)
             self.assertIn("urn:cts:latinLit:phi1294.phi002.perseus-lat2", self.test.inventory)
 
-            self.assertEqual(self.test.results["/phi1294/phi002/__cts__.xml"], {
+            self.assertEqual(self.test.results["/phi1294/phi002/__cts__.xml"].dict, {
+                'at': 'Time',
+                'name': "/phi1294/phi002/__cts__.xml",
                 'coverage': 100.0,
                 'status': True,
                 'units': {
                     'Folder Name': True,
                     'MyCapytain': True
-                }
+                },
+                "logs": [
+                    ">>>> Testing /phi1294/phi002/__cts__.xml",
+                    ">>>>> MyCapytain passed",
+                    ">>>>> Folder Name passed"
+                ]
             })
 
             self.assertEqual(self.test.passing[".phi1294.phi002.__cts__.xml"], True)
 
-    def test_unit_text_mute(self):
+    @mock.patch("HookTest.test.time.strftime", return_value="Time")
+    def test_unit_text_mute(self, time_mocked):
         test = mock.MagicMock()
         test.return_value = [
             ("MyCapytain", True, []),
@@ -264,21 +320,29 @@ class TestTest(unittest.TestCase):
         )
         with mock.patch("HookTest.test.HookTest.units.CTSUnit", ctsunit):
             logs = self.test.unit("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml")
-            self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs)
-            self.assertIn(">>>>> MyCapytain passed", logs)
-            self.assertIn(">>>>> Folder Name passed", logs)
+            self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs.logs)
+            self.assertIn(">>>>> MyCapytain passed", logs.logs)
+            self.assertIn(">>>>> Folder Name passed", logs.logs)
 
-            self.assertEqual(self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"], {
+            self.assertEqual(self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"].dict, {
+                'name': '/phi1294/phi002/phi1294.phi002.perseus-lat2.xml',
+                'at': 'Time',
                 'coverage': 100.0,
                 'status': True,
                 'units': {
                     'Folder Name': True,
                     'MyCapytain': True
-                }
+                },
+                'logs': [
+                    ">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml",
+                    ">>>>> MyCapytain passed",
+                    ">>>>> Folder Name passed"
+                ]
             })
             self.assertEqual(self.test.passing["phi1294.phi002.perseus-lat2.xml"], True)
 
-    def test_unit_text_verbose(self):
+    @mock.patch("HookTest.test.time.strftime", return_value="Time")
+    def test_unit_text_verbose(self, timed):
         self.test.verbose = True
         test = mock.MagicMock()
         test.return_value = [
@@ -293,18 +357,26 @@ class TestTest(unittest.TestCase):
         )
         with mock.patch("HookTest.test.HookTest.units.CTSUnit", ctsunit):
             logs = self.test.unit("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml")
-            self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs)
-            self.assertIn(">>>>> MyCapytain passed", logs)
-            self.assertIn(">>>>> Folder Name passed", logs)
-            self.assertIn("It should be in a subfolder", logs)
+            self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs.logs)
+            self.assertIn(">>>>> MyCapytain passed", logs.logs)
+            self.assertIn(">>>>> Folder Name passed", logs.logs)
+            self.assertIn("It should be in a subfolder", logs.logs)
 
-            self.assertEqual(self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"], {
+            self.assertEqual(self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"].dict, {
+                'at': 'Time',
+                'name': "/phi1294/phi002/phi1294.phi002.perseus-lat2.xml",
                 'coverage': 100.0,
                 'status': True,
                 'units': {
                     'Folder Name': True,
                     'MyCapytain': True
-                }
+                },
+                'logs': [
+                    ">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml",
+                    ">>>>> MyCapytain passed",
+                    ">>>>> Folder Name passed",
+                    "It should be in a subfolder"
+                ]
             })
             self.assertEqual(self.test.passing["phi1294.phi002.perseus-lat2.xml"], True)
 
@@ -324,15 +396,16 @@ class TestTest(unittest.TestCase):
         # Mocking methods
         send_report = mock.MagicMock()
         flush = mock.PropertyMock()
-        write = mock.MagicMock()
+        log = mock.MagicMock()
         self.test.uuid = "tests"
         self.test.send_report = send_report
         self.test.flush = flush
-        self.test.write = write
-        self.test.results = {"001": {"coverage": 100.00}, "002": {"coverage": 50.00}}
+        self.test.log = log
+        results = unitlog_dict()
+        self.test.results = results
 
-        #mocking concurrent
-        result = mock.MagicMock(return_value=["1", "2", "3"])
+        # mocking concurrent
+        result = mock.MagicMock(return_value=results["001"])
         future = mock.MagicMock()
         future.result = result
         on_complete.return_value = [future]
@@ -365,23 +438,14 @@ class TestTest(unittest.TestCase):
         on_complete.assert_called_with({"This is a call": './tests/data/hafez/divan/hafez.divan.perseus-ger1.xml'})
         result.assert_called_with()
 
-        write.assert_has_calls(
+        log.assert_has_calls(
             [
-                mock.call(">>> Starting tests !"),
-                mock.call("files=5"),
-                mock.call("1"),
-                mock.call("2"),
-                mock.call("3"),
-                mock.call("1"),
-                mock.call("2"),
-                mock.call("3"),
-                mock.call(">>> Finished tests !"),
-                mock.call('[error] 0 over 0 texts have fully passed the tests')
+                mock.call(results["001"]),
+                mock.call(results["001"])
             ]
         )
 
         flush.assert_called_with()
-        send_report.assert_called_with()
 
     @mock.patch("HookTest.test.Progress")
     @mock.patch("HookTest.test.git.repo.base.Remote")
@@ -460,7 +524,7 @@ class TestTest(unittest.TestCase):
     def test_find(self):
         reading, metadata = HookTest.test.Test.find("./tests")
         self.assertEqual(len(metadata), 2)
-        self.assertEqual(len(reading), 3) # eng far ger
+        self.assertEqual(len(reading), 3)  # eng far ger
 
     def test_cover(self):
         """ Test covering dict generation """
@@ -476,43 +540,54 @@ class TestTest(unittest.TestCase):
             "One test": False,
             "Two test": False
         }
-        self.assertEqual(
-            HookTest.test.Test.cover(test),
-            {
-                "units": {
-                    "One test": True,
-                    "Two test": False
-                },
-                "coverage": 50.0,
-                "status": False
-            }
-        )
-        self.assertEqual(
-            HookTest.test.Test.cover(test2),
-            {
-                "units": {
-                    "One test": True,
-                    "Two test": True
-                },
-                "coverage": 100.0,
-                "status": True
-            }
-        )
-        self.assertEqual(
-            HookTest.test.Test.cover(test3),
-            {
-                "units": {
-                    "One test": False,
-                    "Two test": False
-                },
-                "coverage": 0.0,
-                "status": False
-            }
-        )
+        with mock.patch("HookTest.test.time.strftime", return_value="Time") as time:
+            self.assertEqual(
+                self.test.cover("test1", test).dict,
+                {
+                    "units": {
+                        "One test": True,
+                        "Two test": False
+                    },
+                    "logs": [],
+                    "name": "test1",
+                    "coverage": 50.0,
+                    "status": False,
+                    "at": "Time"
+                }
+            )
+            self.assertEqual(
+                self.test.cover("test2", test2).dict,
+                {
+                    "units": {
+                        "One test": True,
+                        "Two test": True
+                    },
+                    "logs": [],
+                    "name": "test2",
+                    "coverage": 100.0,
+                    "status": True,
+                    "at": "Time"
+                }
+            )
+            self.assertEqual(
+                self.test.cover("test3", test3).dict,
+                {
+                    "units": {
+                        "One test": False,
+                        "Two test": False
+                    },
+                    "logs": [],
+                    "name": "test3",
+                    "coverage": 0.0,
+                    "status": False,
+                    "at": "Time"
+                }
+            )
 
 
 class TestProgress(unittest.TestCase):
     """ Test Github.Progress own implementation """
+
     def test_json(self):
         """ Test Own Progress function """
         P = HookTest.test.Progress()

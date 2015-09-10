@@ -113,7 +113,7 @@ class Test(object):
         :return: JSON representing the complete test
         :rtype:
         """
-        return json.dumps(self.report)
+        return Test.dump(self.report)
 
     @property
     def report(self):
@@ -123,7 +123,7 @@ class Test(object):
         """
         return {
             "status": self.successes == len(self.passing),
-            "units": self.results,
+            "units": [unitlog.dict for unitlog in self.results.values()],
             "coverage": statistics.mean([test.coverage for test in self.results.values()])
         }
 
@@ -177,7 +177,7 @@ class Test(object):
         elif percentage > Test.STACK_TRIGGER_SIZE:
             return percentage
         else:
-            Test.STACK_TRIGGER_SIZE
+            return Test.STACK_TRIGGER_SIZE
 
     @property
     def files(self):
@@ -189,7 +189,11 @@ class Test(object):
 
     def flush(self):
         """ Flush the remaining logs to the endpoint """
-        self.send(self.stack)
+        stack = self.stack
+        if len(stack) > 0:
+            for needle in stack:
+                needle.sent = True
+            self.send({"units": [needle.dict for needle in stack]})
 
     def send(self, data):
         """
@@ -198,11 +202,9 @@ class Test(object):
         :return:
         """
         if isinstance(data, dict):
-            data = json.dumps(data)
-        elif isinstance(data, UnitLog):
-            data = json.dumps(dict(data))
+            data = Test.dump(data)
         else:
-            data = json.dumps({"log": data})
+            data = Test.dump({"log": data})
 
         data = bytes(data, "utf-8")
         hashed = hmac.new(self.secret, data, hashlib.sha1).hexdigest()
@@ -303,9 +305,7 @@ class Test(object):
         if self.print:
             print(str(log))
         elif self.ping and len(self.stack) >= self.triggering_size:
-                self.send({
-                    "units": self.stack
-                })
+            self.flush()
 
     def start(self):
         """ Deal with the start of the process
@@ -425,7 +425,7 @@ class Test(object):
 
     @staticmethod
     def dump(obj):
-        return json.dumps(obj, indent=0, separators=(',', ':'))
+        return json.dumps(obj, separators=(',', ':'), sort_keys=True)
 
 
 class Progress(git.RemoteProgress):
@@ -516,7 +516,7 @@ class UnitLog(object):
                 self.__logs = [data.replace(self.directory, "") for data in logs]
 
     @property
-    def __dict__(self):
+    def dict(self):
         """ Get the dictionary version of the object
 
         :return: Dictionary representation of the object
