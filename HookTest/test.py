@@ -468,7 +468,7 @@ def cmd(console=False, **kwargs):
         with open(kwargs["json"], "w") as json_file:
             json.dump(test.report, json_file)
 
-    return report
+    return status
 
 
 class Progress(git.RemoteProgress):
