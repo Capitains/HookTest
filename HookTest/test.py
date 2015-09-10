@@ -4,7 +4,7 @@ import os
 import glob
 import statistics
 
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import concurrent.futures
 import json
 import git
@@ -90,7 +90,7 @@ class Test(object):
                 )
             )
 
-        self.results = defaultdict(UnitLog)
+        self.results = OrderedDict()
         self.passing = defaultdict(bool)
         self.inventory = []
         self.text_files = []

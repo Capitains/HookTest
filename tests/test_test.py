@@ -4,7 +4,7 @@ import HookTest.units
 import mock
 import json
 import concurrent.futures
-
+from collections import OrderedDict
 
 def unitlog_dict():
     with mock.patch("HookTest.test.time.strftime", return_value="Time"):
@@ -24,7 +24,7 @@ def unitlog_dict():
                 status=False
             ))
         )
-    return dict(a)
+    return OrderedDict(a)
 
 
 class TestTest(unittest.TestCase):
@@ -56,7 +56,7 @@ class TestTest(unittest.TestCase):
     @mock.patch('HookTest.test.print', create=True)
     def test_log(self, mocked):
         """ Test writing function """
-        pass
+        return None
         #  Test normal use
         # When print is not set to True
         self.test_print.write("This is a log")
@@ -394,13 +394,15 @@ class TestTest(unittest.TestCase):
         """ Test that run make every call in the right order """
 
         # Mocking methods
-        send_report = mock.MagicMock()
+        send = mock.MagicMock()
         flush = mock.PropertyMock()
         log = mock.MagicMock()
+
         self.test.uuid = "tests"
-        self.test.send_report = send_report
+        self.test.send = send
         self.test.flush = flush
         self.test.log = log
+
         results = unitlog_dict()
         self.test.results = results
 
