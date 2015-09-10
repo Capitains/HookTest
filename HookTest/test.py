@@ -452,16 +452,19 @@ def cmd(console=False, **kwargs):
 
     """
     test = HookTest.test.Test(console=console, **kwargs)
-    test.print = True
-    if kwargs["repository"]:
+
+    if console is True:
+        test.print = True
+
+    if "repository" in kwargs:
         test.clone()
 
     status, report = test.run()
 
-    if kwargs["repository"]:
+    if "repository" in kwargs:
         test.clean()
 
-    if kwargs["json"]:
+    if "json" in kwargs:
         with open(kwargs["json"], "w") as json_file:
             json.dump(test.report, json_file)
 
