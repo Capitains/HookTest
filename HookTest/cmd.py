@@ -34,7 +34,7 @@ def cmd():
     )
 
     args = parser.parse_args()
-    status = HookTest.test.cmd(console=True, kwargs=args)
+    status = HookTest.test.cmd(console=True, kwargs=vars(args))
     if status is False:
         sys.exit(1)
     else:

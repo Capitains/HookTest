@@ -441,7 +441,7 @@ class Test(object):
         return json.dumps(obj, separators=(',', ':'), sort_keys=True)
 
 
-def cmd(kwargs, console=False):
+def cmd(console=False, **kwargs):
     """ Generate the complete process of Test
 
     :param console: Print logs to console
@@ -451,18 +451,18 @@ def cmd(kwargs, console=False):
     :return: Status of the test
 
     """
-    test = HookTest.test.Test(console=console, **vars(kwargs))
+    test = HookTest.test.Test(console=console, **kwargs)
     test.print = True
-    if kwargs.repository:
+    if kwargs["repository"]:
         test.clone()
 
     status, report = test.run()
 
-    if kwargs.repository:
+    if kwargs["repository"]:
         test.clean()
 
-    if kwargs.json:
-        with open(kwargs.json, "w") as json_file:
+    if kwargs["json"]:
+        with open(kwargs["json"], "w") as json_file:
             json.dump(test.report, json_file)
 
     return report
