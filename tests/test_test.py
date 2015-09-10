@@ -6,6 +6,7 @@ import json
 import concurrent.futures
 from collections import OrderedDict
 
+
 def unitlog_dict():
     with mock.patch("HookTest.test.time.strftime", return_value="Time"):
         a = ((
@@ -14,7 +15,7 @@ def unitlog_dict():
                 name="001",
                 units={},
                 coverage=100.0,
-                status=False
+                status=True
             )), (
             "002", HookTest.test.UnitLog(
                 directory=".",
@@ -45,6 +46,39 @@ class TestTest(unittest.TestCase):
             secret="PerseusDL"
         )
 
+    def test_init_conditions(self):
+        """ Try special case of init """
+        a = HookTest.test.Test("", triggering_size=10)
+        self.assertEqual(a.triggering_size, 10)
+
+        with self.assertRaises(ValueError):
+            HookTest.test.Test(".", scheme="html")
+
+    def test_files_properties(self):
+        """ Test different files properties
+        """
+        a = HookTest.test.Test("")
+        a.text_files, a.cts_files = ["a text"]*7, ["a cts metadata file"]*5
+        self.assertEqual(a.files, (["a text"]*7, ["a cts metadata file"]*5))
+        self.assertEqual(a.count_files, 12)
+
+    def test_triggering_size(self):
+        """ Test triggering size is defaulted when possible """
+
+        # When triggering size is set by user
+        a = HookTest.test.Test("", triggering_size=10)
+        self.assertEqual(a.triggering_size, 10)
+
+        # When percentage is higher than default
+        a = HookTest.test.Test("")
+        a.text_files, a.cts_files = ["a text"]*200, ["a cts metadata file"]*200
+        self.assertEqual(a.triggering_size, 20)
+
+        # Default
+        a = HookTest.test.Test("")
+        a.text_files, a.cts_files = ["a text"]*10, ["a cts metadata file"]*10
+        self.assertEqual(a.triggering_size, HookTest.test.Test.STACK_TRIGGER_SIZE)
+
     def test_dump(self):
         """ Check that light json is sent
         """
@@ -55,34 +89,116 @@ class TestTest(unittest.TestCase):
 
     @mock.patch('HookTest.test.print', create=True)
     def test_log(self, mocked):
-        """ Test writing function """
-        return None
-        #  Test normal use
-        # When print is not set to True
-        self.test_print.write("This is a log")
-        mocked.assert_not_called()
+        """ Test logging function """
 
-        # When it is
+        # When print is not set to True and there is not ping
+        self.test_print.log("This is a log")
+        self.assertEqual(len(mocked.mock_calls), 0)
+
+        # Test when print
         self.test_print.print = True
-        self.test_print.download = {"test": True}
-        self.test_print.write(None)
-        mocked.assert_called_with({"test": True}, flush=True)
-
-        self.test_print.write("This is a log")
+        self.test_print.log("This is a log")
         mocked.assert_called_with("This is a log", flush=True)
 
-        self.test.print = True
-        self.test.ping = None
-        self.test.write("./1234/file1.xml is good")  # Check its uuid is replaced
-        mocked.assert_called_with("PerseusDL/tests/file1.xml is good", flush=True)
+        logs = unitlog_dict()
+        a = HookTest.test.Test("", ping="Http", triggering_size=2)
+        flush = mock.MagicMock()
+        a.flush = flush
+        a.log(logs["001"])
+        self.assertEqual(len(mocked.mock_calls), 1)
+        self.assertEqual(len(flush.mock_calls), 0)
+        a.results = logs
+        a.log(logs["002"])
+        self.assertEqual(len(mocked.mock_calls), 1)
+        flush.assert_called_with()
 
-        self.test.uuid = None
-        self.test.write("./1234/file2.xml is good")  # Check its uuid is replaced
-        mocked.assert_called_with("./1234/file2.xml is good", flush=True)
+    @mock.patch('HookTest.test.print', create=True)
+    def test_start(self, printed):
+        """ Testing start function, which is notification related
+        """
+        # With HTTP
+        send = mock.MagicMock()
+        self.test.send = send
+        self.test.text_files, self.test.cts_files = ["a text"]*5, ["a cts metadata file"]*2
+        self.test.start()
+        send.assert_called_with({
+            "logs": [
+                ">>> Starting tests !"
+            ],
+            "files": 7,
+            "texts": 5,
+            "inventories": 2,
+        })
 
-        self.test.repository = None
-        self.test.write("./file3.xml is good")  # Check its uuid is replaced
-        mocked.assert_called_with("file3.xml is good", flush=True)
+        # With not print
+        self.test_print.start()
+        self.assertEqual(len(printed.mock_calls), 0, msg="Default of start is not to print")
+
+        # With print
+        self.test_print.print = True
+        self.test_print.text_files, self.test_print.cts_files = ["a text"]*5, ["a cts metadata file"]*2
+        self.test_print.start()
+        self.assertEqual(len(printed.mock_calls), 2, msg="Start should print twice")
+        printed.assert_has_calls([
+            mock.call('>>> Starting tests !', flush=True),
+            mock.call(">>> Files to test : 7", flush=True)
+        ])
+
+    @mock.patch('HookTest.test.print', create=True)
+    def test_end(self, printed):
+        """ Testing end function, which is notification related
+        """
+        # With HTTP
+        send = mock.MagicMock()
+        self.test.send = send
+        self.test.text_files, self.test.cts_files = ["001"], ["002"]
+        results = unitlog_dict()
+        self.test.results = results
+        self.test.end()
+        send.assert_called_with({
+            "status": False,
+            "coverage": 75.00,
+            "units": [r.dict for r in results.values()]
+        })
+
+        # With not print
+        self.test_print.end()
+        self.assertEqual(len(printed.mock_calls), 0, msg="Default of start is not to print")
+
+        # With print
+        self.test_print.print = True
+        self.test_print.text_files, self.test_print.cts_files = ["a text"]*5, ["a cts metadata file"]*2
+        self.test_print.passing = {
+            1: True,
+            2: True,
+            3: True,
+            4: True,
+            5: True,
+            6: False,
+            7: False
+        }
+        self.test_print.end()
+        self.assertEqual(len(printed.mock_calls), 1, msg="End should print once")
+        printed.assert_called_with(
+            ">>> End of the test !\n>>> [failure] 5 over 7 texts have fully passed the tests", flush=True
+        )
+
+    @mock.patch('HookTest.test.print', create=True)
+    def test_download(self, printed):
+        self.test_print.download()
+        self.assertEqual(len(printed.mock_calls), 0, msg="When print is not set, nothing is shown")
+
+        self.test.download()
+        self.assertEqual(len(printed.mock_calls), 0, msg="When print is not set, nothing is shown [Neither with Ping]")
+
+        self.test_print.print = True
+        self.test_print.progress = HookTest.test.Progress()
+        self.test_print.progress.download = "55 kb/s"
+        self.test_print.download()
+        printed.assert_called_with(
+            "Cloning repository\nDownloaded 0/0 (55 kb/s)",
+            flush=True
+        )
 
     @mock.patch('HookTest.test.send', create=True)
     def test_flush(self, mocked):
@@ -139,13 +255,13 @@ class TestTest(unittest.TestCase):
         self.test.send(["5"] * 50)
 
         data = HookTest.test.Test.dump({
-            "log": ["5"] * 50
+            "logs": ["5"] * 50
         })
         mocked.assert_called_with(
             "http://services.perseids.org/Hook",
             data=bytes(data, "utf-8"),
             headers={
-                "HookTest-Secure-X": "3940cfc539b30e3f04dae173e37835100f08a9ec",
+                "HookTest-Secure-X": "587f69e2e316c5da00d3bdde1b9f6a66632b9ea2",
                 'HookTest-UUID': '1234'
             }
         )
@@ -178,11 +294,13 @@ class TestTest(unittest.TestCase):
         self.test.text_files = [1]
         self.test.cts_files = [1]
 
-        self.assertEqual(self.test.status, "error")  # 1/2 passing
+        self.assertEqual(self.test.status, "error")  # 1/2 tested
         self.test.passing["002"] = False
         self.assertEqual(self.test.status, "failure")  # 1/2 successes
         self.test.passing["002"] = True
         self.assertEqual(self.test.status, "success")  # 2/2 successes
+        self.test.text_files, self.test.cts_files = [], []
+        self.assertEqual(self.test.status, "error")  # 0 Files
 
     def test_json(self):
         """ Check that json return is stable
@@ -194,7 +312,7 @@ class TestTest(unittest.TestCase):
                     "coverage": 100.0,
                     "logs": [],
                     "name": "001",
-                    "status": False,
+                    "status": True,
                     "units": {}
                 },
                 {
@@ -264,6 +382,7 @@ class TestTest(unittest.TestCase):
                 ]
             })
             self.assertEqual(self.test.passing["__cts__.xml"], False)
+            self.assertEqual(logs, self.test.results["__cts__.xml"])
 
     @mock.patch("HookTest.test.time.strftime", return_value="Time")
     def test_unit_inv_non_verbose(self, mocked_time):
@@ -304,6 +423,7 @@ class TestTest(unittest.TestCase):
             })
 
             self.assertEqual(self.test.passing[".phi1294.phi002.__cts__.xml"], True)
+            self.assertEqual(logs, self.test.results["/phi1294/phi002/__cts__.xml"])
 
     @mock.patch("HookTest.test.time.strftime", return_value="Time")
     def test_unit_text_mute(self, time_mocked):
@@ -340,6 +460,7 @@ class TestTest(unittest.TestCase):
                 ]
             })
             self.assertEqual(self.test.passing["phi1294.phi002.perseus-lat2.xml"], True)
+            self.assertEqual(logs, self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"])
 
     @mock.patch("HookTest.test.time.strftime", return_value="Time")
     def test_unit_text_verbose(self, timed):
@@ -347,7 +468,7 @@ class TestTest(unittest.TestCase):
         test = mock.MagicMock()
         test.return_value = [
             ("MyCapytain", True, []),
-            ("Folder Name", True, ["It should be in a subfolder"])
+            ("Folder Name", False, ["It should be in a subfolder"])
         ]
         INVObject = mock.Mock(
             test=test
@@ -359,26 +480,27 @@ class TestTest(unittest.TestCase):
             logs = self.test.unit("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml")
             self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs.logs)
             self.assertIn(">>>>> MyCapytain passed", logs.logs)
-            self.assertIn(">>>>> Folder Name passed", logs.logs)
+            self.assertIn(">>>>> Folder Name failed", logs.logs)
             self.assertIn("It should be in a subfolder", logs.logs)
 
             self.assertEqual(self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"].dict, {
                 'at': 'Time',
                 'name': "/phi1294/phi002/phi1294.phi002.perseus-lat2.xml",
-                'coverage': 100.0,
-                'status': True,
+                'coverage': 50.0,
+                'status': False,
                 'units': {
-                    'Folder Name': True,
+                    'Folder Name': False,
                     'MyCapytain': True
                 },
                 'logs': [
                     ">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml",
                     ">>>>> MyCapytain passed",
-                    ">>>>> Folder Name passed",
+                    ">>>>> Folder Name failed",
                     "It should be in a subfolder"
                 ]
             })
-            self.assertEqual(self.test.passing["phi1294.phi002.perseus-lat2.xml"], True)
+            self.assertEqual(self.test.passing["phi1294.phi002.perseus-lat2.xml"], False)
+            self.assertEqual(logs, self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"])
 
     @mock.patch(
         "HookTest.test.concurrent.futures.ThreadPoolExecutor",
@@ -395,12 +517,12 @@ class TestTest(unittest.TestCase):
 
         # Mocking methods
         send = mock.MagicMock()
-        flush = mock.PropertyMock()
+        end = mock.PropertyMock()
         log = mock.MagicMock()
 
         self.test.uuid = "tests"
         self.test.send = send
-        self.test.flush = flush
+        self.test.end = end
         self.test.log = log
 
         results = unitlog_dict()
@@ -447,7 +569,7 @@ class TestTest(unittest.TestCase):
             ]
         )
 
-        flush.assert_called_with()
+        end.assert_called_with()
 
     @mock.patch("HookTest.test.Progress")
     @mock.patch("HookTest.test.git.repo.base.Remote")

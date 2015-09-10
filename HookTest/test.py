@@ -34,6 +34,10 @@ class Test(object):
     :type scheme: str
     :param verbose: Log also rng and unit logs details
     :type verbose: bool
+    :param ping: URI to ping with data
+    :type ping: str
+    :param console: If set to true, print logs to the console
+    :type console: bool
     """
     STACK_TRIGGER_SIZE = 10
     FAILURE = "failure"
@@ -47,7 +51,7 @@ class Test(object):
 
     def __init__(self, path,
          repository=None, branch=None, uuid=None, workers=1, scheme="tei",
-         verbose=False, ping=None, secret="", triggering_size=None
+         verbose=False, ping=None, secret="", triggering_size=None, console=False
     ):
         """ Create a Test object
 
@@ -67,8 +71,10 @@ class Test(object):
         :type verbose: bool
         :param ping: URI to ping with data
         :type ping: str
+        :param console: If set to true, print logs to the console
+        :type console: bool
         """
-        self.print = False
+        self.print = console
         self.path = path
         self.repository = repository
         self.branch = branch
@@ -122,7 +128,7 @@ class Test(object):
         :rtype: dict
         """
         return {
-            "status": self.successes == len(self.passing),
+            "status": self.successes == self.count_files,
             "units": [unitlog.dict for unitlog in self.results.values()],
             "coverage": statistics.mean([test.coverage for test in self.results.values()])
         }
@@ -157,9 +163,9 @@ class Test(object):
         :return: Status string updated
         :rtype: str
         """
-        if len(self.passing) != self.count_files:
+        if self.count_files == 0 or len(self.passing) != self.count_files:
             return Test.ERROR
-        elif self.successes == len(self.passing):
+        elif self.count_files > 0 and self.successes == len(self.passing):
             return Test.SUCCESS
         else:
             return Test.FAILURE
@@ -204,7 +210,7 @@ class Test(object):
         if isinstance(data, dict):
             data = Test.dump(data)
         else:
-            data = Test.dump({"log": data})
+            data = Test.dump({"logs": data})
 
         data = bytes(data, "utf-8")
         hashed = hmac.new(self.secret, data, hashlib.sha1).hexdigest()
@@ -301,9 +307,12 @@ class Test(object):
     def log(self, log):
         """ Deal with middle process situation
 
+        :param log: Result of a test for one unit
+        :type log: UnitLog
+        :return: None
         """
         if self.print:
-            print(str(log))
+            print(str(log), flush=True)
         elif self.ping and len(self.stack) >= self.triggering_size:
             self.flush()
 
@@ -313,10 +322,10 @@ class Test(object):
         """
         if self.print:
             print(">>> Starting tests !", flush=True)
-            print(">>> Files to test : "+str(len(self.text_files) + len(self.cts_files)), flush=True)
+            print(">>> Files to test : "+str(self.count_files), flush=True)
         elif self.ping:
             self.send({
-                "log": [
+                "logs": [
                     ">>> Starting tests !"
                 ],
                 "files": self.count_files,
@@ -326,7 +335,7 @@ class Test(object):
 
     def download(self):
         if self.print:
-            print("\n".join([f for f in self.progress.json if f]))
+            print("\n".join([f for f in self.progress.json if f]), flush=True)
 
     def end(self):
         """ Deal with end logs
@@ -336,10 +345,13 @@ class Test(object):
                 ">>> End of the test !\n" \
                 ">>> [{2}] {0} over {1} texts have fully passed the tests".format(
                     self.successes, len(self.passing), self.status
-                )
+                ),
+                flush=True
             )
         elif self.ping:
-            self.flush()
+            report = self.report
+            report["units"] = [unit.dict for unit in self.stack]
+            self.send(report)
 
     def clone(self):
         """ Clone the repository
