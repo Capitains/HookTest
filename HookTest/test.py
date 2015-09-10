@@ -440,32 +440,32 @@ class Test(object):
     def dump(obj):
         return json.dumps(obj, separators=(',', ':'), sort_keys=True)
 
-    @staticmethod
-    def cmd(kwargs, console=False):
-        """ Generate the complete process of Test
 
-        :param console: Print logs to console
-        :type console: bool
-        :param kwargs: Named arguments
-        :type kwargs: dict
-        :return: Status of the test
+def cmd(kwargs, console=False):
+    """ Generate the complete process of Test
 
-        """
-        test = HookTest.test.Test(console=console, **vars(kwargs))
-        test.print = True
-        if kwargs.repository:
-            test.clone()
+    :param console: Print logs to console
+    :type console: bool
+    :param kwargs: Named arguments
+    :type kwargs: dict
+    :return: Status of the test
 
-        status, report = test.run()
+    """
+    test = HookTest.test.Test(console=console, **vars(kwargs))
+    test.print = True
+    if kwargs.repository:
+        test.clone()
 
-        if kwargs.repository:
-            test.clean()
+    status, report = test.run()
 
-        if kwargs.json:
-            with open(kwargs.json, "w") as json_file:
-                json.dump(test.report, json_file)
+    if kwargs.repository:
+        test.clean()
 
-        return report
+    if kwargs.json:
+        with open(kwargs.json, "w") as json_file:
+            json.dump(test.report, json_file)
+
+    return report
 
 
 class Progress(git.RemoteProgress):
