@@ -439,6 +439,29 @@ class Test(object):
     def dump(obj):
         return json.dumps(obj, separators=(',', ':'), sort_keys=True)
 
+    @staticmethod
+    def cmd(kwargs, console=False):
+        """ Generate the complete process of Test
+
+        :param console: Print logs to console
+        :type console: bool
+        :param kwargs: Named arguments
+        :type kwargs: dict
+        :return: Status of the test
+
+        """
+        test = HookTest.test.Test(console=console, **vars(kwargs))
+        test.print = True
+        if kwargs.repository:
+            test.clone()
+
+        status, report = test.run()
+
+        if kwargs.repository:
+            test.clean()
+
+        return report
+
 
 class Progress(git.RemoteProgress):
     """ Progress object for HookTest
