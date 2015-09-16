@@ -17,6 +17,7 @@ setup(
         "requests==2.7.0"
     ],
     tests_require=[
+        "setuptools>=18.3.1",
         "mock==1.3.0"
     ],
     package_data={
