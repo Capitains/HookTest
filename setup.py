@@ -11,13 +11,13 @@ setup(
     license='MIT',
     packages=find_packages(),
     install_requires=[
-        "MyCapytain==0.0.3",
+        "MyCapytain==0.0.4",
         "jingtrang==0.1.1",
         "GitPython==1.0.1",
         "requests==2.7.0"
     ],
     tests_require=[
-        "mock==1.0.1"
+        "mock==1.3.0"
     ],
     package_data={
         'HookTest': ['resources/*.rng']
