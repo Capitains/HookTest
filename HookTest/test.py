@@ -2,7 +2,9 @@
 
 import os
 import glob
-import statistics
+import statistics#
+import sys
+import traceback
 
 from collections import defaultdict, OrderedDict
 import concurrent.futures
@@ -40,7 +42,7 @@ class Test(object):
     :type console: bool
     """
     STACK_TRIGGER_SIZE = 10
-    FAILURE = "failure"
+    FAILURE = "failed"
     ERROR = "error"
     SUCCESS = "success"
     PENDING = "pending"
@@ -128,10 +130,13 @@ class Test(object):
         :return: Report of the test
         :rtype: dict
         """
+        coverage = 0
+        if len(self.results) > 0:
+            coverage = statistics.mean([test.coverage for test in self.results.values()])
         return {
-            "status": self.successes == self.count_files,
+            "status": self.status,
             "units": [unitlog.dict for unitlog in self.results.values()],
-            "coverage": statistics.mean([test.coverage for test in self.results.values()])
+            "coverage": coverage
         }
 
     @property
@@ -303,7 +308,7 @@ class Test(object):
                 self.log(unit)
 
         self.end()
-        return self.status, self.report
+        return self.status
 
     def log(self, log):
         """ Deal with middle process situation
@@ -456,15 +461,31 @@ def cmd(console=False, **kwargs):
     if console is True:
         test.print = True
 
+    if test.ping:
+        test.send({"status" : "download"})
+
     if "repository" in kwargs:
         test.clone()
 
-    status, report = test.run()
+    if test.ping:
+        test.send({"status" : "pending"})
+
+    status = {}
+
+    try:
+        status = test.run()
+    except Exception as E:
+        type_, value_, traceback_ = sys.exc_info()
+        tb = "".join(traceback.format_exception(type_, value_, traceback_))
+        if test.ping:
+            test.send({"status": Test.ERROR, "message": tb})
+        elif console is True:
+            print(tb, flush=True)
 
     if "repository" in kwargs:
         test.clean()
 
-    if "json" in kwargs:
+    if "json" in kwargs and kwargs["json"] is True:
         with open(kwargs["json"], "w") as json_file:
             json.dump(test.report, json_file)
 
@@ -535,7 +556,6 @@ class UnitLog(object):
         :param sent: Status regarding the logging
         """
         self.directory = directory
-        self.name = name
         self.units = units
         self.coverage = coverage
         self.status = status
@@ -544,6 +564,7 @@ class UnitLog(object):
         self.time = time.strftime("%Y-%m-%d %H:%M:%S")
         self.repository = repository
 
+        self.name = self.directory_replacer(name)
         self.logs = logs
 
     @property
@@ -553,10 +574,13 @@ class UnitLog(object):
     @logs.setter
     def logs(self, logs):
         if isinstance(logs, list):
-            if self.repository:
-                self.__logs = [data.replace(self.directory, self.repository) for data in logs]
-            else:
-                self.__logs = [data.replace(self.directory, "") for data in logs]
+            self.__logs = [self.directory_replacer(data) for data in logs]
+
+    def directory_replacer(self, data):
+        if self.repository:
+            return data.replace(self.directory, self.repository)
+        else:
+            return data.replace(self.directory, "")
 
     @property
     def dict(self):

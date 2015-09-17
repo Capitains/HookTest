@@ -271,10 +271,11 @@ class CTSUnit(TESTUnit):
             try:
                 self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
                 yield True
-            except IndexError:
-                yield False
             except XPathEvalError:
                 self.log("XPath given for citation can't be parsed")
+                yield False
+            except (IndexError, TypeError):
+                self.log("Text can't be read through Capitains standards")
                 yield False
         else:
             yield False
