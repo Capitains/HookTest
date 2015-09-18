@@ -425,7 +425,7 @@ class TestTest(unittest.TestCase):
                 ]
             })
 
-            self.assertEqual(self.test.passing[".phi1294.phi002.__cts__.xml"], True)
+            self.assertEqual(self.test.passing["/phi1294/phi002/__cts__.xml"], True)
             self.assertEqual(logs, self.test.results["/phi1294/phi002/__cts__.xml"])
 
     @mock.patch("HookTest.test.time.strftime", return_value="Time")
@@ -462,7 +462,7 @@ class TestTest(unittest.TestCase):
                     ">>>>> Folder Name passed"
                 ]
             })
-            self.assertEqual(self.test.passing["phi1294.phi002.perseus-lat2.xml"], True)
+            self.assertEqual(self.test.passing["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"], True)
             self.assertEqual(logs, self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"])
 
     @mock.patch("HookTest.test.time.strftime", return_value="Time")
