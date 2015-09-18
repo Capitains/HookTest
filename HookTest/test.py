@@ -254,7 +254,7 @@ class Test(object):
                 results[name] = status
 
             self.results[filepath] = self.cover(filepath, results, logs=logs)
-            self.passing[filepath.replace("/", ".")] = self.results[filepath].status
+            self.passing[filepath] = self.results[filepath].status
             self.inventory += unit.urns
 
         else:
@@ -275,7 +275,7 @@ class Test(object):
                 results[name] = status
 
             self.results[filepath] = self.cover(filepath, results, logs=logs)
-            self.passing[filepath.split("/")[-1]] = self.results[filepath].status
+            self.passing[filepath] = self.results[filepath].status
 
         return self.results[filepath]
 

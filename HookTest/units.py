@@ -131,16 +131,20 @@ class INVUnit(TESTUnit):
         if self.xml:
             textgroup = "textgroup" in self.xml.getroot().tag
             work = not textgroup and "work" in self.xml.getroot().tag
-            if textgroup:
-                self.type = "textgroup"
-                self.log("TextGroup detected")
-                self.Text = MyCapytain.resources.inventory.TextGroup(resource=self.xml.getroot())
-            elif work:
-                self.type = "work"
-                self.log("Work detected")
-                self.Text = MyCapytain.resources.inventory.Work(resource=self.xml.getroot())
-            else:
-                self.log("Nothing detected")
+            try:
+                if textgroup:
+                    self.type = "textgroup"
+                    self.log("TextGroup detected")
+                    self.Text = MyCapytain.resources.inventory.TextGroup(resource=self.xml.getroot())
+                elif work:
+                    self.type = "work"
+                    self.log("Work detected")
+                    self.Text = MyCapytain.resources.inventory.Work(resource=self.xml.getroot())
+                else:
+                    self.log("Nothing detected")
+            except Exception:
+                self.log("Inventory can't be read through Capitains standards")
+                yield False
 
         if self.Text:
             yield True
@@ -215,8 +219,8 @@ class INVUnit(TESTUnit):
                     self.urns.append(text.get("urn"))
                     workUrnsText.append(text.get("workUrn"))
 
-                workUrnsText = [urn for urn in workUrnsText if len(MyCapytain.common.reference.URN(urn)) == 4]
-                self.urns = [urn for urn in self.urns if len(MyCapytain.common.reference.URN(urn)) == 5]
+                workUrnsText = [urn for urn in workUrnsText if urn is not None and len(MyCapytain.common.reference.URN(urn)) == 4]
+                self.urns = [urn for urn in self.urns if urn is not None and len(MyCapytain.common.reference.URN(urn)) == 5]
                 self.log("Editions and translations urns : " + " ".join(self.urns))
 
                 status= len(worksUrns) == 2 and (len(texts)*2)==len(self.urns + workUrnsText)
@@ -321,10 +325,14 @@ class CTSUnit(TESTUnit):
     def passages(self):
         if self.Text:
             for i in range(0, len(self.Text.citation)):
-                passages = self.Text.getValidReff(level=i+1)
-                status = len(passages) > 0
-                self.log(str(len(passages)) + " found")
-                yield status
+                try:
+                    passages = self.Text.getValidReff(level=i+1)
+                    status = len(passages) > 0
+                    self.log(str(len(passages)) + " found")
+                    yield status
+                except Exception:
+                    self.log("Error when searching passages at level {0}".format(i+1))
+                    yield False
         else:
             yield False
 

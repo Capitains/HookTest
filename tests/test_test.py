@@ -154,9 +154,10 @@ class TestTest(unittest.TestCase):
         self.test.text_files, self.test.cts_files = ["001"], ["002"]
         results = unitlog_dict()
         self.test.results = results
+        self.test.passing = {"001": True, "002": False}
         self.test.end()
         send.assert_called_with({
-            "status": False,
+            "status": "failed",
             "coverage": 75.00,
             "units": [r.dict for r in results.values()]
         })
@@ -180,7 +181,7 @@ class TestTest(unittest.TestCase):
         self.test_print.end()
         self.assertEqual(len(printed.mock_calls), 1, msg="End should print once")
         printed.assert_called_with(
-            ">>> End of the test !\n>>> [failure] 5 over 7 texts have fully passed the tests", flush=True
+            ">>> End of the test !\n>>> [failed] 5 over 7 texts have fully passed the tests", flush=True
         )
 
     @mock.patch('HookTest.test.print', create=True)
@@ -295,8 +296,9 @@ class TestTest(unittest.TestCase):
         self.test.cts_files = [1]
 
         self.assertEqual(self.test.status, "error")  # 1/2 tested
+
         self.test.passing["002"] = False
-        self.assertEqual(self.test.status, "failure")  # 1/2 successes
+        self.assertEqual(self.test.status, "failed")  # 1/2 successes
         self.test.passing["002"] = True
         self.assertEqual(self.test.status, "success")  # 2/2 successes
         self.test.text_files, self.test.cts_files = [], []
@@ -306,7 +308,7 @@ class TestTest(unittest.TestCase):
         """ Check that json return is stable
         """
         report = json.dumps({
-            "status": False,
+            "status": "failed",
             "units": [{
                     "at": "Time",
                     "coverage": 100.0,
@@ -326,6 +328,7 @@ class TestTest(unittest.TestCase):
             ],
             "coverage": 75.0
         }, sort_keys=True, separators=(",", ":"))
+        self.test.cts_files, self.test.text_files = [1], [1]
         self.test.passing = {"001": True, "002": False}
         self.test.results = unitlog_dict()
         self.assertEqual(self.test.json, report)
