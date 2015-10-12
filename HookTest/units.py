@@ -195,7 +195,7 @@ class INVUnit(TESTUnit):
                 urns = [
                     urn
                     for urn in self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)
-                    if len(MyCapytain.common.reference.URN(urn)) == 3
+                    if urn and len(MyCapytain.common.reference.URN(urn)) == 3
                 ]
                 self.log("Group urn :" + "".join(self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)))
                 status = len(urns) == 1
@@ -203,11 +203,11 @@ class INVUnit(TESTUnit):
                 worksUrns = [
                         urn
                         for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
-                        if len(MyCapytain.common.reference.URN(urn)) == 4
+                        if urn and len(MyCapytain.common.reference.URN(urn)) == 4
                     ] + [
                         urn
                         for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
-                        if len(MyCapytain.common.reference.URN(urn)) == 3
+                        if urn and len(MyCapytain.common.reference.URN(urn)) == 3
                     ]
                 self.log("Group urn : " + "".join(self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)))
                 self.log("Work urn : " + "".join(self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)))
@@ -219,8 +219,8 @@ class INVUnit(TESTUnit):
                     self.urns.append(text.get("urn"))
                     workUrnsText.append(text.get("workUrn"))
 
-                workUrnsText = [urn for urn in workUrnsText if urn is not None and len(MyCapytain.common.reference.URN(urn)) == 4]
-                self.urns = [urn for urn in self.urns if urn is not None and len(MyCapytain.common.reference.URN(urn)) == 5]
+                workUrnsText = [urn for urn in workUrnsText if urn and len(MyCapytain.common.reference.URN(urn)) == 4]
+                self.urns = [urn for urn in self.urns if urn and len(MyCapytain.common.reference.URN(urn)) == 5]
                 self.log("Editions and translations urns : " + " ".join(self.urns))
 
                 status= len(worksUrns) == 2 and (len(texts)*2)==len(self.urns + workUrnsText)
