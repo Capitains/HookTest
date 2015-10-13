@@ -457,14 +457,13 @@ def cmd(console=False, **kwargs):
 
     """
     test = HookTest.test.Test(console=console, **kwargs)
-
     if console is True:
         test.print = True
 
     if test.ping:
         test.send({"status" : "download"})
 
-    if "repository" in kwargs:
+    if "repository" in kwargs and kwargs["repository"]:
         test.clone()
 
     if test.ping:
@@ -482,10 +481,11 @@ def cmd(console=False, **kwargs):
         elif console is True:
             print(tb, flush=True)
 
-    if "repository" in kwargs:
+    if "repository" in kwargs and kwargs["repository"]:
         test.clean()
 
-    if "json" in kwargs and kwargs["json"] is True:
+    if "json" in kwargs and kwargs["json"]:
+        print(kwargs["json"])
         with open(kwargs["json"], "w") as json_file:
             json.dump(test.report, json_file)
 
