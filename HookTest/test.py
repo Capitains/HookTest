@@ -5,6 +5,7 @@ import glob
 import statistics#
 import sys
 import traceback
+import re
 
 from collections import defaultdict, OrderedDict
 import concurrent.futures
@@ -18,6 +19,8 @@ import time
 
 import HookTest.units
 
+
+pr_finder = re.compile("pull\/([0-9]+)\/head")
 
 class Test(object):
     """ Create a Test object
@@ -375,8 +378,8 @@ class Test(object):
         if self.branch is None:
             self.branch = "master"
 
-        if isinstance(self.branch, int) or self.branch.isnumeric():
-            ref = "refs/pull/{0}/head:refs/pull/origin/{0}".format(self.branch)
+        if pr_finder.match(self.branch):
+            ref = "refs/{0}".format(self.branch)
         else:
             ref = "refs/heads/{ref}".format(ref=self.branch)
 

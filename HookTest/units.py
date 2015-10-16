@@ -278,6 +278,9 @@ class CTSUnit(TESTUnit):
             except XPathEvalError:
                 self.log("XPath given for citation can't be parsed")
                 yield False
+            except MyCapytain.resources.texts.local.RefsDeclError as E:
+                self.error(E)
+                yield False
             except (IndexError, TypeError):
                 self.log("Text can't be read through Capitains standards")
                 yield False
