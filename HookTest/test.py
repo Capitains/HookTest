@@ -376,12 +376,12 @@ class Test(object):
         )
 
         if self.branch is None:
-            self.branch = "master"
+            self.branch = "refs/heads/master"
 
         if pr_finder.match(self.branch):
             ref = "refs/{0}".format(self.branch)
         else:
-            ref = "refs/heads/{ref}".format(ref=self.branch)
+            ref = self.branch
 
         repo.remote().pull(ref, progress=self.progress)
 
@@ -467,7 +467,17 @@ def cmd(console=False, **kwargs):
         test.send({"status" : "download"})
 
     if "repository" in kwargs and kwargs["repository"]:
-        test.clone()
+        try:
+            test.clone()
+        except Exception as E:
+            type_, value_, traceback_ = sys.exc_info()
+            tb = "".join(traceback.format_exception(type_, value_, traceback_))
+            if test.ping:
+                test.send({"status": Test.ERROR, "message": tb})
+            elif console is True:
+                print(tb, flush=True)
+            test.clean()
+            raise(E)
 
     if test.ping:
         test.send({"status" : "pending"})

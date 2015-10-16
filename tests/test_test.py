@@ -33,7 +33,7 @@ class TestTest(unittest.TestCase):
         self.test = HookTest.test.Test(
             "./",
             repository="PerseusDL/tests",
-            branch="dev",
+            branch="refs/heads/dev",
             uuid="1234",
             ping="http://services.perseids.org/Hook",
             secret="PerseusDL"
@@ -41,7 +41,7 @@ class TestTest(unittest.TestCase):
         self.test_print = HookTest.test.Test(
             "./",
             repository="PerseusDL",
-            branch="master",
+            branch="refs/heads/master",
             uuid="1234",
             secret="PerseusDL"
         )
@@ -595,7 +595,7 @@ class TestTest(unittest.TestCase):
             to_path="./1234",
             progress=self.test.progress
         )
-        self.assertEqual(self.test.branch, "dev")
+        self.assertEqual(self.test.branch, "refs/heads/dev")
         repo_mocked.remote.assert_called_with()
         remote_met.assert_called_with()
         pull.assert_called_with("refs/heads/dev", progress=self.test.progress)
@@ -609,27 +609,13 @@ class TestTest(unittest.TestCase):
             to_path="./1234",
             progress=self.test.progress
         )
-        self.assertEqual(self.test.branch, "master")
+        self.assertEqual(self.test.branch, "refs/heads/master")
         repo_mocked.remote.assert_called_with()
         remote_met.assert_called_with()
         pull.assert_called_with("refs/heads/master", progress=self.test.progress)
 
-        # With a PR number as int
-        self.test.branch = 4
-        self.test.clone()
-        progress_mocked.assert_called_with(parent=self.test)
-        clone_from_mocked.assert_called_with(
-            url="https://github.com/PerseusDL/tests.git",
-            to_path="./1234",
-            progress=self.test.progress
-        )
-        self.assertEqual(self.test.branch, 4)
-        repo_mocked.remote.assert_called_with()
-        remote_met.assert_called_with()
-        pull.assert_called_with("refs/pull/4/head:refs/pull/origin/4", progress=self.test.progress)
-
         # With a PR number as numeric string
-        self.test.branch = "5"
+        self.test.branch = "pull/5/head"
         self.test.clone()
         progress_mocked.assert_called_with(parent=self.test)
         clone_from_mocked.assert_called_with(
@@ -637,10 +623,10 @@ class TestTest(unittest.TestCase):
             to_path="./1234",
             progress=self.test.progress
         )
-        self.assertEqual(self.test.branch, "5")
+        self.assertEqual(self.test.branch, "pull/5/head")
         repo_mocked.remote.assert_called_with()
         remote_met.assert_called_with()
-        pull.assert_called_with("refs/pull/5/head:refs/pull/origin/5", progress=self.test.progress)
+        pull.assert_called_with("refs/pull/5/head", progress=self.test.progress)
 
     @mock.patch("HookTest.test.shutil.rmtree", create=True)
     def test_clean(self, mocked):
