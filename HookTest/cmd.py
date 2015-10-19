@@ -25,6 +25,7 @@ def cmd():
     parser.add_argument('-w', "--workers", type=int, help='Number of workers to be used', default=1)
     parser.add_argument('-s', "--scheme", help="'tei' or 'epidoc' scheme to be used", default="tei")
     parser.add_argument("-v", "--verbose", help="Show RNG's errors", action="store_true")
+    parser.add_argument("-j", "--json", help="Save to specified json file the results", default=None)
     parser.add_argument(
         "-p",
         "--ping",
@@ -33,19 +34,8 @@ def cmd():
     )
 
     args = parser.parse_args()
-
-    test = HookTest.test.Test(**vars(args))
-
-    if args.repository:
-        test.clone()
-
-    status, logs, report = test.run(printing=True)
-
-    if args.repository:
-        test.clean()
-
+    status = HookTest.test.cmd(console=True, **vars(args))
     if status is False:
-        test.write(test.json)
         sys.exit(1)
     else:
         sys.exit(0)

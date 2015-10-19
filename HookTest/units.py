@@ -7,7 +7,7 @@ import pkg_resources
 import subprocess
 import re
 from collections import defaultdict
-
+from lxml.etree import XPathEvalError
 
 class TESTUnit(object):
     """ TestUnit Metaclass
@@ -131,16 +131,20 @@ class INVUnit(TESTUnit):
         if self.xml:
             textgroup = "textgroup" in self.xml.getroot().tag
             work = not textgroup and "work" in self.xml.getroot().tag
-            if textgroup:
-                self.type = "textgroup"
-                self.log("TextGroup detected")
-                self.Text = MyCapytain.resources.inventory.TextGroup(resource=self.xml.getroot())
-            elif work:
-                self.type = "work"
-                self.log("Work detected")
-                self.Text = MyCapytain.resources.inventory.Work(resource=self.xml.getroot())
-            else:
-                self.log("Nothing detected")
+            try:
+                if textgroup:
+                    self.type = "textgroup"
+                    self.log("TextGroup detected")
+                    self.Text = MyCapytain.resources.inventory.TextGroup(resource=self.xml.getroot())
+                elif work:
+                    self.type = "work"
+                    self.log("Work detected")
+                    self.Text = MyCapytain.resources.inventory.Work(resource=self.xml.getroot())
+                else:
+                    self.log("Nothing detected")
+            except Exception:
+                self.log("Inventory can't be read through Capitains standards")
+                yield False
 
         if self.Text:
             yield True
@@ -191,7 +195,7 @@ class INVUnit(TESTUnit):
                 urns = [
                     urn
                     for urn in self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)
-                    if len(MyCapytain.common.reference.URN(urn)) == 3
+                    if urn and len(MyCapytain.common.reference.URN(urn)) == 3
                 ]
                 self.log("Group urn :" + "".join(self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)))
                 status = len(urns) == 1
@@ -199,11 +203,11 @@ class INVUnit(TESTUnit):
                 worksUrns = [
                         urn
                         for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
-                        if len(MyCapytain.common.reference.URN(urn)) == 4
+                        if urn and len(MyCapytain.common.reference.URN(urn)) == 4
                     ] + [
                         urn
                         for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
-                        if len(MyCapytain.common.reference.URN(urn)) == 3
+                        if urn and len(MyCapytain.common.reference.URN(urn)) == 3
                     ]
                 self.log("Group urn : " + "".join(self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)))
                 self.log("Work urn : " + "".join(self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)))
@@ -215,8 +219,8 @@ class INVUnit(TESTUnit):
                     self.urns.append(text.get("urn"))
                     workUrnsText.append(text.get("workUrn"))
 
-                workUrnsText = [urn for urn in workUrnsText if len(MyCapytain.common.reference.URN(urn)) == 4]
-                self.urns = [urn for urn in self.urns if len(MyCapytain.common.reference.URN(urn)) == 5]
+                workUrnsText = [urn for urn in workUrnsText if urn and len(MyCapytain.common.reference.URN(urn)) == 4]
+                self.urns = [urn for urn in self.urns if urn and len(MyCapytain.common.reference.URN(urn)) == 5]
                 self.log("Editions and translations urns : " + " ".join(self.urns))
 
                 status= len(worksUrns) == 2 and (len(texts)*2)==len(self.urns + workUrnsText)
@@ -271,7 +275,14 @@ class CTSUnit(TESTUnit):
             try:
                 self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
                 yield True
-            except IndexError as E:
+            except XPathEvalError:
+                self.log("XPath given for citation can't be parsed")
+                yield False
+            except MyCapytain.resources.texts.local.RefsDeclError as E:
+                self.error(E)
+                yield False
+            except (IndexError, TypeError):
+                self.log("Text can't be read through Capitains standards")
                 yield False
         else:
             yield False
@@ -317,10 +328,14 @@ class CTSUnit(TESTUnit):
     def passages(self):
         if self.Text:
             for i in range(0, len(self.Text.citation)):
-                passages = self.Text.getValidReff(level=i+1)
-                status = len(passages) > 0
-                self.log(str(len(passages)) + " found")
-                yield status
+                try:
+                    passages = self.Text.getValidReff(level=i+1)
+                    status = len(passages) > 0
+                    self.log(str(len(passages)) + " found")
+                    yield status
+                except Exception:
+                    self.log("Error when searching passages at level {0}".format(i+1))
+                    yield False
         else:
             yield False
 

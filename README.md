@@ -1,6 +1,8 @@
 Capitains HookTest
 ===
 
+[![Coverage Status](https://coveralls.io/repos/Capitains/HookTest/badge.svg?service=github)](https://coveralls.io/github/Capitains/HookTest)
+[![Build Status](https://travis-ci.org/Capitains/HookTest.svg)](https://travis-ci.org/Capitains/HookTest)
 [![PyPI version](https://badge.fury.io/py/HookTest.svg)](http://badge.fury.io/py/HookTest)
 
 ## What ?
