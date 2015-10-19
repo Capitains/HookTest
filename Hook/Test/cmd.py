@@ -1,7 +1,7 @@
 import argparse
 import sys
-import HookTest.test
 
+import Hook.Test.test
 
 def cmd():
     """ Run locally the software
@@ -34,7 +34,7 @@ def cmd():
     )
 
     args = parser.parse_args()
-    status = HookTest.test.cmd(console=True, **vars(args))
+    status = Hook.Test.test.cmd(console=True, **vars(args))
     if status is False:
         sys.exit(1)
     else:

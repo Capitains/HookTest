@@ -3,13 +3,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='HookTest',
-    version="0.0.1",
+    version="0.0.2",
     description='Hook Test Script for GitHub/CTS repositories',
     url='http://github.com/Capitains/HookTest',
     author='Thibault Clérice',
     author_email='leponteineptique@gmail.com',
-    license='MIT',
-    packages=find_packages(),
+    license='GNU GPL',
+    packages=find_packages(exclude=("./tests")),
     install_requires=[
         "MyCapytain==0.0.6",
         "jingtrang==0.1.1",
@@ -25,7 +25,7 @@ setup(
     },
     include_package_data=True,
     entry_points={
-        'console_scripts': ['hooktest=HookTest.cmd:cmd'],
+        'console_scripts': ['hooktest=Hook.Test.cmd:cmd'],
     },
     test_suite="tests",
     zip_safe=False
