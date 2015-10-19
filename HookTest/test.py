@@ -6,18 +6,19 @@ import statistics#
 import sys
 import traceback
 import re
+
 from collections import defaultdict, OrderedDict
 import concurrent.futures
 import json
+import git
 import shutil
+import requests
 import hashlib
 import hmac
 import time
 
-import git
-import requests
+import HookTest.units
 
-import Hook.Test.units
 
 pr_finder = re.compile("pull\/([0-9]+)\/head")
 
@@ -239,7 +240,7 @@ class Test(object):
         logs = []
         results = {}
         if filepath.endswith("__cts__.xml"):
-            unit = Hook.Test.units.INVUnit(filepath)
+            unit = HookTest.units.INVUnit(filepath)
             logs.append(">>>> Testing " + filepath)
             for name, status, unitlogs in unit.test():
 
@@ -260,7 +261,7 @@ class Test(object):
             self.inventory += unit.urns
 
         else:
-            unit = Hook.Test.units.CTSUnit(filepath)
+            unit = HookTest.units.CTSUnit(filepath)
             logs.append(">>>> Testing " + filepath.split("data")[-1])
             for name, status, unitlogs in unit.test(self.scheme, self.inventory):
 
@@ -458,7 +459,7 @@ def cmd(console=False, **kwargs):
     :return: Status of the test
 
     """
-    test = Hook.test.Test(console=console, **kwargs)
+    test = HookTest.test.Test(console=console, **kwargs)
     if console is True:
         test.print = True
 
