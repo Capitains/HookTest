@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='HookTest',
-    version="0.0.3",
+    version="0.0.4",
     description='Hook Test Script for GitHub/CTS repositories',
     url='http://github.com/Capitains/HookTest',
     author='Thibault Clérice',
