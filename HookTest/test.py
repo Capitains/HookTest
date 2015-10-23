@@ -203,9 +203,8 @@ class Test(object):
     def count_files(self):
         return len(self.text_files) + len(self.cts_files)
 
-    def flush(self):
+    def flush(self, stack):
         """ Flush the remaining logs to the endpoint """
-        stack = self.stack
         if len(stack) > 0:
             for needle in stack:
                 needle.sent = True
@@ -321,10 +320,11 @@ class Test(object):
         :type log: UnitLog
         :return: None
         """
+        print(len(self.stack), self.triggering_size)
         if self.console:
             print(str(log), flush=True)
         elif self.ping and len(self.stack) >= self.triggering_size:
-            self.flush()
+            self.flush(self.stack)
 
     def start(self):
         """ Deal with the start of the process
@@ -498,7 +498,6 @@ def cmd(console=False, **kwargs):
         test.clean()
 
     if "json" in kwargs and kwargs["json"]:
-        print(kwargs["json"])
         with open(kwargs["json"], "w") as json_file:
             json.dump(test.report, json_file)
 
