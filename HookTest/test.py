@@ -305,7 +305,7 @@ class Test(object):
             tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.text_files}
             # We iterate over a dictionary of completed tasks
             for future in concurrent.futures.as_completed(tasks):
-                result, passing, additional = future.result()
+                result, filepath, additional = future.result()
                 self.results[filepath] = result
                 self.passing[filepath] = result.status
                 self.log(self.results[filepath])
