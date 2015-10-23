@@ -303,7 +303,7 @@ class Test(object):
             for future in concurrent.futures.as_completed(tasks):
                 result, status, filepath = future.result()
                 self.results[filepath] = result
-                self.status[filepath] = status
+                self.passing[filepath] = status
                 self.log(self.results[filepath])
 
         # We load a thread pool which has 5 maximum workers
@@ -314,7 +314,7 @@ class Test(object):
             for future in concurrent.futures.as_completed(tasks):
                 result, passing, unit = future.result()
                 self.results[filepath] = result
-                self.status[filepath] = status
+                self.passing[filepath] = status
                 self.log(self.results[filepath])
 
         self.end()
