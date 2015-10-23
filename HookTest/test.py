@@ -186,6 +186,7 @@ class Test(object):
 
         :return:
         """
+        print(self.count_files)
         percentage = int(self.count_files / 20)
 
         if self.__triggering_size is not None:
