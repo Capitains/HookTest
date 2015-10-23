@@ -96,7 +96,7 @@ class TestTest(unittest.TestCase):
         self.assertEqual(len(mocked.mock_calls), 0)
 
         # Test when print
-        self.test_print.print = True
+        self.test_print.console = True
         self.test_print.log("This is a log")
         mocked.assert_called_with("This is a log", flush=True)
 
@@ -135,7 +135,7 @@ class TestTest(unittest.TestCase):
         self.assertEqual(len(printed.mock_calls), 0, msg="Default of start is not to print")
 
         # With print
-        self.test_print.print = True
+        self.test_print.console = True
         self.test_print.text_files, self.test_print.cts_files = ["a text"]*5, ["a cts metadata file"]*2
         self.test_print.start()
         self.assertEqual(len(printed.mock_calls), 2, msg="Start should print twice")
@@ -167,7 +167,7 @@ class TestTest(unittest.TestCase):
         self.assertEqual(len(printed.mock_calls), 0, msg="Default of start is not to print")
 
         # With print
-        self.test_print.print = True
+        self.test_print.console = True
         self.test_print.text_files, self.test_print.cts_files = ["a text"]*5, ["a cts metadata file"]*2
         self.test_print.passing = {
             1: True,
@@ -192,7 +192,7 @@ class TestTest(unittest.TestCase):
         self.test.download()
         self.assertEqual(len(printed.mock_calls), 0, msg="When print is not set, nothing is shown [Neither with Ping]")
 
-        self.test_print.print = True
+        self.test_print.console = True
         self.test_print.progress = HookTest.test.Progress()
         self.test_print.progress.download = "55 kb/s"
         self.test_print.download()

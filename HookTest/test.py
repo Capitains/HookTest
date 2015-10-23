@@ -80,7 +80,7 @@ class Test(object):
         :param console: If set to true, print logs to the console
         :type console: bool
         """
-        self.print = console
+        self.console = console
         self.path = path
         self.repository = repository
         self.branch = branch
@@ -320,7 +320,7 @@ class Test(object):
         :type log: UnitLog
         :return: None
         """
-        if self.print:
+        if self.console:
             print(str(log), flush=True)
         elif self.ping and len(self.stack) >= self.triggering_size:
             self.flush()
@@ -329,7 +329,7 @@ class Test(object):
         """ Deal with the start of the process
 
         """
-        if self.print:
+        if self.console:
             print(">>> Starting tests !", flush=True)
             print(">>> Files to test : "+str(self.count_files), flush=True)
         elif self.ping:
@@ -343,13 +343,13 @@ class Test(object):
             })
 
     def download(self):
-        if self.print:
+        if self.console:
             print("\n".join([f for f in self.progress.json if f]), flush=True)
 
     def end(self):
         """ Deal with end logs
         """
-        if self.print:
+        if self.console:
             print(
                 ">>> End of the test !\n" \
                 ">>> [{2}] {0} over {1} texts have fully passed the tests".format(
@@ -460,8 +460,7 @@ def cmd(console=False, **kwargs):
 
     """
     test = HookTest.test.Test(console=console, **kwargs)
-    if console is True:
-        test.print = True
+    test.console = console
 
     if test.ping:
         test.send({"status" : "download"})
