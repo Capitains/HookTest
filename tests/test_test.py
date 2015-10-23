@@ -506,8 +506,8 @@ class TestTest(unittest.TestCase):
             self.assertEqual(logs, self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"])
 
     @mock.patch(
-        "HookTest.test.concurrent.futures.ThreadPoolExecutor",
-        spec=concurrent.futures.ThreadPoolExecutor,
+        "HookTest.test.concurrent.futures.ProcessPoolExecutor",
+        spec=concurrent.futures.ProcessPoolExecutor,
         create=True
     )
     @mock.patch(

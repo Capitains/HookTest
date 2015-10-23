@@ -293,7 +293,7 @@ class Test(object):
         self.start()
 
         # We deal with Inventory files first to get a list of urns
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=self.workers) as executor:
             # We create a dictionary of tasks which
             tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.cts_files}
             # We iterate over a dictionary of completed tasks
@@ -302,7 +302,7 @@ class Test(object):
                 self.log(unit)
 
         # We load a thread pool which has 5 maximum workers
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=self.workers) as executor:
             # We create a dictionary of tasks which
             tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.text_files}
             # We iterate over a dictionary of completed tasks
