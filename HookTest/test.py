@@ -282,7 +282,7 @@ class Test(object):
             self.passing[filepath] = self.results[filepath].status
 
         if dicts:
-            return self.results, self.passing, self.results[filepath]
+            return self.results[filepath], self.passing[filepath], filepath
         return self.results[filepath]
 
     def run(self):
@@ -301,10 +301,10 @@ class Test(object):
             tasks = {executor.submit(self.unit, target_file, True): target_file for target_file in self.cts_files}
             # We iterate over a dictionary of completed tasks
             for future in concurrent.futures.as_completed(tasks):
-                result, passing, unit = future.result()
-                self.results.update(result)
-                self.passing.update(passing)
-                self.log(unit)
+                result, status, filepath = future.result()
+                self.results[filepath] = result
+                self.status[filepath] = status
+                self.log(self.results[filepath])
 
         # We load a thread pool which has 5 maximum workers
         with concurrent.futures.ProcessPoolExecutor(max_workers=self.workers) as executor:
@@ -313,9 +313,9 @@ class Test(object):
             # We iterate over a dictionary of completed tasks
             for future in concurrent.futures.as_completed(tasks):
                 result, passing, unit = future.result()
-                self.results.update(result)
-                self.passing.update(passing)
-                self.log(unit)
+                self.results[filepath] = result
+                self.status[filepath] = status
+                self.log(self.results[filepath])
 
         self.end()
         return self.status
