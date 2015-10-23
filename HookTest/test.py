@@ -230,7 +230,7 @@ class Test(object):
             headers={"HookTest-Secure-X": hashed, "HookTest-UUID": self.uuid}
         )
 
-    def unit(self, filepath, dicts=False):
+    def unit(self, filepath):
         """ Do test for a file and print the results
 
         :param filepath: Path of the file to be tested
@@ -240,6 +240,7 @@ class Test(object):
         """
         logs = []
         results = {}
+        additional = []
         if filepath.endswith("__cts__.xml"):
             unit = HookTest.units.INVUnit(filepath)
             logs.append(">>>> Testing " + filepath)
@@ -256,10 +257,7 @@ class Test(object):
                     logs.append("\n".join([log for log in unitlogs if log]))
 
                 results[name] = status
-
-            self.results[filepath] = self.cover(filepath, results, logs=logs)
-            self.passing[filepath] = self.results[filepath].status
-            self.inventory += unit.urns
+            additional += unit.urns
 
         else:
             unit = HookTest.units.CTSUnit(filepath)
@@ -278,12 +276,7 @@ class Test(object):
 
                 results[name] = status
 
-            self.results[filepath] = self.cover(filepath, results, logs=logs)
-            self.passing[filepath] = self.results[filepath].status
-
-        if dicts:
-            return self.results[filepath], self.passing[filepath], filepath
-        return self.results[filepath]
+        return self.cover(filepath, results, logs=logs), filepath, additional
 
     def run(self):
         """ Run the tests
@@ -298,23 +291,24 @@ class Test(object):
         # We deal with Inventory files first to get a list of urns
         with concurrent.futures.ProcessPoolExecutor(max_workers=self.workers) as executor:
             # We create a dictionary of tasks which
-            tasks = {executor.submit(self.unit, target_file, True): target_file for target_file in self.cts_files}
+            tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.cts_files}
             # We iterate over a dictionary of completed tasks
             for future in concurrent.futures.as_completed(tasks):
-                result, status, filepath = future.result()
+                result, filepath, additional = future.result()
                 self.results[filepath] = result
-                self.passing[filepath] = status
+                self.passing[filepath] = result.status
+                self.inventory += additional
                 self.log(self.results[filepath])
 
         # We load a thread pool which has 5 maximum workers
         with concurrent.futures.ProcessPoolExecutor(max_workers=self.workers) as executor:
             # We create a dictionary of tasks which
-            tasks = {executor.submit(self.unit, target_file, True): target_file for target_file in self.text_files}
+            tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.text_files}
             # We iterate over a dictionary of completed tasks
             for future in concurrent.futures.as_completed(tasks):
-                result, passing, unit = future.result()
+                result, passing, additional = future.result()
                 self.results[filepath] = result
-                self.passing[filepath] = status
+                self.passing[filepath] = result.status
                 self.log(self.results[filepath])
 
         self.end()
