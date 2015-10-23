@@ -230,7 +230,7 @@ class Test(object):
             headers={"HookTest-Secure-X": hashed, "HookTest-UUID": self.uuid}
         )
 
-    def unit(self, filepath):
+    def unit(self, filepath, dicts=False):
         """ Do test for a file and print the results
 
         :param filepath: Path of the file to be tested
@@ -281,6 +281,8 @@ class Test(object):
             self.results[filepath] = self.cover(filepath, results, logs=logs)
             self.passing[filepath] = self.results[filepath].status
 
+        if dicts:
+            return self.results, self.passing, self.results[filepath]
         return self.results[filepath]
 
     def run(self):
@@ -296,19 +298,23 @@ class Test(object):
         # We deal with Inventory files first to get a list of urns
         with concurrent.futures.ProcessPoolExecutor(max_workers=self.workers) as executor:
             # We create a dictionary of tasks which
-            tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.cts_files}
+            tasks = {executor.submit(self.unit, target_file, True): target_file for target_file in self.cts_files}
             # We iterate over a dictionary of completed tasks
             for future in concurrent.futures.as_completed(tasks):
-                unit = future.result()
+                result, passing, unit = future.result()
+                self.results.update(result)
+                self.passing.update(passing)
                 self.log(unit)
 
         # We load a thread pool which has 5 maximum workers
         with concurrent.futures.ProcessPoolExecutor(max_workers=self.workers) as executor:
             # We create a dictionary of tasks which
-            tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.text_files}
+            tasks = {executor.submit(self.unit, target_file, True): target_file for target_file in self.text_files}
             # We iterate over a dictionary of completed tasks
             for future in concurrent.futures.as_completed(tasks):
-                unit = future.result()
+                result, passing, unit = future.result()
+                self.results.update(result)
+                self.passing.update(passing)
                 self.log(unit)
 
         self.end()
