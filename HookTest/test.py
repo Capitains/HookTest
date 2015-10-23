@@ -186,7 +186,6 @@ class Test(object):
 
         :return:
         """
-        print(self.count_files)
         percentage = int(self.count_files / 20)
 
         if self.__triggering_size is not None:
@@ -322,6 +321,7 @@ class Test(object):
         :type log: UnitLog
         :return: None
         """
+        print(len(self.stack), self.triggering_size)
         if self.console:
             print(str(log), flush=True)
         elif self.ping and len(self.stack) >= self.triggering_size:
