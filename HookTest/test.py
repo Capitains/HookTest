@@ -172,6 +172,7 @@ class Test(object):
         :return: Status string updated
         :rtype: str
         """
+
         if self.count_files == 0 or len(self.passing) != self.count_files:
             return Test.ERROR
         elif self.count_files > 0 and self.successes == len(self.passing):
