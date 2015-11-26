@@ -282,13 +282,15 @@ class CTSUnit(TESTUnit):
             try:
                 self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
                 yield True
-            except XPathEvalError:
+            except XPathEvalError as E:
                 self.log("XPath given for citation can't be parsed")
+                self.error(E)
                 yield False
             except MyCapytain.resources.texts.local.RefsDeclError as E:
                 self.error(E)
                 yield False
-            except (IndexError, TypeError):
+            except (IndexError, TypeError) as E:
+                self.error(E)
                 self.log("Text can't be read through Capitains standards")
                 yield False
         else:
@@ -298,7 +300,7 @@ class CTSUnit(TESTUnit):
         """ Contains refsDecl informations
         """
         if self.Text:
-            self.log(str(len(self.Text.citation)) + " citations found")
+            self.log(str(len(self.Text.citation)) + " citation's level found")
             yield len(self.Text.citation) > 0
         else:
             yield False
