@@ -17,7 +17,8 @@ setup(
         "requests>=2.7.0"
     ],
     tests_require=[
-        "mock==1.3.0"
+        "mock==1.3.0",
+        "six>=1.10.0"
     ],
     package_data={
         'HookTest': ['resources/*.rng']
