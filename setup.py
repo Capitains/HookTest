@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='HookTest',
-    version="0.0.4",
+    version="0.0.5",
     description='Hook Test Script for GitHub/CTS repositories',
     url='http://github.com/Capitains/HookTest',
     author='Thibault Clérice',
@@ -18,7 +18,7 @@ setup(
     ],
     tests_require=[
         "mock==1.3.0",
-        "six>=1.10.0"
+        "six>=1.9.0",
     ],
     package_data={
         'HookTest': ['resources/*.rng']
