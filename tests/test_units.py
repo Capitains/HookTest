@@ -58,12 +58,14 @@ class TestCTS(unittest.TestCase):
 class TestText(unittest.TestCase):
     """ Test the UnitTests for Text
     """
+
     def setUp(self):
         self.TEI = HookTest.units.CTSUnit("/false/path")
         self.TEI.scheme = "tei"
 
         self.Epidoc = HookTest.units.CTSUnit("/false/path")
         self.Epidoc.scheme = "epidoc"
+
     def testUrn(self):
         """ Test the urn Test """
         # When edition
@@ -114,3 +116,23 @@ class TestText(unittest.TestCase):
         self.assertEqual(self.TEI.has_urn().__next__(), False, "Incomplete URN should fail")
         self.TEI.xml = etree.fromstring(edition.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2:1.pr"))
         self.assertEqual(self.TEI.has_urn().__next__(), False, "URN with Reference should fail")
+
+    def test_passage_collision(self):
+        """ Test collision of passages
+        """
+        unit = HookTest.units.CTSUnit("tests/passages/test_passage_success.xml")
+        parsed = [a for a in unit.parsable()]
+        parsed = [a for a in unit.capitain()]
+        unit.flush()
+        passages = [level for level in unit.passages()]
+        self.assertEqual(passages, [True, True, True], "No collision should result in success")
+
+        unit = HookTest.units.CTSUnit("tests/passages/test_passage_fail_1.xml")
+        parsed = [a for a in unit.parsable()]
+        parsed = [a for a in unit.capitain()]
+        unit.flush()
+        passages = [level for level in unit.passages()]
+        self.assertEqual(passages, [False, False, False], "Collision should result in fail")
+        self.assertIn(">>>>>> Duplicate founds : 1", unit.logs)
+        self.assertIn(">>>>>> Duplicate founds : 3.1", unit.logs)
+        self.assertIn(">>>>>> Duplicate founds : 1.2.1", unit.logs)

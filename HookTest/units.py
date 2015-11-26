@@ -1,8 +1,9 @@
 from lxml import etree
+import warnings
 import MyCapytain.resources.texts.local
 import MyCapytain.resources.inventory
 import MyCapytain.common.reference
-
+import MyCapytain.errors
 import pkg_resources
 import subprocess
 import re
@@ -280,13 +281,13 @@ class CTSUnit(TESTUnit):
         """
         if self.xml:
             try:
-                self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
+                self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot(), autoreffs=False)
                 yield True
             except XPathEvalError as E:
                 self.log("XPath given for citation can't be parsed")
                 self.error(E)
                 yield False
-            except MyCapytain.resources.texts.local.RefsDeclError as E:
+            except MyCapytain.errors.RefsDeclError as E:
                 self.error(E)
                 yield False
             except (IndexError, TypeError) as E:
@@ -336,15 +337,27 @@ class CTSUnit(TESTUnit):
 
     def passages(self):
         if self.Text:
-            for i in range(0, len(self.Text.citation)):
-                try:
-                    passages = self.Text.getValidReff(level=i+1)
-                    status = len(passages) > 0
-                    self.log(str(len(passages)) + " found")
-                    yield status
-                except Exception:
-                    self.log("Error when searching passages at level {0}".format(i+1))
-                    yield False
+            self.Text.parse()
+            _continue = True
+
+            if _continue:
+                for i in range(0, len(self.Text.citation)):
+                    try:
+                        with warnings.catch_warnings(record=True) as w:
+                            # Cause all warnings to always be triggered.
+                            warnings.simplefilter("always")
+                            passages = self.Text.getValidReff(level=i+1)
+                            status = len(passages) > 0 and len(w) == 0
+                            self.log(str(len(passages)) + " found")
+                            if len(w) > 0:
+                                self.log("Duplicate founds : {0}".format(", ".join([str(v.message) for v in w])))
+                            yield status
+                    except Exception as E:
+                        self.error(E)
+                        self.log("Error when searching passages at level {0}".format(i+1))
+                        yield False
+            else:
+                yield False
         else:
             yield False
 
