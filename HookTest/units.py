@@ -153,7 +153,7 @@ class INVUnit(TESTUnit):
 
     def metadata(self):
         status = False
-        if self.xml and self.Text:
+        if self.xml is not None and self.Text:
 
             if self.type == "textgroup":
 
@@ -162,9 +162,15 @@ class INVUnit(TESTUnit):
                 status = groups > 0
 
             elif self.type == "work":
+                status = True
+                langs = self.xml.xpath("//ti:translation/@xml:lang", namespaces=TESTUnit.NS)
+                if len(langs) != len(self.xml.xpath("//ti:translation", namespaces=TESTUnit.NS)):
+                    status = False
+                    self.log("Translation(s) are missing lang attribute")
+
                 titles = len(self.Text.metadata["title"].children)
                 self.log("{0} titles found".format(titles))
-                status = titles > 0
+                status = status and titles > 0
 
                 texts = len(self.Text.texts)
                 labels = len(

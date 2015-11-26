@@ -2,6 +2,59 @@ import unittest
 import HookTest.units
 from lxml import etree
 
+class TestCTS(unittest.TestCase):
+    """ Test the UnitTest for __cts__
+    """
+    def test_lang(self):
+        """ Test lang in translation check
+        """
+        success = """<work xmlns="http://chs.harvard.edu/xmlns/cts">
+    <title xml:lang="eng">Div&#257;n</title>
+    <edition urn="urn:cts:farsiLit:hafez.divan.perseus-far1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+        </edition>
+    <translation  xml:lang="eng" urn="urn:cts:farsiLit:hafez.divan.perseus-eng1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+    </translation>
+    <translation  xml:lang="ger" urn="urn:cts:farsiLit:hafez.divan.perseus-ger1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+    </translation>
+</work>"""
+        fail = """<work xmlns="http://chs.harvard.edu/xmlns/cts">
+    <title xml:lang="eng">Div&#257;n</title>
+    <edition urn="urn:cts:farsiLit:hafez.divan.perseus-far1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+        </edition>
+    <translation  xml:lang="eng" urn="urn:cts:farsiLit:hafez.divan.perseus-eng1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+    </translation>
+    <translation urn="urn:cts:farsiLit:hafez.divan.perseus-ger1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+    </translation>
+</work>"""
+        unit = HookTest.units.INVUnit("/a/b")
+        unit.xml = etree.ElementTree(etree.fromstring(success))
+        ingest = [a for a in unit.capitain()]
+        unit.capitain()  # We ingest
+        unit.flush()
+        self.assertEqual(unit.metadata().__next__(), True, "When lang, description and edition are there, metadata should work")
+        self.assertNotIn(">>>>>> Translation(s) are missing lang attribute", unit.logs)
+
+        unit.xml = etree.ElementTree(etree.fromstring(fail))
+        ingest = [a for a in unit.capitain()]
+        unit.capitain()  # We ingest
+        unit.flush()
+        self.assertEqual(unit.metadata().__next__(), False, "When lang fails, test should fail")
+        self.assertIn(">>>>>> Translation(s) are missing lang attribute", unit.logs)
+
+
+
 class TestText(unittest.TestCase):
     """ Test the UnitTests for Text
     """
