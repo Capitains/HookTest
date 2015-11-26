@@ -267,6 +267,7 @@ class CTSUnit(TESTUnit):
     def __init__(self, *args, **kwargs):
         super(CTSUnit, self).__init__(*args, **kwargs)
         self.inv = list()
+        self.scheme = None
 
     def capitain(self):
         """ Load the file in MyCapytain
@@ -342,14 +343,28 @@ class CTSUnit(TESTUnit):
     def has_urn(self):
         """ Test that a file has its urn saved
         """
-        if self.xml:
-            urns = self.xml.xpath("//tei:text[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
-            urns += self.xml.xpath("//tei:div[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+        if self.xml is not None:
+            if self.scheme == "tei":
+                urns = self.xml.xpath("//tei:text[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+            else:
+                urns = self.xml.xpath("//tei:body/tei:div[@type='edition' and starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+                urns += self.xml.xpath("//tei:body/tei:div[@type='translation' and starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
             status = len(urns) > 0
             if status:
                 logs = urns[0].get("n")
-                self.log(logs)
-                self.urn = logs
+                try:
+                    urn = MyCapytain.common.reference.URN(logs)
+                    if len(urn) < 5:
+                        status = False
+                        self.log("Incomplete URN")
+                    elif urn["passage"]:
+                        status = False
+                        self.log("Reference not accepted in URN")
+                except:
+                    status = False
+                finally:
+                    self.log(logs)
+                    self.urn = logs
         else:
             status = False
         yield status
@@ -385,6 +400,7 @@ class CTSUnit(TESTUnit):
 
         tests = [] + CTSUnit.tests
         tests.append(scheme)
+        self.scheme = scheme
 
         for test in tests:
             # Show the logs and return the status
