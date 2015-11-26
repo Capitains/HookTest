@@ -44,7 +44,7 @@ class TESTUnit(object):
     
     def error(self, error):
         if isinstance(error, Exception):
-            self.__logs.append(">>>>>> " + str(type(error)) + " : " + str(error))
+            self.log(str(type(error)) + " : " + str(error))
 
     def flush(self):
         self.__archives = self.__archives + self.__logs
@@ -281,17 +281,15 @@ class CTSUnit(TESTUnit):
         """
         if self.xml:
             try:
-                self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot(), autoreffs=False)
+                self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
                 yield True
             except XPathEvalError as E:
                 self.log("XPath given for citation can't be parsed")
-                self.error(E)
                 yield False
             except MyCapytain.errors.RefsDeclError as E:
                 self.error(E)
                 yield False
             except (IndexError, TypeError) as E:
-                self.error(E)
                 self.log("Text can't be read through Capitains standards")
                 yield False
         else:
@@ -337,27 +335,21 @@ class CTSUnit(TESTUnit):
 
     def passages(self):
         if self.Text:
-            self.Text.parse()
-            _continue = True
-
-            if _continue:
-                for i in range(0, len(self.Text.citation)):
-                    try:
-                        with warnings.catch_warnings(record=True) as w:
-                            # Cause all warnings to always be triggered.
-                            warnings.simplefilter("always")
-                            passages = self.Text.getValidReff(level=i+1)
-                            status = len(passages) > 0 and len(w) == 0
-                            self.log(str(len(passages)) + " found")
-                            if len(w) > 0:
-                                self.log("Duplicate founds : {0}".format(", ".join([str(v.message) for v in w])))
-                            yield status
-                    except Exception as E:
-                        self.error(E)
-                        self.log("Error when searching passages at level {0}".format(i+1))
-                        yield False
-            else:
-                yield False
+            for i in range(0, len(self.Text.citation)):
+                try:
+                    with warnings.catch_warnings(record=True) as w:
+                        # Cause all warnings to always be triggered.
+                        warnings.simplefilter("always")
+                        passages = self.Text.getValidReff(level=i+1)
+                        status = len(passages) > 0 and len(w) == 0
+                        self.log(str(len(passages)) + " found")
+                        if len(w) > 0:
+                            self.log("Duplicate founds : {0}".format(", ".join([str(v.message) for v in w])))
+                        yield status
+                except Exception as E:
+                    self.error(E)
+                    self.log("Error when searching passages at level {0}".format(i+1))
+                    yield False
         else:
             yield False
 
