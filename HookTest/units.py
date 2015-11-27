@@ -344,7 +344,7 @@ class CTSUnit(TESTUnit):
                         status = len(passages) > 0 and len(w) == 0
                         self.log(str(len(passages)) + " found")
                         if len(w) > 0:
-                            self.log("Duplicate founds : {0}".format(", ".join([str(v.message) for v in w])))
+                            self.log("Duplicate references found : {0}".format(", ".join([str(v.message) for v in w])))
                         yield status
                 except Exception as E:
                     self.error(E)
@@ -352,6 +352,29 @@ class CTSUnit(TESTUnit):
                     yield False
         else:
             yield False
+
+    def unique_passage(self):
+        """ Check that citation scheme do not collide
+        """
+        # Checking for duplicate
+        xpaths = [
+            self.Text.xml.xpath(
+                MyCapytain.common.reference.REFERENCE_REPLACER.sub(
+                    r"\1",
+                    citation.refsDecl
+                ),
+                namespaces=TESTUnit.NS
+            )
+            for citation in self.Text.citation
+        ]
+        nodes = [element for xpath in xpaths for element in xpath]
+        bad_citation = len(nodes) == len(set(nodes))
+        if not bad_citation:
+            self.log("Some node are found twice")
+            yield False
+        else:
+            yield True
+
 
     def has_urn(self):
         """ Test that a file has its urn saved

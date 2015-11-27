@@ -133,6 +133,58 @@ class TestText(unittest.TestCase):
         unit.flush()
         passages = [level for level in unit.passages()]
         self.assertEqual(passages, [False, False, False], "Collision should result in fail")
-        self.assertIn(">>>>>> Duplicate founds : 1", unit.logs)
-        self.assertIn(">>>>>> Duplicate founds : 3.1", unit.logs)
-        self.assertIn(">>>>>> Duplicate founds : 1.2.1", unit.logs)
+        self.assertIn(">>>>>> Duplicate references found : 1", unit.logs)
+        self.assertIn(">>>>>> Duplicate references found : 3.1", unit.logs)
+        self.assertIn(">>>>>> Duplicate references found : 1.2.1", unit.logs)
+
+    def test_node_collision(self):
+        """ Test unique_passage
+        """
+        frame = """<TEI xmlns="http://www.tei-c.org/ns/1.0">
+<teiHeader>
+<encodingDesc>
+<refsDecl n="CTS">
+    <cRefPattern matchPattern="(\w+).(\w+)" replacementPattern="#xpath({1})">
+        <p>This pointer pattern extracts letter and poem</p>
+    </cRefPattern>
+    <cRefPattern matchPattern="(\w+)" replacementPattern="#xpath({0})">
+        <p>This pointer pattern extracts letter</p>
+    </cRefPattern>
+</refsDecl>
+</encodingDesc>
+</teiHeader>
+<text>
+<body>
+<div type="edition" n="urn:cts:latinLit:phi1294.phi002.perseus-lat2">
+    <div type="chapter" n="1">
+        <div type="section" n="1"/>
+        <div type="section" n="2"/>
+    </div>
+    <div type="chapter" n="2">
+        <div type="section" n="1"/>
+        <div type="section" n="2"/>
+    </div>
+</div>
+</body>
+</text>
+</TEI>
+"""
+        unit = HookTest.units.CTSUnit("/a/b")
+        unit.xml = etree.ElementTree(etree.fromstring(frame.format(
+            "/tei:TEI/tei:text/tei:body//tei:div[@n='$1']",
+            "/tei:TEI/tei:text/tei:body/tei:div[@n='$1']//tei:div[@n='$2']"
+        )))
+        ingest = [a for a in unit.capitain()]
+        unit.flush()
+
+        results = [result for result in unit.unique_passage()]
+        self.assertEqual(results, [False], "Wrong citation with node collision should fail")
+
+        unit.xml = etree.ElementTree(etree.fromstring(frame.format(
+            "/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']",
+            "/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2']"
+        )))
+        ingest = [a for a in unit.capitain()]
+        unit.flush()
+        results = [result for result in unit.unique_passage()]
+        self.assertEqual(results, [True], "Right citation with node collision should success")
