@@ -22,6 +22,7 @@ class TESTUnit(object):
     RNG_ERROR = re.compile("([0-9]+):([0-9]+):(.*);")
     RNG_FAILURE = re.compile("([0-9]+):([0-9]+):(\s*fatal.*)")
     SPACE_REPLACER = re.compile("(\s{2,})")
+    FORBIDDEN_CHAR = re.compile("[^\w\d]")
     NS = {"tei": "http://www.tei-c.org/ns/1.0", "ti": "http://chs.harvard.edu/xmlns/cts"}
     PARSER = etree.XMLParser(no_network=True, resolve_entities=False)
 
@@ -341,10 +342,21 @@ class CTSUnit(TESTUnit):
                         # Cause all warnings to always be triggered.
                         warnings.simplefilter("always")
                         passages = self.Text.getValidReff(level=i+1)
-                        status = len(passages) > 0 and len(w) == 0
+                        ids = [ref.split(".", i)[-1] for ref in passages]
+                        space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
+                        status = len(passages) > 0 and len(w) == 0 and space_in_passage is None
                         self.log(str(len(passages)) + " found")
                         if len(w) > 0:
                             self.log("Duplicate references found : {0}".format(", ".join([str(v.message) for v in w])))
+                        if space_in_passage and space_in_passage is not None:
+                            self.log("Reference with forbidden characters found: {}".format(
+                                " ".join([
+                                    "'{}'".format(n)
+                                    for ref, n in zip(ids, passages)
+                                    if TESTUnit.FORBIDDEN_CHAR.search(ref)
+                                ])
+                            ))
+
                         yield status
                 except Exception as E:
                     self.error(E)

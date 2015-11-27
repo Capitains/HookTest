@@ -188,3 +188,51 @@ class TestText(unittest.TestCase):
         unit.flush()
         results = [result for result in unit.unique_passage()]
         self.assertEqual(results, [True], "Right citation with node collision should success")
+
+    def test_illegal_characters(self):
+        """ Test unique_passage"""
+        frame = """<TEI xmlns="http://www.tei-c.org/ns/1.0">
+<teiHeader>
+<encodingDesc>
+<refsDecl n="CTS">
+    <cRefPattern matchPattern="(\w+).(\w+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2'])">
+        <p>This pointer pattern extracts letter</p>
+    </cRefPattern>
+    <cRefPattern matchPattern="(\w+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1'])">
+        <p>This pointer pattern extracts letter</p>
+    </cRefPattern>
+</refsDecl>
+</encodingDesc>
+</teiHeader>
+<text>
+<body>
+<div type="edition" n="urn:cts:latinLit:phi1294.phi002.perseus-lat2">
+    <div n="{0}">
+        <div type="section" n="{1}"/>
+        <div type="section" n="{2}"/>
+        <div type="section" n="{3}"/>
+    </div>
+    <div n="{4}">
+    </div>
+</div>
+</body>
+</text>
+</TEI>
+    """
+        unit = HookTest.units.CTSUnit("/a/b")
+        unit.xml = etree.ElementTree(etree.fromstring(frame.format(
+            "0 1", "a.b", "d-d", "@", "7"
+        )))
+        ingest = [a for a in unit.capitain()]
+        unit.flush()
+        results = [result for result in unit.passages()]
+        self.assertEqual(results, [False, False], "Illegal character should fail")
+        self.assertIn(">>>>>> Reference with forbidden characters found: '0 1.a.b' '0 1.d-d' '0 1.@'", unit.logs)
+        self.assertIn(">>>>>> Reference with forbidden characters found: '0 1'", unit.logs)
+        unit.xml = etree.ElementTree(etree.fromstring(frame.format(
+            0, 1, "q", "b", "105v"
+        )))
+        ingest = [a for a in unit.capitain()]
+        unit.flush()
+        results = [result for result in unit.passages()]
+        self.assertEqual(results, [True, True], "Legal character should pass")
