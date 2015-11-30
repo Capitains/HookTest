@@ -259,7 +259,7 @@ class CTSUnit(TESTUnit):
 
     """
 
-    tests = ["parsable", "capitain", "has_urn", "naming_convention", "refsDecl", "passages", "inventory"]
+    tests = ["parsable", "capitain", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory"]
     readable = {
         "parsable": "File parsing",
         "capitain": "File ingesting in MyCapytain",
@@ -269,7 +269,8 @@ class CTSUnit(TESTUnit):
         "tei": "TEI DTD Validation",
         "has_urn": "URN informations",
         "naming_convention": "Naming conventions",
-        "inventory": "Available in inventory"
+        "inventory": "Available in inventory",
+        "unique_passage": "Unique nodes found by XPath"
     }
 
     def __init__(self, *args, **kwargs):
