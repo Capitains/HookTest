@@ -9,9 +9,11 @@ Capitains HookTest
 
 Capitains HookTest is a python library and commandline tool for testing Capitains CTS packages or CTS files individually. To install it, simply do : `pip3 install HookTest` (*Not available yet*) or `python3 setup.py install`. From there, you will be able to call it in your python scripts with `ìmport HookTest` or you can use it in your terminal session :
 
+**Be careful, as Capitains requires java for Schematron and RelaxNG tests**
+
 ```
 usage: HookTest-Local [-h] [-i UUID] [-r REPOSITORY] [-b BRANCH] [-w WORKERS]
-                      [-s SCHEME] [-v] [-p PING]
+                      [-s SCHEME] [-v] [-j JSON] [-c] [-p PING]
                       path
 
 HookTest provides local and easy to use tests for CTS resources package
@@ -32,6 +34,8 @@ optional arguments:
   -s SCHEME, --scheme SCHEME
                         'tei' or 'epidoc' scheme to be used
   -v, --verbose         Show RNG's errors
+  -j JSON, --json JSON  Save to specified json file the results
+  -c, --console         Print to console
   -p PING, --ping PING  Send results to a server
 ```
 

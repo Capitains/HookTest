@@ -1,8 +1,9 @@
 from lxml import etree
+import warnings
 import MyCapytain.resources.texts.local
 import MyCapytain.resources.inventory
 import MyCapytain.common.reference
-
+import MyCapytain.errors
 import pkg_resources
 import subprocess
 import re
@@ -21,6 +22,7 @@ class TESTUnit(object):
     RNG_ERROR = re.compile("([0-9]+):([0-9]+):(.*);")
     RNG_FAILURE = re.compile("([0-9]+):([0-9]+):(\s*fatal.*)")
     SPACE_REPLACER = re.compile("(\s{2,})")
+    FORBIDDEN_CHAR = re.compile("[^\w\d]")
     NS = {"tei": "http://www.tei-c.org/ns/1.0", "ti": "http://chs.harvard.edu/xmlns/cts"}
     PARSER = etree.XMLParser(no_network=True, resolve_entities=False)
 
@@ -43,7 +45,7 @@ class TESTUnit(object):
     
     def error(self, error):
         if isinstance(error, Exception):
-            self.__logs.append(">>>>>> " + str(type(error)) + " : " + str(error))
+            self.log(str(type(error)) + " : " + str(error))
 
     def flush(self):
         self.__archives = self.__archives + self.__logs
@@ -153,7 +155,7 @@ class INVUnit(TESTUnit):
 
     def metadata(self):
         status = False
-        if self.xml and self.Text:
+        if self.xml is not None and self.Text:
 
             if self.type == "textgroup":
 
@@ -162,9 +164,15 @@ class INVUnit(TESTUnit):
                 status = groups > 0
 
             elif self.type == "work":
+                status = True
+                langs = self.xml.xpath("//ti:translation/@xml:lang", namespaces=TESTUnit.NS)
+                if len(langs) != len(self.xml.xpath("//ti:translation", namespaces=TESTUnit.NS)):
+                    status = False
+                    self.log("Translation(s) are missing lang attribute")
+
                 titles = len(self.Text.metadata["title"].children)
                 self.log("{0} titles found".format(titles))
-                status = titles > 0
+                status = status and titles > 0
 
                 texts = len(self.Text.texts)
                 labels = len(
@@ -251,7 +259,7 @@ class CTSUnit(TESTUnit):
 
     """
 
-    tests = ["parsable", "capitain", "has_urn", "naming_convention", "refsDecl", "passages", "inventory"]
+    tests = ["parsable", "capitain", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory"]
     readable = {
         "parsable": "File parsing",
         "capitain": "File ingesting in MyCapytain",
@@ -261,12 +269,14 @@ class CTSUnit(TESTUnit):
         "tei": "TEI DTD Validation",
         "has_urn": "URN informations",
         "naming_convention": "Naming conventions",
-        "inventory": "Available in inventory"
+        "inventory": "Available in inventory",
+        "unique_passage": "Unique nodes found by XPath"
     }
 
     def __init__(self, *args, **kwargs):
         super(CTSUnit, self).__init__(*args, **kwargs)
         self.inv = list()
+        self.scheme = None
 
     def capitain(self):
         """ Load the file in MyCapytain
@@ -275,13 +285,13 @@ class CTSUnit(TESTUnit):
             try:
                 self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
                 yield True
-            except XPathEvalError:
+            except XPathEvalError as E:
                 self.log("XPath given for citation can't be parsed")
                 yield False
-            except MyCapytain.resources.texts.local.RefsDeclError as E:
+            except MyCapytain.errors.RefsDeclError as E:
                 self.error(E)
                 yield False
-            except (IndexError, TypeError):
+            except (IndexError, TypeError) as E:
                 self.log("Text can't be read through Capitains standards")
                 yield False
         else:
@@ -291,7 +301,7 @@ class CTSUnit(TESTUnit):
         """ Contains refsDecl informations
         """
         if self.Text:
-            self.log(str(len(self.Text.citation)) + " citations found")
+            self.log(str(len(self.Text.citation)) + " citation's level found")
             yield len(self.Text.citation) > 0
         else:
             yield False
@@ -329,27 +339,84 @@ class CTSUnit(TESTUnit):
         if self.Text:
             for i in range(0, len(self.Text.citation)):
                 try:
-                    passages = self.Text.getValidReff(level=i+1)
-                    status = len(passages) > 0
-                    self.log(str(len(passages)) + " found")
-                    yield status
-                except Exception:
+                    with warnings.catch_warnings(record=True) as w:
+                        # Cause all warnings to always be triggered.
+                        warnings.simplefilter("always")
+                        passages = self.Text.getValidReff(level=i+1)
+                        ids = [ref.split(".", i)[-1] for ref in passages]
+                        space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
+                        status = len(passages) > 0 and len(w) == 0 and space_in_passage is None
+                        self.log(str(len(passages)) + " found")
+                        if len(w) > 0:
+                            self.log("Duplicate references found : {0}".format(", ".join([str(v.message) for v in w])))
+                        if space_in_passage and space_in_passage is not None:
+                            self.log("Reference with forbidden characters found: {}".format(
+                                " ".join([
+                                    "'{}'".format(n)
+                                    for ref, n in zip(ids, passages)
+                                    if TESTUnit.FORBIDDEN_CHAR.search(ref)
+                                ])
+                            ))
+
+                        yield status
+                except Exception as E:
+                    self.error(E)
                     self.log("Error when searching passages at level {0}".format(i+1))
                     yield False
         else:
             yield False
 
+    def unique_passage(self):
+        """ Check that citation scheme do not collide
+        """
+        try:
+            # Checking for duplicate
+            xpaths = [
+                self.Text.xml.xpath(
+                    MyCapytain.common.reference.REFERENCE_REPLACER.sub(
+                        r"\1",
+                        citation.refsDecl
+                    ),
+                    namespaces=TESTUnit.NS
+                )
+                for citation in self.Text.citation
+            ]
+            nodes = [element for xpath in xpaths for element in xpath]
+            bad_citation = len(nodes) == len(set(nodes))
+            if not bad_citation:
+                self.log("Some node are found twice")
+                yield False
+            else:
+                yield True
+        except Exception:
+            yield False
+
+
     def has_urn(self):
         """ Test that a file has its urn saved
         """
-        if self.xml:
-            urns = self.xml.xpath("//tei:text[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
-            urns += self.xml.xpath("//tei:div[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+        if self.xml is not None:
+            if self.scheme == "tei":
+                urns = self.xml.xpath("//tei:text[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+            else:
+                urns = self.xml.xpath("//tei:body/tei:div[@type='edition' and starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+                urns += self.xml.xpath("//tei:body/tei:div[@type='translation' and starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
             status = len(urns) > 0
             if status:
                 logs = urns[0].get("n")
-                self.log(logs)
-                self.urn = logs
+                try:
+                    urn = MyCapytain.common.reference.URN(logs)
+                    if len(urn) < 5:
+                        status = False
+                        self.log("Incomplete URN")
+                    elif urn["passage"]:
+                        status = False
+                        self.log("Reference not accepted in URN")
+                except:
+                    status = False
+                finally:
+                    self.log(logs)
+                    self.urn = logs
         else:
             status = False
         yield status
@@ -385,6 +452,7 @@ class CTSUnit(TESTUnit):
 
         tests = [] + CTSUnit.tests
         tests.append(scheme)
+        self.scheme = scheme
 
         for test in tests:
             # Show the logs and return the status

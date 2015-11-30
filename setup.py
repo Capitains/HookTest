@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='HookTest',
-    version="0.0.4",
+    version="0.0.5",
     description='Hook Test Script for GitHub/CTS repositories',
     url='http://github.com/Capitains/HookTest',
     author='Thibault Clérice',
@@ -11,14 +11,14 @@ setup(
     license='MIT',
     packages=find_packages(exclude=("tests")),
     install_requires=[
-        "MyCapytain==0.0.6",
+        "MyCapytain==0.0.9",
         "jingtrang==0.1.1",
         "GitPython==1.0.1",
-        "requests==2.7.0"
+        "requests>=2.7.0"
     ],
     tests_require=[
-        "setuptools>=18.3.1",
-        "mock==1.3.0"
+        "mock==1.3.0",
+        "six>=1.9.0",
     ],
     package_data={
         'HookTest': ['resources/*.rng']

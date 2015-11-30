@@ -463,7 +463,7 @@ def cmd(console=False, **kwargs):
     test.console = console
 
     if test.ping:
-        test.send({"status" : "download"})
+        test.send({"status": "download"})
 
     if "repository" in kwargs and kwargs["repository"]:
         try:
