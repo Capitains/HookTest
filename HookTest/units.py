@@ -369,24 +369,27 @@ class CTSUnit(TESTUnit):
     def unique_passage(self):
         """ Check that citation scheme do not collide
         """
-        # Checking for duplicate
-        xpaths = [
-            self.Text.xml.xpath(
-                MyCapytain.common.reference.REFERENCE_REPLACER.sub(
-                    r"\1",
-                    citation.refsDecl
-                ),
-                namespaces=TESTUnit.NS
-            )
-            for citation in self.Text.citation
-        ]
-        nodes = [element for xpath in xpaths for element in xpath]
-        bad_citation = len(nodes) == len(set(nodes))
-        if not bad_citation:
-            self.log("Some node are found twice")
+        try:
+            # Checking for duplicate
+            xpaths = [
+                self.Text.xml.xpath(
+                    MyCapytain.common.reference.REFERENCE_REPLACER.sub(
+                        r"\1",
+                        citation.refsDecl
+                    ),
+                    namespaces=TESTUnit.NS
+                )
+                for citation in self.Text.citation
+            ]
+            nodes = [element for xpath in xpaths for element in xpath]
+            bad_citation = len(nodes) == len(set(nodes))
+            if not bad_citation:
+                self.log("Some node are found twice")
+                yield False
+            else:
+                yield True
+        except Exception:
             yield False
-        else:
-            yield True
 
 
     def has_urn(self):
