@@ -459,4 +459,3 @@ class CTSUnit(TESTUnit):
             status = False in [status for status in getattr(self, test)()]
             yield (CTSUnit.readable[test], status, self.logs)
             self.flush()
-`
