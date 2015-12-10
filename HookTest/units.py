@@ -456,6 +456,7 @@ class CTSUnit(TESTUnit):
 
         for test in tests:
             # Show the logs and return the status
-            for status in getattr(self, test)():
-                yield (CTSUnit.readable[test], status, self.logs)
-                self.flush()
+            status = False in [status for status in getattr(self, test)()]
+            yield (CTSUnit.readable[test], status, self.logs)
+            self.flush()
+`
