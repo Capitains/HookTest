@@ -3,8 +3,11 @@ import sys
 import HookTest.test
 
 
-def cmd():
-    """ Run locally the software
+def parse_args(args):
+    """ Parsing function. Written to support unit test
+
+    :param args: List of command line argument
+    :return: Parsed argument
     """
     parser = argparse.ArgumentParser(
         prog='HookTest-Local',
@@ -34,8 +37,13 @@ def cmd():
         default=None
     )
 
-    args = parser.parse_args()
-    status = HookTest.test.cmd(**vars(args))
+    return parser.parse_args(args)
+
+
+def cmd():
+    """ Run locally the software
+    """
+    status = HookTest.test.cmd(**vars(parse_args(sys.argv[1:])))
     if status is False:
         sys.exit(1)
     else:
