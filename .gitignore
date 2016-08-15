@@ -1,6 +1,7 @@
 #Py charm
 .idea
 venv
+cloning_dir
 logs.txt
 # Byte-compiled / optimized / DLL files
 __pycache__/

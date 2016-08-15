@@ -58,13 +58,157 @@ class TestProcess(TestCase):
             "Normal file should be tested"
         )
         self.assertTrue(
-            set([
+            {
                 ">>>> Testing /data/hafez/divan/__cts__.xml",
                 ">>>> Testing /data/hafez/__cts__.xml",
                 ">>>> Testing /hafez/divan/hafez.divan.perseus-far1.xml",
                 ">>>> Testing /hafez/divan/hafez.divan.perseus-eng1.xml",
                 ">>>> Testing /hafez/divan/hafez.divan.perseus-ger1.xml"
-            ]).issubset(set(logs.split("\n"))),
+            }.issubset(set(logs.split("\n"))),
             "All files should be tested"
         )
         self.assertEqual(status, "failed", "Test should fail")
+
+    def test_run_local_console_verbose(self):
+        """ Test a run on the local tests passages with console print """
+        status, logs = self.hooktest(["./tests", "--console", "--verbose"])
+        self.assertIn(
+            "[failed] 2 over 5 texts have fully passed the tests\n", logs,
+            "Test conclusion should be printed"
+        )
+        self.assertIn(
+            "\n>>>>>> ", logs,
+            "Marker of verbose should be available"
+        )
+        self.assertTrue(
+            {
+                # List of file tested
+                ">>>> Testing /data/hafez/divan/__cts__.xml",
+                ">>>> Testing /data/hafez/__cts__.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-far1.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-eng1.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-ger1.xml",
+
+                # Tests number of nodes showing
+                ">>>>>> 32 found",
+                ">>>>>> 498 found",
+                ">>>>>> 4243 found",
+                ">>>>>> 13613 found",
+
+                # RefsDecl verbosing should match
+                ">>>>> RefsDecl parsing passed",
+                ">>>>>> 4 citation's level found",
+
+                # URN Should fail because we are using TEI scheme by default
+                ">>>>> URN informations failed",
+
+                # Metadata information found
+                ">>>>>> Group urn : urn:cts:farsiLit:hafez",
+                ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan",
+                ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" +\
+                "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
+
+            }.issubset(set(logs.split("\n"))),
+            "All files should be tested and verbosed"
+        )
+        self.assertEqual(status, "failed", "Test should fail")
+
+    def test_run_local_console_verbose_epidoc(self):
+        """ Test a run on the local tests passages with console print """
+        status, logs = self.hooktest(["./tests", "--console", "--verbose", "--scheme", "epidoc"])
+        self.assertIn(
+            "[success] 5 over 5 texts have fully passed the tests\n", logs,
+            "Test conclusion should be printed"
+        )
+        self.assertIn(
+            "\n>>>>>> ", logs,
+            "Marker of verbose should be available"
+        )
+        self.assertTrue(
+            {
+                # List of file tested
+                ">>>> Testing /data/hafez/divan/__cts__.xml",
+                ">>>> Testing /data/hafez/__cts__.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-far1.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-eng1.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-ger1.xml",
+
+                # Tests number of nodes showing
+                ">>>>>> 32 found",
+                ">>>>>> 498 found",
+                ">>>>>> 4243 found",
+                ">>>>>> 13613 found",
+
+                # RefsDecl verbosing should match
+                ">>>>> RefsDecl parsing passed",
+                ">>>>>> 4 citation's level found",
+
+                # URN Should fail because we are using Epidoc scheme here
+                ">>>>> URN informations passed",
+
+                # Metadata information found
+                ">>>>>> Group urn : urn:cts:farsiLit:hafez",
+                ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan",
+                ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" +\
+                "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
+
+            }.issubset(set(logs.split("\n"))),
+            "All files should be tested and verbosed"
+        )
+        self.assertEqual(status, "success", "Test should fail")
+
+    def test_run_clone_empty(self):
+        """ Test a clone on dummy empty repo """
+        status, logs = self.hooktest(["./cloning_dir", "--repository", "Capitains/DH2016", "--console"])
+        self.assertIn(
+            ">>> [error] 0 over 0 texts have fully passed the tests", logs,
+            "No file should result in no file tested"
+        )
+
+    def test_run_clone_empty_branch(self):
+        """ Test a clone on dummy empty repo with branch change"""
+        status, logs = self.hooktest(["./cloning_dir", "--repository", "Capitains/DH2016", "--console"])
+        self.assertIn(
+            ">>> [error] 0 over 0 texts have fully passed the tests", logs,
+            "No file should result in no file tested"
+        )
+
+    def test_run_clone_farsiLit(self):
+        """ Test a run cloning a known working repository (PerseusDL/canonical-farsiLit)"""
+        status, logs = self.hooktest([
+            "./cloning_dir", "--repository", "PerseusDL/canonical-farsiLit",
+            "--console", "--verbose", "--scheme", "epidoc"
+        ])
+        self.assertIn(
+            "[success] 5 over 5 texts have fully passed the tests\n", logs,
+            "Test conclusion should be printed"
+        )
+        self.assertTrue(
+            {
+                # List of file tested
+                ">>>> Testing PerseusDL/canonical-farsiLit/data/hafez/__cts__.xml",
+                ">>>> Testing PerseusDL/canonical-farsiLit/data/hafez/divan/__cts__.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-far1.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-eng1.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-ger1.xml",
+
+                # Tests number of nodes showing
+                ">>>>>> 32 found",
+                ">>>>>> 498 found",
+                ">>>>>> 4243 found",
+                ">>>>>> 13613 found",
+
+                # RefsDecl verbosing should match
+                ">>>>> RefsDecl parsing passed",
+                ">>>>>> 4 citation's level found",
+
+                # URN Should fail because we are using Epidoc scheme here
+                ">>>>> URN informations passed",
+
+                # Metadata information found
+                ">>>>>> Group urn : urn:cts:farsiLit:hafez",
+                ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan"
+
+            }.issubset(set(logs.split("\n"))),
+            "All files should be tested and verbosed"
+        )
