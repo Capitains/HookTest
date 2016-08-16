@@ -1,4 +1,5 @@
 .DS_STORE
+htmlcov
 #Py charm
 .idea
 venv
