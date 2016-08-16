@@ -526,7 +526,7 @@ class TestTest(unittest.TestCase):
         end = mock.PropertyMock()
         log = mock.MagicMock()
 
-        self.test.uuid = "tests"
+        self.test.uuid = "tests/repo1" # This is the uuid transformed in folder
         self.test.send = send
         self.test.end = end
         self.test.log = log
@@ -546,23 +546,23 @@ class TestTest(unittest.TestCase):
         thread.assert_called_with(max_workers=1)
         thread().__enter__().submit.assert_any_call(
             self.test.unit,
-            './tests/data/hafez/__cts__.xml'
+            './tests/repo1/data/hafez/__cts__.xml'
         )
         thread().__enter__().submit.assert_any_call(
             self.test.unit,
-            './tests/data/hafez/divan/__cts__.xml'
+            './tests/repo1/data/hafez/divan/__cts__.xml'
         )
         thread().__enter__().submit.assert_any_call(
             self.test.unit,
-            './tests/data/hafez/divan/hafez.divan.perseus-ger1.xml'
+            './tests/repo1/data/hafez/divan/hafez.divan.perseus-ger1.xml'
         )
         thread().__enter__().submit.assert_any_call(
             self.test.unit,
-            './tests/data/hafez/divan/hafez.divan.perseus-far1.xml'
+            './tests/repo1/data/hafez/divan/hafez.divan.perseus-far1.xml'
         )
         thread().__enter__().submit.assert_any_call(
             self.test.unit,
-            './tests/data/hafez/divan/hafez.divan.perseus-eng1.xml'
+            './tests/repo1/data/hafez/divan/hafez.divan.perseus-eng1.xml'
         )
 
         # on_complete.assert_called_with({"This is a call": './tests/data/hafez/divan/hafez.divan.perseus-ger1.xml'})
@@ -640,9 +640,13 @@ class TestTest(unittest.TestCase):
         mocked.assert_called_with("./1234", ignore_errors=True)
 
     def test_find(self):
-        reading, metadata = HookTest.test.Test.find("./tests")
-        self.assertEqual(len(metadata), 2)
-        self.assertEqual(len(reading), 3)  # eng far ger
+        reading, metadata = HookTest.test.Test.find("./tests/repo1")
+        self.assertEqual(len(metadata), 2, "It should find two __cts__ in repo1")
+        self.assertEqual(len(reading), 3, "It should find three texts in repo1")  # eng far ger
+
+        reading, metadata = HookTest.test.Test.find("./tests/repo2")
+        self.assertEqual(len(metadata), 2, "It should find two __cts__ in repo2")
+        self.assertEqual(len(reading), 1, "It should find three texts in repo2")  # eng far ger
 
     def test_cover(self):
         """ Test covering dict generation """
