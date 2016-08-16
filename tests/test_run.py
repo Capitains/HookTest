@@ -55,10 +55,12 @@ class TestProcess(TestCase):
 
          This unit test should be used to check edge cases. Repo 2 is built for that
         """
-        status, logs = self.hooktest(["./tests/repo2", "--console", "--scheme", "epidoc", "--verbose", "--json", "cloning_dir/repo2.json"])
-        setlogs = set(logs.split("\n"))
+        status, logs = self.hooktest([
+            "./tests/repo2", "--console",
+            "--scheme", "epidoc", "--verbose",
+            "--json", "cloning_dir/repo2.json"
+        ])
         parsed = self.read_logs("cloning_dir/repo2.json")
-        print(logs)
         ####
         #
         #   Test on tlg2255.perseus001
