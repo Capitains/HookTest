@@ -574,7 +574,7 @@ class TestTest(unittest.TestCase):
         self.assertEqual(len(reading), 3, "It should find three texts in repo1")  # eng far ger
 
         reading, metadata = HookTest.test.Test.find("./tests/repo2")
-        self.assertEqual(len(metadata), 2, "It should find three __cts__ in repo2")
+        self.assertEqual(len(metadata), 3, "It should find three __cts__ in repo2")
         self.assertEqual(len(reading), 1, "It should find three texts in repo2")  # eng far ger
 
     def test_cover(self):
