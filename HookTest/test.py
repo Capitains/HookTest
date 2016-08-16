@@ -479,7 +479,7 @@ def cmd(console=False, **kwargs):
             raise(E)
 
     if test.ping:
-        test.send({"status" : "pending"})
+        test.send({"status": "pending"})
 
     status = {}
 

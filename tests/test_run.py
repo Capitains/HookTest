@@ -38,13 +38,13 @@ class TestProcess(TestCase):
 
     def test_run_local_no_option(self):
         """ Test a run on the local tests passages """
-        status, logs = self.hooktest(["./tests"])
+        status, logs = self.hooktest(["./tests/repo1"])
         self.assertEqual(len(logs), 0, "There should be no logs")
         self.assertEqual(status, "failed", "Test should fail")
 
     def test_run_local_console(self):
         """ Test a run on the local tests passages with console print """
-        status, logs = self.hooktest(["./tests", "--console"])
+        status, logs = self.hooktest(["./tests/repo1", "--console"])
         self.assertIn(
             "[failed] 2 over 5 texts have fully passed the tests\n", logs,
             "Test conclusion should be printed"
@@ -71,7 +71,7 @@ class TestProcess(TestCase):
 
     def test_run_local_console_verbose(self):
         """ Test a run on the local tests passages with console print """
-        status, logs = self.hooktest(["./tests", "--console", "--verbose"])
+        status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose"])
         self.assertIn(
             "[failed] 2 over 5 texts have fully passed the tests\n", logs,
             "Test conclusion should be printed"
@@ -115,7 +115,7 @@ class TestProcess(TestCase):
 
     def test_run_local_console_verbose_epidoc(self):
         """ Test a run on the local tests passages with console print """
-        status, logs = self.hooktest(["./tests", "--console", "--verbose", "--scheme", "epidoc"])
+        status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose", "--scheme", "epidoc"])
         self.assertIn(
             "[success] 5 over 5 texts have fully passed the tests\n", logs,
             "Test conclusion should be printed"
@@ -165,12 +165,33 @@ class TestProcess(TestCase):
             "No file should result in no file tested"
         )
 
-    def test_run_clone_empty_branch(self):
+    def test_run_clone_branch(self):
         """ Test a clone on dummy empty repo with branch change"""
-        status, logs = self.hooktest(["./cloning_dir", "--repository", "Capitains/DH2016", "--console"])
+        status, logs = self.hooktest([
+            "./cloning_dir",
+            "--repository", "Capitains/HookTest-TestRepo", "--branch", "master",
+            "--console", "--verbose", "--scheme", "epidoc"
+        ])
+        setlogs = set(logs.split("\n"))
+
+        self.assertTrue(
+            {
+                ">>>>> Epidoc DTD validation failed",
+                ">>>>>> error: element \"seg\" not allowed here [In (L43 C32)]",
+                ">>>>>> error: element \"table\" not allowed anywhere [In (L31 C51)]"
+            }.issubset(setlogs),
+            "Logs should fail on Epidoc wrong"
+        )
+
+        self.assertTrue(
+            {
+                ">>>>>> Duplicate references found : 1.1"
+            }.issubset(setlogs),
+            "Duplicate note should be explicit"
+        )
         self.assertIn(
-            ">>> [error] 0 over 0 texts have fully passed the tests", logs,
-            "No file should result in no file tested"
+            ">>>>> Passage level parsing passed\n>>>>>> 1 found\n>>>>>> 32 found", logs,
+            "Ger2 should success in passage number "
         )
 
     def test_run_clone_farsiLit(self):
