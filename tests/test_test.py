@@ -3,7 +3,7 @@ import HookTest.test
 import HookTest.units
 import mock
 import json
-import concurrent.futures
+from multiprocessing.pool import Pool
 from collections import OrderedDict
 
 
@@ -508,77 +508,6 @@ class TestTest(unittest.TestCase):
             self.assertEqual(self.test.passing["phi1294.phi002.perseus-lat2.xml"], False)
             self.assertEqual(logs, self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"])
 
-    @mock.patch(
-        "HookTest.test.concurrent.futures.ProcessPoolExecutor",
-        spec=concurrent.futures.ProcessPoolExecutor,
-        create=True
-    )
-    @mock.patch(
-        "HookTest.test.concurrent.futures.as_completed",
-        spec=concurrent.futures.as_completed,
-        create=True
-    )
-    def test_run(self, on_complete, thread):
-        """ Test that run make every call in the right order """
-
-        # Mocking methods
-        send = mock.MagicMock()
-        end = mock.PropertyMock()
-        log = mock.MagicMock()
-
-        self.test.uuid = "tests"
-        self.test.send = send
-        self.test.end = end
-        self.test.log = log
-
-        results = unitlog_dict()
-        self.test.results = results
-
-        # mocking concurrent
-        result = mock.MagicMock(return_value=[results["001"], "001", []])
-        future = mock.MagicMock()
-        future.result = result
-        on_complete.return_value = future
-
-        # Running
-        thread().__enter__().submit.return_value = "This is a call"
-        self.test.run()
-        thread.assert_called_with(max_workers=1)
-        thread().__enter__().submit.assert_any_call(
-            self.test.unit,
-            './tests/data/hafez/__cts__.xml'
-        )
-        thread().__enter__().submit.assert_any_call(
-            self.test.unit,
-            './tests/data/hafez/divan/__cts__.xml'
-        )
-        thread().__enter__().submit.assert_any_call(
-            self.test.unit,
-            './tests/data/hafez/divan/hafez.divan.perseus-ger1.xml'
-        )
-        thread().__enter__().submit.assert_any_call(
-            self.test.unit,
-            './tests/data/hafez/divan/hafez.divan.perseus-far1.xml'
-        )
-        thread().__enter__().submit.assert_any_call(
-            self.test.unit,
-            './tests/data/hafez/divan/hafez.divan.perseus-eng1.xml'
-        )
-
-        # on_complete.assert_called_with({"This is a call": './tests/data/hafez/divan/hafez.divan.perseus-ger1.xml'})
-        # #result.assert_called_with()
-
-        """
-        log.assert_has_calls(
-            [
-                mock.call(results["001"]),
-                mock.call(results["001"])
-            ]
-        )
-        """
-
-        end.assert_called_with()
-
     @mock.patch("HookTest.test.Progress")
     @mock.patch("HookTest.test.git.repo.base.Remote")
     @mock.patch("HookTest.test.git.repo.base.Repo.clone_from")
@@ -640,9 +569,13 @@ class TestTest(unittest.TestCase):
         mocked.assert_called_with("./1234", ignore_errors=True)
 
     def test_find(self):
-        reading, metadata = HookTest.test.Test.find("./tests")
-        self.assertEqual(len(metadata), 2)
-        self.assertEqual(len(reading), 3)  # eng far ger
+        reading, metadata = HookTest.test.Test.find("./tests/repo1")
+        self.assertEqual(len(metadata), 2, "It should find two __cts__ in repo1")
+        self.assertEqual(len(reading), 3, "It should find three texts in repo1")  # eng far ger
+
+        reading, metadata = HookTest.test.Test.find("./tests/repo2")
+        self.assertEqual(len(metadata), 3, "It should find three __cts__ in repo2")
+        self.assertEqual(len(reading), 3, "It should find three texts in repo2")  # eng far ger
 
     def test_cover(self):
         """ Test covering dict generation """

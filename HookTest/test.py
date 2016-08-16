@@ -8,7 +8,7 @@ import traceback
 import re
 
 from collections import defaultdict, OrderedDict
-import concurrent.futures
+from multiprocessing.pool import Pool
 import json
 import git
 import shutil
@@ -21,6 +21,7 @@ import HookTest.units
 
 
 pr_finder = re.compile("pull\/([0-9]+)\/head")
+
 
 class Test(object):
     """ Create a Test object
@@ -286,30 +287,33 @@ class Test(object):
 
         self.text_files, self.cts_files = Test.find(self.directory)
         self.start()
-
         # We deal with Inventory files first to get a list of urns
-        with concurrent.futures.ProcessPoolExecutor(max_workers=self.workers) as executor:
-            # We create a dictionary of tasks which
-            tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.cts_files}
+
+        with Pool(processes=self.workers) as executor:
             # We iterate over a dictionary of completed tasks
-            for future in concurrent.futures.as_completed(tasks):
-                result, filepath, additional = future.result()
+            for future in executor.imap_unordered(self.unit, [file for file in self.cts_files]):
+                result, filepath, additional = future
                 self.results[filepath] = result
                 self.passing[filepath] = result.status
                 self.inventory += additional
                 self.log(self.results[filepath])
 
+            # Required for coverage
+            executor.close()
+            executor.join()
+
         # We load a thread pool which has 5 maximum workers
-        with concurrent.futures.ProcessPoolExecutor(max_workers=self.workers) as executor:
+        with Pool(processes=self.workers) as executor:
             # We create a dictionary of tasks which
-            tasks = {executor.submit(self.unit, target_file): target_file for target_file in self.text_files}
-            # We iterate over a dictionary of completed tasks
-            for future in concurrent.futures.as_completed(tasks):
-                result, filepath, additional = future.result()
+            for future in executor.imap_unordered(self.unit, [file for file in self.text_files]):
+                result, filepath, additional = future
                 self.results[filepath] = result
                 self.passing[filepath] = result.status
                 self.log(self.results[filepath])
 
+            # Required for coverage
+            executor.close()
+            executor.join()
         self.end()
         return self.status
 
@@ -479,7 +483,7 @@ def cmd(console=False, **kwargs):
             raise(E)
 
     if test.ping:
-        test.send({"status" : "pending"})
+        test.send({"status": "pending"})
 
     status = {}
 

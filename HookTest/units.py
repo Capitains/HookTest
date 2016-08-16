@@ -126,6 +126,7 @@ class INVUnit(TESTUnit):
     def __init__(self, *args, **kwargs):
         super(INVUnit, self).__init__(*args, **kwargs)
         self.urns = []
+        self.type = None
 
     def capitain(self):
         """ Load the file in MyCapytain
@@ -133,18 +134,16 @@ class INVUnit(TESTUnit):
         if self.xml:
             textgroup = "textgroup" in self.xml.getroot().tag
             work = not textgroup and "work" in self.xml.getroot().tag
-            try:
-                if textgroup:
-                    self.type = "textgroup"
-                    self.log("TextGroup detected")
-                    self.Text = MyCapytain.resources.inventory.TextGroup(resource=self.xml.getroot())
-                elif work:
-                    self.type = "work"
-                    self.log("Work detected")
-                    self.Text = MyCapytain.resources.inventory.Work(resource=self.xml.getroot())
-                else:
-                    self.log("Nothing detected")
-            except Exception:
+            if textgroup:
+                self.type = "textgroup"
+                self.log("TextGroup detected")
+                self.Text = MyCapytain.resources.inventory.TextGroup(resource=self.xml.getroot())
+            elif work:
+                self.type = "work"
+                self.log("Work detected")
+                self.Text = MyCapytain.resources.inventory.Work(resource=self.xml.getroot())
+            else:
+                self.log("No metadata type detected (neither work nor textgroup)")
                 self.log("Inventory can't be read through Capitains standards")
                 yield False
 
