@@ -8,7 +8,6 @@ import traceback
 import re
 
 from collections import defaultdict, OrderedDict
-import concurrent.futures
 from multiprocessing.pool import Pool
 import json
 import git

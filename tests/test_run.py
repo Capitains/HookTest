@@ -2,7 +2,7 @@ import HookTest.test
 import HookTest.cmd
 from unittest import TestCase
 from io import StringIO  # Python3
-
+import json
 import sys
 
 
@@ -12,6 +12,14 @@ class TestProcess(TestCase):
 
     Thanks to http://stackoverflow.com/questions/18160078/how-do-you-write-tests-for-the-argparse-portion-of-a-python-module
     """
+    def read_logs(self, file):
+        j = []
+        with open(file) as file:
+            j = json.load(file)
+        return j
+
+    def filter(self, obj, name):
+        return [x for x in obj["units"] if x["name"] == name][0]
 
     def hooktest(self, args):
         """ Run args (Splitted list of command line)
@@ -41,6 +49,53 @@ class TestProcess(TestCase):
         status, logs = self.hooktest(["./tests/repo1"])
         self.assertEqual(len(logs), 0, "There should be no logs")
         self.assertEqual(status, "failed", "Test should fail")
+
+    def test_run_local_repo_errors(self):
+        """ Test a run on the local tests passages with console print
+
+         This unit test should be used to check edge cases. Repo 2 is built for that
+        """
+        status, logs = self.hooktest(["./tests/repo2", "--console", "--scheme", "epidoc", "--verbose", "--json", "cloning_dir/repo2.json"])
+        setlogs = set(logs.split("\n"))
+        parsed = self.read_logs("cloning_dir/repo2.json")
+        print(logs)
+        ####
+        #
+        #   Test on tlg2255.perseus001
+        #   With MyCapytain 0.0.9, display wrong number of passages in verbose
+        #
+        ####
+        text = self.filter(parsed, "/data/tlg2255/perseus001/tlg2255.perseus001.perseus-grc1.xml")
+        self.assertIn('>>>>>> 2 found', text["logs"], "Text should have 22 passages")
+        self.assertTrue(text["status"], "Text tlg2255.p001.grc1 should pass")
+
+        ####
+        #
+        #   Test on false.xml
+        #   Is bad formatted XML + provoke a fatal in RNG
+        #
+        ####
+        text = self.filter(parsed, "/data/tlg2255/perseus001/false.xml")
+        self.assertFalse(text["status"], "Text tlg2255.p001.grc1 should not pass")
+        self.assertFalse(text["units"]["File parsing"], "It should not be parsable")
+        self.assertIn(
+            '>>>>>> fatal: The element type "text" must be terminated by the matching end-tag "</text>". [In (L236 C22)]',
+            text["logs"][-1], "Fatal error should be parsed"
+        )
+
+        ####
+        #
+        #   /data/stuff/__cts__.xml
+        #   Has wrong root node
+        #
+        ####
+        text = self.filter(parsed, "/data/stuff/__cts__.xml")
+        self.assertIn(
+            '>>>>>> No metadata type detected (neither work nor textgroup)\n>>>>>> Inventory can\'t '\
+            'be read through Capitains standards',
+            text["logs"], "Fatal error should be parsed"
+        )
+        self.assertFalse(text["status"], "Wrong root node should fail file")
 
     def test_run_local_console(self):
         """ Test a run on the local tests passages with console print """
@@ -105,10 +160,10 @@ class TestProcess(TestCase):
                 # Metadata information found
                 ">>>>>> Group urn : urn:cts:farsiLit:hafez",
                 ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan",
-                ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" +\
+                ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
                 "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
 
-            }.issubset(set(logs.split("\n"))),
+                }.issubset(set(logs.split("\n"))),
             "All files should be tested and verbosed"
         )
         self.assertEqual(status, "failed", "Test should fail")
@@ -149,10 +204,10 @@ class TestProcess(TestCase):
                 # Metadata information found
                 ">>>>>> Group urn : urn:cts:farsiLit:hafez",
                 ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan",
-                ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" +\
+                ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
                 "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
 
-            }.issubset(set(logs.split("\n"))),
+                }.issubset(set(logs.split("\n"))),
             "All files should be tested and verbosed"
         )
         self.assertEqual(status, "success", "Test should fail")
