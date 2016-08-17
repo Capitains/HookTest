@@ -61,11 +61,19 @@ class TestProcess(TestCase):
 
          This unit test should be used to check edge cases. Repo 2 is built for that
         """
+        # Can be replace by HookTest.test.cmd(**vars(HookTest.cmd.parse_args()) for debug
+        status = HookTest.test.cmd(**vars(HookTest.cmd.parse_args([
+            "./tests/repo2",
+            "--scheme", "epidoc", "--verbose",
+            "--json", "cloning_dir/repo2.json"
+        ])))
+        """
         status, logs = self.hooktest([
             "./tests/repo2", "--console",
             "--scheme", "epidoc", "--verbose",
             "--json", "cloning_dir/repo2.json"
         ])
+        """
         parsed = self.read_logs("cloning_dir/repo2.json")
         ####
         #
@@ -117,6 +125,19 @@ class TestProcess(TestCase):
             text["logs"], "Absence of metadatafile should be spotted"
         )
         self.assertFalse(text["status"], "Wrong root node should fail file")
+
+        ####
+        #
+        #   /data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml
+        #   Has wrong root node
+        #
+        ####
+        text = self.filter(parsed, "/data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml")
+        self.assertCountEqual(
+            [False, False, False, False, False, False, False, True],
+            list(text["units"].values()), "Everything but XML parsing should fail in TEI.2 files"
+        )
+        self.assertFalse(text["status"], "Wrong XML scheme should fail file")
 
     def test_run_local_console(self):
         """ Test a run on the local tests passages with console print """

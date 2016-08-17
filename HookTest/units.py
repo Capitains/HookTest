@@ -259,10 +259,9 @@ class CTSUnit(TESTUnit):
 
     """
 
-    tests = ["parsable", "capitain", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory"]
+    tests = ["parsable", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory"]
     readable = {
         "parsable": "File parsing",
-        "capitain": "File ingesting in MyCapytain",
         "refsDecl": "RefsDecl parsing",
         "passages": "Passage level parsing",
         "epidoc": "Epidoc DTD validation",
@@ -274,35 +273,34 @@ class CTSUnit(TESTUnit):
     }
 
     def __init__(self, *args, **kwargs):
-        super(CTSUnit, self).__init__(*args, **kwargs)
         self.inv = list()
         self.scheme = None
+        self.Text = None
+        self.xml = None
+        super(CTSUnit, self).__init__(*args, **kwargs)
 
-    def capitain(self):
-        """ Load the file in MyCapytain
+    def parsable(self):
+        """ Override super(parsable) and add CapiTainS Ingesting to it
         """
-        if self.xml:
-            try:
-                self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
-                yield True
-            except XPathEvalError as E:
-                self.log("XPath given for citation can't be parsed")
-                yield False
-            except MyCapytain.errors.RefsDeclError as E:
-                self.error(E)
-                yield False
-            except (IndexError, TypeError) as E:
-                self.log("Text can't be read through Capitains standards")
-                yield False
+        status = next(
+            super(CTSUnit, self).parsable()
+        )
+        if status:
+            self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
         else:
-            yield False
+            self.Text = None
+        yield status
 
     def refsDecl(self):
         """ Contains refsDecl informations
         """
         if self.Text:
-            self.log(str(len(self.Text.citation)) + " citation's level found")
-            yield len(self.Text.citation) > 0
+            # In 1.0.1, MyCapytain actually create an empty citation by default
+            if self.Text.citation.refsDecl:
+                self.log(str(len(self.Text.citation)) + " citation's level found")
+                yield len(self.Text.citation) > 0
+            else:
+                yield False
         else:
             yield False
 

@@ -575,7 +575,7 @@ class TestTest(unittest.TestCase):
 
         reading, metadata = HookTest.test.Test.find("./tests/repo2")
         self.assertEqual(len(metadata), 3, "It should find three __cts__ in repo2")
-        self.assertEqual(len(reading), 4, "It should find four texts in repo2")  # eng far ger
+        self.assertEqual(len(reading), 5, "It should find five texts in repo2")  # eng far ger
 
     def test_cover(self):
         """ Test covering dict generation """

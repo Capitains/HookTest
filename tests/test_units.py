@@ -1,6 +1,8 @@
 import unittest
 import HookTest.units
+from MyCapytain.resources.texts.local import Text
 from lxml import etree
+
 
 class TestCTS(unittest.TestCase):
     """ Test the UnitTest for __cts__
@@ -40,8 +42,8 @@ class TestCTS(unittest.TestCase):
 </work>"""
         unit = HookTest.units.INVUnit("/a/b")
         unit.xml = etree.ElementTree(etree.fromstring(success))
-        ingest = [a for a in unit.capitain()]
-        unit.capitain()  # We ingest
+        [a for a in unit.capitain()]  # We ingest
+
         unit.flush()
         self.assertEqual(unit.metadata().__next__(), True, "When lang, description and edition are there, metadata should work")
         self.assertNotIn(">>>>>> Translation(s) are missing lang attribute", unit.logs)
@@ -52,7 +54,6 @@ class TestCTS(unittest.TestCase):
         unit.flush()
         self.assertEqual(unit.metadata().__next__(), False, "When lang fails, test should fail")
         self.assertIn(">>>>>> Translation(s) are missing lang attribute", unit.logs)
-
 
 
 class TestText(unittest.TestCase):
@@ -122,14 +123,12 @@ class TestText(unittest.TestCase):
         """
         unit = HookTest.units.CTSUnit("tests/passages/test_passage_success.xml")
         parsed = [a for a in unit.parsable()]
-        parsed = [a for a in unit.capitain()]
         unit.flush()
         passages = [level for level in unit.passages()]
         self.assertEqual(passages, [True, True, True], "No collision should result in success")
 
         unit = HookTest.units.CTSUnit("tests/passages/test_passage_fail_1.xml")
         parsed = [a for a in unit.parsable()]
-        parsed = [a for a in unit.capitain()]
         unit.flush()
         passages = [level for level in unit.passages()]
         self.assertEqual(passages, [False, False, False], "Collision should result in fail")
@@ -173,8 +172,8 @@ class TestText(unittest.TestCase):
         unit.xml = etree.ElementTree(etree.fromstring(frame.format(
             "/tei:TEI/tei:text/tei:body//tei:div[@n='$1']",
             "/tei:TEI/tei:text/tei:body/tei:div[@n='$1']//tei:div[@n='$2']"
-        )))
-        ingest = [a for a in unit.capitain()]
+        ))).getroot()
+        unit.Text = Text(resource=unit.xml)
         unit.flush()
 
         results = [result for result in unit.unique_passage()]
@@ -183,8 +182,8 @@ class TestText(unittest.TestCase):
         unit.xml = etree.ElementTree(etree.fromstring(frame.format(
             "/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']",
             "/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2']"
-        )))
-        ingest = [a for a in unit.capitain()]
+        ))).getroot()
+        unit.Text = Text(resource=unit.xml)
         unit.flush()
         results = [result for result in unit.unique_passage()]
         self.assertEqual(results, [True], "Right citation with node collision should success")
@@ -222,8 +221,8 @@ class TestText(unittest.TestCase):
         unit = HookTest.units.CTSUnit("/a/b")
         unit.xml = etree.ElementTree(etree.fromstring(frame.format(
             "0 1", "a.b", "d-d", "@", "7"
-        )))
-        ingest = [a for a in unit.capitain()]
+        ))).getroot()
+        unit.Text = Text(resource=unit.xml)
         unit.flush()
         results = [result for result in unit.passages()]
         self.assertEqual(results, [False, False], "Illegal character should fail")
@@ -231,8 +230,8 @@ class TestText(unittest.TestCase):
         self.assertIn(">>>>>> Reference with forbidden characters found: '0 1'", unit.logs)
         unit.xml = etree.ElementTree(etree.fromstring(frame.format(
             0, 1, "q", "b", "105v"
-        )))
-        ingest = [a for a in unit.capitain()]
+        ))).getroot()
+        unit.Text = Text(resource=unit.xml)
         unit.flush()
         results = [result for result in unit.passages()]
         self.assertEqual(results, [True, True], "Legal character should pass")
