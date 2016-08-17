@@ -542,7 +542,8 @@ class TestTest(unittest.TestCase):
         clone_from_mocked.assert_called_with(
             url="https://github.com/PerseusDL/tests.git",
             to_path="./1234",
-            progress=self.test.progress
+            progress=self.test.progress,
+            depth=10
         )
         self.assertEqual(self.test.branch, "refs/heads/master")
         repo_mocked.remote.assert_called_with()
@@ -556,7 +557,8 @@ class TestTest(unittest.TestCase):
         clone_from_mocked.assert_called_with(
             url="https://github.com/PerseusDL/tests.git",
             to_path="./1234",
-            progress=self.test.progress
+            progress=self.test.progress,
+            depth=10
         )
         self.assertEqual(self.test.branch, "pull/5/head")
         repo_mocked.remote.assert_called_with()
