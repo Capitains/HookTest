@@ -77,18 +77,18 @@ class TestText(unittest.TestCase):
         # When wrong because in wrong div
         main = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><body><div n="{}"/></body></TEI>"""
         # When in Body
-        body = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><teiHeader/><text n="{}"/></TEI>"""
+        body = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><teiHeader/><text><body n="{}"/></text></TEI>"""
 
         # Epidoc should fail for TEI
         self.TEI.xml = etree.fromstring(edition.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
-        self.assertEqual(self.TEI.has_urn().__next__(), False)
+        self.assertEqual(self.TEI.has_urn().__next__(), False, "Epidoc should fail for TEI")
         self.TEI.xml = etree.fromstring(translation.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
-        self.assertEqual(self.TEI.has_urn().__next__(), False)
+        self.assertEqual(self.TEI.has_urn().__next__(), False, "Epidoc should fail for TEI")
         # Wrong epidoc should be wrong in TEI too
         self.TEI.xml = etree.fromstring(part.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
-        self.assertEqual(self.TEI.has_urn().__next__(), False)
+        self.assertEqual(self.TEI.has_urn().__next__(), False, "Wrong epidoc should be wrong in TEI too")
         self.TEI.xml = etree.fromstring(main.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
-        self.assertEqual(self.TEI.has_urn().__next__(), False)
+        self.assertEqual(self.TEI.has_urn().__next__(), False, "Wrong epidoc should be wrong in TEI too")
         # Right when TEI
         self.TEI.xml = etree.fromstring(body.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
         self.assertEqual(self.TEI.has_urn().__next__(), True, "TEI URN should return True when urn is in text")
@@ -97,15 +97,15 @@ class TestText(unittest.TestCase):
         self.Epidoc.xml = etree.fromstring(edition.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
         self.assertEqual(self.Epidoc.has_urn().__next__(), True, "div[type='edition'] should work with urn")
         self.Epidoc.xml = etree.fromstring(translation.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
-        self.assertEqual(self.Epidoc.has_urn().__next__(), True)
+        self.assertEqual(self.Epidoc.has_urn().__next__(), True, "Epidoc should work with translation and edition")
         # Wrong epidoc should be wrong
         self.Epidoc.xml = etree.fromstring(part.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
-        self.assertEqual(self.Epidoc.has_urn().__next__(), False)
+        self.assertEqual(self.Epidoc.has_urn().__next__(), False, "Wrong epidoc should be wrong")
         self.Epidoc.xml = etree.fromstring(main.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
-        self.assertEqual(self.Epidoc.has_urn().__next__(), False)
+        self.assertEqual(self.Epidoc.has_urn().__next__(), False, "Wrong epidoc should be wrong")
         # Wrong when TEI
         self.Epidoc.xml = etree.fromstring(body.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
-        self.assertEqual(self.Epidoc.has_urn().__next__(), False)
+        self.assertEqual(self.Epidoc.has_urn().__next__(), False, "Epidoc wrong when using TEI Guidelines")
 
         # Wrong urn should fail with Epidoc or TEI
         self.Epidoc.xml = etree.fromstring(edition.format("urn:cts:latinLit:phi1294"))
@@ -134,8 +134,8 @@ class TestText(unittest.TestCase):
         passages = [level for level in unit.passages()]
         self.assertEqual(passages, [False, False, False], "Collision should result in fail")
         self.assertIn(">>>>>> Duplicate references found : 1", unit.logs)
-        self.assertIn(">>>>>> Duplicate references found : 3.1", unit.logs)
-        self.assertIn(">>>>>> Duplicate references found : 1.2.1", unit.logs)
+        self.assertIn(">>>>>> Duplicate references found : 1.2, 1.pr, 3.1", unit.logs)
+        self.assertIn(">>>>>> Duplicate references found : 1.2.1, 1.pr.1, 3.1.1, 3.1.2", unit.logs)
 
     def test_node_collision(self):
         """ Test unique_passage

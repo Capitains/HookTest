@@ -9,6 +9,8 @@ import subprocess
 import re
 from collections import defaultdict
 from lxml.etree import XPathEvalError
+from MyCapytain.errors import DuplicateReference
+
 
 class TESTUnit(object):
     """ TestUnit Metaclass
@@ -230,7 +232,7 @@ class INVUnit(TESTUnit):
                 self.urns = [urn for urn in self.urns if urn and len(MyCapytain.common.reference.URN(urn)) == 5]
                 self.log("Editions and translations urns : " + " ".join(self.urns))
 
-                status= len(worksUrns) == 2 and (len(texts)*2)==len(self.urns + workUrnsText)
+                status = len(worksUrns) == 2 and (len(texts)*2) == len(self.urns + workUrnsText)
 
         yield status
 
@@ -338,16 +340,18 @@ class CTSUnit(TESTUnit):
         if self.Text:
             for i in range(0, len(self.Text.citation)):
                 try:
-                    with warnings.catch_warnings(record=True) as w:
+                    with warnings.catch_warnings(record=True) as warning_record:
                         # Cause all warnings to always be triggered.
                         warnings.simplefilter("always")
-                        passages = self.Text.getValidReff(level=i+1)
+                        passages = self.Text.getValidReff(level=i+1, _debug=True)
                         ids = [ref.split(".", i)[-1] for ref in passages]
                         space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
-                        status = len(passages) > 0 and len(w) == 0 and space_in_passage is None
+                        status = len(passages) > 0 and len(warning_record) == 0 and space_in_passage is None
                         self.log(str(len(passages)) + " found")
-                        if len(w) > 0:
-                            self.log("Duplicate references found : {0}".format(", ".join([str(v.message) for v in w])))
+                        for record in warning_record:
+                            if record.category == DuplicateReference:
+                                passages = sorted(str(record.message).split(", "))
+                                self.log("Duplicate references found : {0}".format(", ".join(passages)))
                         if space_in_passage and space_in_passage is not None:
                             self.log("Reference with forbidden characters found: {}".format(
                                 " ".join([
@@ -390,16 +394,21 @@ class CTSUnit(TESTUnit):
         except Exception:
             yield False
 
-
     def has_urn(self):
         """ Test that a file has its urn saved
         """
         if self.xml is not None:
             if self.scheme == "tei":
-                urns = self.xml.xpath("//tei:text[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+                urns = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
             else:
-                urns = self.xml.xpath("//tei:body/tei:div[@type='edition' and starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
-                urns += self.xml.xpath("//tei:body/tei:div[@type='translation' and starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+                urns = self.xml.xpath(
+                    "//tei:body/tei:div[@type='edition' and starts-with(@n, 'urn:cts:')]",
+                    namespaces=TESTUnit.NS
+                )
+                urns += self.xml.xpath(
+                    "//tei:body/tei:div[@type='translation' and starts-with(@n, 'urn:cts:')]",
+                    namespaces=TESTUnit.NS
+                )
             status = len(urns) > 0
             if status:
                 logs = urns[0].get("n")
@@ -408,11 +417,12 @@ class CTSUnit(TESTUnit):
                     if len(urn) < 5:
                         status = False
                         self.log("Incomplete URN")
-                    elif urn["passage"]:
+                    elif urn.reference:
                         status = False
                         self.log("Reference not accepted in URN")
-                except:
+                except Exception as E:
                     status = False
+                    self.log("Unparsable URN [Python Error: {}]".format(str(E)))
                 finally:
                     self.log(logs)
                     self.urn = logs

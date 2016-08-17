@@ -254,7 +254,7 @@ class Test(object):
                 logs.append(">>>>> " + name + status_str)
 
                 if self.verbose and len(unitlogs) > 0:
-                    logs.append("\n".join([log for log in unitlogs if log]))
+                    logs += [log for log in unitlogs if log]
 
                 results[name] = status
             additional += unit.urns
@@ -272,7 +272,7 @@ class Test(object):
                 logs.append(">>>>> " + name + status_str)
 
                 if self.verbose and len(unitlogs) > 0:
-                    logs.append("\n".join([log for log in unitlogs if log]))
+                    logs += [log for log in unitlogs if log]
 
                 results[name] = status
 

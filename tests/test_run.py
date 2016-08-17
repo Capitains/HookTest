@@ -12,6 +12,12 @@ class TestProcess(TestCase):
 
     Thanks to http://stackoverflow.com/questions/18160078/how-do-you-write-tests-for-the-argparse-portion-of-a-python-module
     """
+
+    def assertSubset(self, member, container, message):
+        self.assertTrue(
+            set(member).issubset(set(container)), message
+        )
+
     def read_logs(self, file):
         j = []
         with open(file) as file:
@@ -68,8 +74,19 @@ class TestProcess(TestCase):
         #
         ####
         text = self.filter(parsed, "/data/tlg2255/perseus001/tlg2255.perseus001.perseus-grc1.xml")
-        self.assertIn('>>>>>> 2 found', text["logs"], "Text should have 22 passages")
+        self.assertIn('>>>>>> 21 found', text["logs"], "Text should have 21 passages")
         self.assertTrue(text["status"], "Text tlg2255.p001.grc1 should pass")
+
+        ####
+        #
+        #   Test on subreference
+        #   Reference should make an issue
+        #
+        ####
+        text = self.filter(parsed, "/data/tlg2255/perseus001/subreference.xml")
+        self.assertFalse(text["units"]["URN informations"], "URN information fails")
+        self.assertIn(">>>>>> Reference not accepted in URN", text["logs"], "URN Reference error should display in logs")
+        self.assertFalse(text["status"], "Text subreference should fail because of URN")
 
         ####
         #
@@ -78,11 +95,11 @@ class TestProcess(TestCase):
         #
         ####
         text = self.filter(parsed, "/data/tlg2255/perseus001/false.xml")
-        self.assertFalse(text["status"], "Text tlg2255.p001.grc1 should not pass")
+        self.assertFalse(text["status"], "Text false.xml should not pass")
         self.assertFalse(text["units"]["File parsing"], "It should not be parsable")
         self.assertIn(
             '>>>>>> fatal: The element type "text" must be terminated by the matching end-tag "</text>". [In (L236 C22)]',
-            text["logs"][-1], "Fatal error should be parsed"
+            text["logs"], "Fatal error should be parsed"
         )
 
         ####
@@ -92,10 +109,12 @@ class TestProcess(TestCase):
         #
         ####
         text = self.filter(parsed, "/data/stuff/__cts__.xml")
-        self.assertIn(
-            '>>>>>> No metadata type detected (neither work nor textgroup)\n>>>>>> Inventory can\'t '\
-            'be read through Capitains standards',
-            text["logs"], "Fatal error should be parsed"
+        self.assertSubset(
+            [
+                '>>>>>> No metadata type detected (neither work nor textgroup)',
+                '>>>>>> Inventory can\'t be read through Capitains standards'
+             ],
+            text["logs"], "Absence of metadatafile should be spotted"
         )
         self.assertFalse(text["status"], "Wrong root node should fail file")
 
@@ -114,14 +133,15 @@ class TestProcess(TestCase):
             "Unique nodes found by XPath passed", logs,
             "Normal file should be tested"
         )
-        self.assertTrue(
-            {
+        self.assertSubset(
+            [
                 ">>>> Testing /data/hafez/divan/__cts__.xml",
                 ">>>> Testing /data/hafez/__cts__.xml",
                 ">>>> Testing /hafez/divan/hafez.divan.perseus-far1.xml",
                 ">>>> Testing /hafez/divan/hafez.divan.perseus-eng1.xml",
                 ">>>> Testing /hafez/divan/hafez.divan.perseus-ger1.xml"
-            }.issubset(set(logs.split("\n"))),
+            ],
+            logs.split("\n"),
             "All files should be tested"
         )
         self.assertEqual(status, "failed", "Test should fail")
@@ -137,7 +157,7 @@ class TestProcess(TestCase):
             "\n>>>>>> ", logs,
             "Marker of verbose should be available"
         )
-        self.assertTrue(
+        self.assertSubset(
             {
                 # List of file tested
                 ">>>> Testing /data/hafez/divan/__cts__.xml",
@@ -165,7 +185,8 @@ class TestProcess(TestCase):
                 ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
                 "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
 
-                }.issubset(set(logs.split("\n"))),
+            },
+            logs.split("\n"),
             "All files should be tested and verbosed"
         )
         self.assertEqual(status, "failed", "Test should fail")
@@ -181,7 +202,7 @@ class TestProcess(TestCase):
             "\n>>>>>> ", logs,
             "Marker of verbose should be available"
         )
-        self.assertTrue(
+        self.assertSubset(
             {
                 # List of file tested
                 ">>>> Testing /data/hafez/divan/__cts__.xml",
@@ -209,7 +230,8 @@ class TestProcess(TestCase):
                 ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
                 "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
 
-                }.issubset(set(logs.split("\n"))),
+            },
+            logs.split("\n"),
             "All files should be tested and verbosed"
         )
         self.assertEqual(status, "success", "Test should fail")
@@ -239,7 +261,6 @@ class TestProcess(TestCase):
             }.issubset(setlogs),
             "Logs should fail on Epidoc wrong"
         )
-
         self.assertTrue(
             {
                 ">>>>>> Duplicate references found : 1.1"
@@ -261,7 +282,7 @@ class TestProcess(TestCase):
             "[success] 5 over 5 texts have fully passed the tests\n", logs,
             "Test conclusion should be printed"
         )
-        self.assertTrue(
+        self.assertSubset(
             {
                 # List of file tested
                 ">>>> Testing PerseusDL/canonical-farsiLit/data/hafez/__cts__.xml",
@@ -287,6 +308,7 @@ class TestProcess(TestCase):
                 ">>>>>> Group urn : urn:cts:farsiLit:hafez",
                 ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan"
 
-            }.issubset(set(logs.split("\n"))),
+            },
+            logs.split("\n"),
             "All files should be tested and verbosed"
         )
