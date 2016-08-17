@@ -57,7 +57,7 @@ class TestProcess(TestCase):
         self.assertEqual(status, "failed", "Test should fail")
 
     def test_run_local_repo_errors(self):
-        """ Test a run on the local tests passages with console print
+        """ Test a run on the local error tests passages with console print
 
          This unit test should be used to check edge cases. Repo 2 is built for that
         """
@@ -147,7 +147,7 @@ class TestProcess(TestCase):
         self.assertEqual(status, "failed", "Test should fail")
 
     def test_run_local_console_verbose(self):
-        """ Test a run on the local tests passages with console print """
+        """ Test a run on the local tests passages with console print and verbose """
         status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose"])
         self.assertIn(
             "[failed] 2 over 5 texts have fully passed the tests\n", logs,
@@ -192,7 +192,7 @@ class TestProcess(TestCase):
         self.assertEqual(status, "failed", "Test should fail")
 
     def test_run_local_console_verbose_epidoc(self):
-        """ Test a run on the local tests passages with console print """
+        """ Test a run on the local tests passages with console print as Epidoc """
         status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose", "--scheme", "epidoc"])
         self.assertIn(
             "[success] 5 over 5 texts have fully passed the tests\n", logs,

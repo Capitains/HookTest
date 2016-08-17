@@ -60,12 +60,11 @@ class TESTUnit(object):
         :rtype: boolean
         """
         try:
-            f = open(self.path)
-            xml = etree.parse(f, TESTUnit.PARSER)
-            self.xml = xml
-            self.testable = True
-            self.log("Parsed")
-            f.close()
+            with open(self.path) as f:
+                xml = etree.parse(f, TESTUnit.PARSER)
+                self.xml = xml
+                self.testable = True
+                self.log("Parsed")
         except Exception as e:
             self.testable = False
             self.error(e)
