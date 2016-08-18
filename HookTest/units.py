@@ -367,33 +367,34 @@ class CTSUnit(TESTUnit):
     def passages(self):
         if self.Text:
             for i in range(0, len(self.Text.citation)):
-                try:
-                    with warnings.catch_warnings(record=True) as warning_record:
-                        # Cause all warnings to always be triggered.
-                        warnings.simplefilter("always")
-                        passages = self.Text.getValidReff(level=i+1, _debug=True)
-                        ids = [ref.split(".", i)[-1] for ref in passages]
-                        space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
-                        status = len(passages) > 0 and len(warning_record) == 0 and space_in_passage is None
-                        self.log(str(len(passages)) + " found")
-                        for record in warning_record:
-                            if record.category == DuplicateReference:
-                                passages = sorted(str(record.message).split(", "))
-                                self.log("Duplicate references found : {0}".format(", ".join(passages)))
-                        if space_in_passage and space_in_passage is not None:
-                            self.log("Reference with forbidden characters found: {}".format(
-                                " ".join([
-                                    "'{}'".format(n)
-                                    for ref, n in zip(ids, passages)
-                                    if TESTUnit.FORBIDDEN_CHAR.search(ref)
-                                ])
-                            ))
+                if self.Text.citation.refsDecl:
+                    try:
+                        with warnings.catch_warnings(record=True) as warning_record:
+                            # Cause all warnings to always be triggered.
+                            warnings.simplefilter("always")
+                            passages = self.Text.getValidReff(level=i+1, _debug=True)
+                            ids = [ref.split(".", i)[-1] for ref in passages]
+                            space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
+                            status = len(passages) > 0 and len(warning_record) == 0 and space_in_passage is None
+                            self.log(str(len(passages)) + " found")
+                            for record in warning_record:
+                                if record.category == DuplicateReference:
+                                    passages = sorted(str(record.message).split(", "))
+                                    self.log("Duplicate references found : {0}".format(", ".join(passages)))
+                            if space_in_passage and space_in_passage is not None:
+                                self.log("Reference with forbidden characters found: {}".format(
+                                    " ".join([
+                                        "'{}'".format(n)
+                                        for ref, n in zip(ids, passages)
+                                        if TESTUnit.FORBIDDEN_CHAR.search(ref)
+                                    ])
+                                ))
 
-                        yield status
-                except Exception as E:
-                    self.error(E)
-                    self.log("Error when searching passages at level {0}".format(i+1))
-                    yield False
+                            yield status
+                    except Exception as E:
+                        self.error(E)
+                        self.log("Error when searching passages at level {0}".format(i+1))
+                        yield False
         else:
             yield False
 
@@ -440,20 +441,21 @@ class CTSUnit(TESTUnit):
             status = len(urns) > 0
             if status:
                 logs = urns[0].get("n")
-                try:
-                    urn = MyCapytain.common.reference.URN(logs)
-                    if len(urn) < 5:
-                        status = False
-                        self.log("Incomplete URN")
-                    elif urn.reference:
-                        status = False
-                        self.log("Reference not accepted in URN")
-                except Exception as E:
+                urn = MyCapytain.common.reference.URN(logs)
+                members = [
+                    key for key in ['namespace', 'work', 'version', 'textgroup']
+                    if len(getattr(urn, key)) == 0
+                ]
+                if len(urn) < 5:
                     status = False
-                    self.log("Unparsable URN [Python Error: {}]".format(str(E)))
-                finally:
-                    self.log(logs)
-                    self.urn = logs
+                    self.log("Incomplete URN")
+                elif urn.reference:
+                    status = False
+                    self.log("Reference not accepted in URN")
+                elif len(members) > 0:
+                    status = False
+                    self.log("Elements of URN are empty: {}".format(", ".join(sorted(members))))
+                self.urn = logs
         else:
             status = False
         yield status

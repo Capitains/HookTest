@@ -171,7 +171,6 @@ class TestProcess(TestCase):
              'Naming Convention': False}, text["units"],
             "Naming Convention should fail as well as lang"
         )
-        print(text["logs"])
         self.assertSubset(
             [
                 ">>>>>> Work node is missing its lang attribute",
@@ -305,6 +304,51 @@ class TestProcess(TestCase):
             ">>> [error] 0 over 0 texts have fully passed the tests", logs,
             "No file should result in no file tested"
         )
+
+    def test_run_tei_errors(self):
+        """ Test a run on the local error TEI Repo with console print
+
+         This unit test should be used to check edge cases. Repo tei is built for that
+        """
+        # Can be replace by HookTest.test.cmd(**vars(HookTest.cmd.parse_args()) for debug
+        status = HookTest.test.cmd(**vars(HookTest.cmd.parse_args([
+            "./tests/repotei",
+            "--scheme", "tei", "--verbose",
+            "--json", "cloning_dir/repotei.json"
+        ])))
+        parsed = self.read_logs("cloning_dir/repotei.json")
+        ####
+        #
+        #   Test on tei.tei.tei.xml
+        #   Checks TEI RNG parsing
+        #
+        ####
+        text = self.filter(parsed, "/data/tei/tei/tei.tei.tei.xml")
+        self.assertIn(
+            '>>>>>> error: element "varchar" not allowed anywhere [In (L3 C10)]', text["logs"],
+            "TEI RNG Error should show"
+        )
+        self.assertFalse(text["status"], "Wrong TEI File should not pass")
+
+        ####
+        #
+        #   Test on tei.tei.weirdurn.xml
+        #   Weird URN Exception should be catched
+        #
+        ####
+        text = self.filter(parsed, "/data/tei/tei/tei.tei.weirdurn.xml")
+        self.assertIn(
+            '>>>>>> error: element "encodingDesc" incomplete [In (L27 C20)]', text["logs"],
+            "TEI RNG Error should show"
+        )
+        self.assertIn(
+            ">>>>>> Elements of URN are empty: namespace, textgroup, version, work",
+            text["logs"], "Empty member of urn should raise issue"
+        )
+        self.assertEqual(
+            [False, False], [text["units"]["URN informations"], text["units"]["TEI DTD Validation"]], text["units"],
+        )
+        self.assertFalse(text["status"], "Wrong TEI File should not pass")
 
     def test_run_clone_branch(self):
         """ Test a clone on dummy empty repo with branch change"""
