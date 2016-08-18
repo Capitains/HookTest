@@ -139,6 +139,47 @@ class TestProcess(TestCase):
         )
         self.assertFalse(text["status"], "Wrong XML scheme should fail file")
 
+        ####
+        #
+        #   /data/wrongmetadata/__cts__xml
+        #   Miss languages on groupname node and wrong path
+        #
+        ####
+        text = self.filter(parsed, "/data/wrongmetadata/__cts__.xml")
+        self.assertEqual(
+            {'Metadata availability': False, 'URNs testing': True, 'MyCapytain parsing': True, 'File parsing': True,
+             'Naming Convention': False}, text["units"],
+            "Naming Convention should fail as well as lang"
+        )
+        self.assertSubset(
+            [
+                ">>>>>> 0 groupname found",
+                ">>>>>> URN and path does not match"
+            ], text["logs"], "Logs should be detailed when failing on lang or naming convention"
+        )
+        self.assertFalse(text["status"], "Missing language and naming convention should fail file")
+
+        ####
+        #
+        #   /data/wrongmetadata/wrongmetadata/__cts__xml
+        #   Miss languages on work node and wrong path
+        #
+        ####
+        text = self.filter(parsed, "/data/wrongmetadata/wrongmetadata/__cts__.xml")
+        self.assertEqual(
+            {'Metadata availability': False, 'URNs testing': True, 'MyCapytain parsing': True, 'File parsing': True,
+             'Naming Convention': False}, text["units"],
+            "Naming Convention should fail as well as lang"
+        )
+        print(text["logs"])
+        self.assertSubset(
+            [
+                ">>>>>> Work node is missing its lang attribute",
+                ">>>>>> URN and path does not match"
+            ], text["logs"], "Logs should be detailed when failing on lang or naming convention"
+        )
+        self.assertFalse(text["status"], "Missing language and naming convention should fail file")
+
     def test_run_local_console(self):
         """ Test a run on the local tests passages with console print """
         status, logs = self.hooktest(["./tests/repo1", "--console"])

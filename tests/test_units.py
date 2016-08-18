@@ -10,7 +10,7 @@ class TestCTS(unittest.TestCase):
     def test_lang(self):
         """ Test lang in translation check
         """
-        success = """<work xmlns="http://chs.harvard.edu/xmlns/cts">
+        success = """<work xmlns="http://chs.harvard.edu/xmlns/cts" xml:lang="far">
     <title xml:lang="eng">Div&#257;n</title>
     <edition urn="urn:cts:farsiLit:hafez.divan.perseus-far1" workUrn="urn:cts:farsiLit:hafez.divan">
         <label xml:lang="eng">Divan</label>

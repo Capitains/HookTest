@@ -116,12 +116,13 @@ class INVUnit(TESTUnit):
     :type path: basestring
     """
 
-    tests = ["parsable", "capitain", "metadata", "check_urns"]
+    tests = ["parsable", "capitain", "metadata", "check_urns", "filename"]
     readable = {
         "parsable": "File parsing",
         "capitain": "MyCapytain parsing",
         "metadata": "Metadata availability",
-        "check_urns": "URNs testing"
+        "check_urns": "URNs testing",
+        "filename": "Naming Convention"
     }
 
     def __init__(self, *args, **kwargs):
@@ -165,6 +166,13 @@ class INVUnit(TESTUnit):
 
             elif self.type == "work":
                 status = True
+
+                # Check that the work has a language
+                workLang = self.xml.xpath("//ti:work/@xml:lang", namespaces=TESTUnit.NS)
+                if len(workLang) != 1:
+                    status = False
+                    self.log("Work node is missing its lang attribute")
+
                 langs = self.xml.xpath("//ti:translation/@xml:lang", namespaces=TESTUnit.NS)
                 if len(langs) != len(self.xml.xpath("//ti:translation", namespaces=TESTUnit.NS)):
                     status = False
@@ -207,18 +215,23 @@ class INVUnit(TESTUnit):
                 ]
                 self.log("Group urn :" + "".join(self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)))
                 status = len(urns) == 1
+                if status:
+                    self.urn = urns[0]
             elif self.type == "work":
                 worksUrns = [
                         urn
                         for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
                         if urn and len(MyCapytain.common.reference.URN(urn)) == 4
-                    ] + [
+                    ]
+                groupUrns = [
                         urn
                         for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
                         if urn and len(MyCapytain.common.reference.URN(urn)) == 3
                     ]
-                self.log("Group urn : " + "".join(self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)))
-                self.log("Work urn : " + "".join(self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)))
+                if len(worksUrns) == 1:
+                    self.urn = worksUrns[0]
+                self.log("Group urn : " + "".join(groupUrns))
+                self.log("Work urn : " + "".join(worksUrns))
 
                 texts = self.xml.xpath("//ti:edition|//ti:translation", namespaces=TESTUnit.NS)
                 workUrnsText = []
@@ -231,8 +244,26 @@ class INVUnit(TESTUnit):
                 self.urns = [urn for urn in self.urns if urn and len(MyCapytain.common.reference.URN(urn)) == 5]
                 self.log("Editions and translations urns : " + " ".join(self.urns))
 
-                status = len(worksUrns) == 2 and (len(texts)*2) == len(self.urns + workUrnsText)
+                status = len(worksUrns) == 1 and \
+                         len(groupUrns) == 1 and \
+                         (len(texts)*2) == len(self.urns + workUrnsText)
 
+        yield status
+
+    def filename(self):
+        status = False
+        if self.urn:
+            urn = MyCapytain.common.reference.URN(self.urn)
+            if self.type == "textgroup":
+                status = self.path.endswith("data/{textgroup}/__cts__.xml".format(textgroup=urn.textgroup))
+            elif self.type == "work":
+                self.log(str(urn))
+                status = self.path.endswith("data/{textgroup}/{work}/__cts__.xml".format(
+                    textgroup=urn.textgroup, work=urn.work
+                ))
+
+        if not status:
+            self.log("URN and path does not match")
         yield status
 
     def test(self):
