@@ -218,7 +218,9 @@ class INVUnit(TESTUnit):
                 if status:
                     self.urn = urns[0]
             elif self.type == "work":
-                matches = False
+                matches = True
+                onlyOneWork = True
+                allMembers = True
                 worksUrns = [
                         urn
                         for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
@@ -229,25 +231,55 @@ class INVUnit(TESTUnit):
                         for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
                         if urn and len(MyCapytain.common.reference.URN(urn)) == 3
                     ]
+                self.urn = None
                 if len(worksUrns) == 1:
                     self.urn = worksUrns[0]
+                    urn = MyCapytain.common.reference.URN(self.urn)
+                    if len(groupUrns) == len(worksUrns):
+                        missing = [
+                            key for key in ['namespace', 'work', 'textgroup']
+                            if getattr(urn, key) is None or len(getattr(urn, key)) == 0
+                        ]
+                        if missing:
+                            self.log("Work URN is missing: {}".format(", ".join(missing)))
+                            allMembers = False
+                        elif groupUrns[0] != urn.upTo(MyCapytain.common.reference.URN.TEXTGROUP):
+                            matches = False
+                            self.log("The Work URN is not a child of the Textgroup URN")
                 self.log("Group urn : " + "".join(groupUrns))
                 self.log("Work urn : " + "".join(worksUrns))
 
                 texts = self.xml.xpath("//ti:edition|//ti:translation", namespaces=TESTUnit.NS)
-                workUrnsText = []
 
                 for text in texts:
-                    self.urns.append(text.get("urn"))
-                    workUrnsText.append(text.get("workUrn"))
+                    t_urn = text.get("urn")
+                    if t_urn and t_urn.startswith("urn:cts:"):
+                        t_urn = MyCapytain.common.reference.URN(t_urn)
+                        missing = [
+                            key for key in ['namespace', 'work', 'version', 'textgroup']
+                            if getattr(t_urn, key) is None or len(getattr(t_urn, key)) == 0
+                        ]
+                        if missing:
+                            self.log("Text {} URN is missing: {}".format(str(t_urn), ", ".join(missing)))
+                            allMembers = False
+                        elif t_urn.upTo(MyCapytain.common.reference.URN.WORK) != str(urn):
+                            matches = False
+                            self.log("Text {} does not match parent URN".format(str(t_urn)))
+                    self.urns.append(t_urn)
+                    worksUrns.append(text.get("workUrn"))
 
-                workUrnsText = [urn for urn in workUrnsText if urn and len(MyCapytain.common.reference.URN(urn)) == 4]
-                self.urns = [urn for urn in self.urns if urn and len(MyCapytain.common.reference.URN(urn)) == 5]
+                if len(set(worksUrns)) > 1:
+                    onlyOneWork = False
+                    self.log("There is different workUrns in the metadata")
+
+                self.urns = [str(urn) for urn in self.urns if urn and len(urn) == 5]
+
                 self.log("Editions and translations urns : " + " ".join(self.urns))
 
-                status = len(worksUrns) == 1 and \
-                         len(groupUrns) == 1 and \
-                         (len(texts)*2) == len(self.urns + workUrnsText)
+                status = allMembers and\
+                         matches and onlyOneWork and self.urn and \
+                            len(groupUrns) == 1 and \
+                            (len(texts)*2+1) == len(self.urns + worksUrns)
 
         yield status
 
@@ -444,7 +476,7 @@ class CTSUnit(TESTUnit):
                 urn = MyCapytain.common.reference.URN(logs)
                 missing_members = [
                     key for key in ['namespace', 'work', 'version', 'textgroup']
-                    if getattr(urn, key) and len(getattr(urn, key)) == 0
+                    if getattr(urn, key) is None or len(getattr(urn, key)) == 0
                 ]
                 if len(urn) < 5:
                     status = False

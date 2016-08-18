@@ -170,7 +170,7 @@ class TestProcess(TestCase):
         ####
         text = self.filter(parsed, "/data/wrongmetadata/wrongmetadata/__cts__.xml")
         self.assertEqual(
-            {'Metadata availability': False, 'URNs testing': True, 'MyCapytain parsing': True, 'File parsing': True,
+            {'Metadata availability': False, 'URNs testing': False, 'MyCapytain parsing': True, 'File parsing': True,
              'Naming Convention': False}, text["units"],
             "Naming Convention should fail as well as lang"
         )
@@ -319,6 +319,12 @@ class TestProcess(TestCase):
             "--scheme", "tei", "--verbose",
             "--json", "cloning_dir/repotei.json"
         ])))
+        status, logs = self.hooktest([
+            "./tests/repotei", "--console",
+            "--scheme", "tei", "--verbose",
+            "--json", "cloning_dir/repotei.json"
+        ])
+
         parsed = self.read_logs("cloning_dir/repotei.json")
         ####
         #
@@ -352,6 +358,26 @@ class TestProcess(TestCase):
             [False, False], [text["units"]["URN informations"], text["units"]["TEI DTD Validation"]], text["units"],
         )
         self.assertFalse(text["status"], "Wrong TEI File should not pass")
+
+        ####
+        #
+        #   Test on tei/tei/__cts__.xml
+        #   Weird URN Exception should be catched
+        #
+        ####
+        text = self.filter(parsed, "/data/tei/tei/__cts__.xml")
+        self.assertSubset(
+            {
+                '>>>>> URNs testing failed',
+                ">>>>>> The Work URN is not a child of the Textgroup URN",
+                ">>>>>> Text urn:cts:greekLit:tlg2255..perseus-grc1 URN is missing: work",
+                ">>>>>> Text urn:cts:greekLit:tei.tei. URN is missing: version",
+                ">>>>>> Text urn:cts:greekLit:tei.tei2.tei does not match parent URN",
+                ">>>>>> There is different workUrns in the metadata"
+            },
+            text["logs"], "Details about failing URN should be provided"
+        )
+        self.assertFalse(text["status"], "Misformated URNS or not descendants should not pass")
 
     def test_run_clone_branch(self):
         """ Test a clone on dummy empty repo with branch change"""
