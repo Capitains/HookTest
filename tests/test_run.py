@@ -133,9 +133,12 @@ class TestProcess(TestCase):
         #
         ####
         text = self.filter(parsed, "/data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml")
-        self.assertCountEqual(
-            [False, False, False, False, False, False, False, True],
-            list(text["units"].values()), "Everything but XML parsing should fail in TEI.2 files"
+        self.assertEqual(
+            {'Naming conventions': False, 'RefsDecl parsing': False, 'Epidoc DTD validation': False,
+             'URN informations': False, 'File parsing': True, 'Passage level parsing': False,
+             'Available in inventory': False, 'Unique nodes found by XPath': False}
+            ,
+            text["units"], "Everything but XML parsing should fail in TEI.2 files"
         )
         self.assertFalse(text["status"], "Wrong XML scheme should fail file")
 
