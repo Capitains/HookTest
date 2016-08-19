@@ -527,7 +527,8 @@ class TestTest(unittest.TestCase):
         clone_from_mocked.assert_called_with(
             url="https://github.com/PerseusDL/tests.git",
             to_path="./1234",
-            progress=self.test.progress
+            progress=self.test.progress,
+            depth=10
         )
         self.assertEqual(self.test.branch, "refs/heads/dev")
         repo_mocked.remote.assert_called_with()
@@ -541,7 +542,8 @@ class TestTest(unittest.TestCase):
         clone_from_mocked.assert_called_with(
             url="https://github.com/PerseusDL/tests.git",
             to_path="./1234",
-            progress=self.test.progress
+            progress=self.test.progress,
+            depth=10
         )
         self.assertEqual(self.test.branch, "refs/heads/master")
         repo_mocked.remote.assert_called_with()
@@ -555,7 +557,8 @@ class TestTest(unittest.TestCase):
         clone_from_mocked.assert_called_with(
             url="https://github.com/PerseusDL/tests.git",
             to_path="./1234",
-            progress=self.test.progress
+            progress=self.test.progress,
+            depth=10
         )
         self.assertEqual(self.test.branch, "pull/5/head")
         repo_mocked.remote.assert_called_with()
@@ -572,10 +575,6 @@ class TestTest(unittest.TestCase):
         reading, metadata = HookTest.test.Test.find("./tests/repo1")
         self.assertEqual(len(metadata), 2, "It should find two __cts__ in repo1")
         self.assertEqual(len(reading), 3, "It should find three texts in repo1")  # eng far ger
-
-        reading, metadata = HookTest.test.Test.find("./tests/repo2")
-        self.assertEqual(len(metadata), 3, "It should find three __cts__ in repo2")
-        self.assertEqual(len(reading), 3, "It should find three texts in repo2")  # eng far ger
 
     def test_cover(self):
         """ Test covering dict generation """

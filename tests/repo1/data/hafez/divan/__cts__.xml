@@ -1,4 +1,4 @@
-<ti:work xmlns:ti="http://chs.harvard.edu/xmlns/cts" groupUrn="urn:cts:farsiLit:hafez" projid="farsiLit:divan" urn="urn:cts:farsiLit:hafez.divan" xml:lang="fa">
+<ti:work xmlns:ti="http://chs.harvard.edu/xmlns/cts" groupUrn="urn:cts:farsiLit:hafez" urn="urn:cts:farsiLit:hafez.divan" xml:lang="fa">
     <ti:title xml:lang="eng">Div&#257;n</ti:title>
     <ti:edition urn="urn:cts:farsiLit:hafez.divan.perseus-far1" workUrn="urn:cts:farsiLit:hafez.divan">
         <ti:label xml:lang="eng">Div&#257;n</ti:label>

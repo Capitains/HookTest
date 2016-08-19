@@ -1,0 +1,19 @@
+<ti:work xmlns:ti="http://chs.harvard.edu/xmlns/cts" groupUrn="urn:cts:greekLit:tei2" xml:lang="grc" urn="urn:cts:greekLit:tei.tei">
+  <ti:title xml:lang="eng">Encomium of Helen</ti:title>
+  <ti:edition urn="urn:cts:greekLit:tlg2255..perseus-grc1" workUrn="urn:cts:greekLit:tlg2255.perseus001">
+    <ti:label xml:lang="grc">ΕΛΕΝΗΣ ΕΓΚΩΜΙΟΝ</ti:label>
+    <ti:description xml:lang="grc">ΓΟΡΓΙΟΥ ΕΛΕΝΗΣ ΕΓΚΩΜΙΟΝ</ti:description>
+  </ti:edition>
+  <ti:translation urn="urn:cts:greekLit:tei.tei." workUrn="urn:cts:greekLit:tlg2255.perseus001">
+    <ti:label xml:lang="grc">ΕΛΕΝΗΣ ΕΓΚΩΜΙΟΝ</ti:label>
+    <ti:description xml:lang="grc">ΓΟΡΓΙΟΥ ΕΛΕΝΗΣ ΕΓΚΩΜΙΟΝ</ti:description>
+  </ti:translation>
+  <ti:edition urn="urn:cts:greekLit:tei.tei.tei" workUrn="urn:cts:greekLit:tei.tei.tei">
+    <ti:label xml:lang="grc">ΕΛΕΝΗΣ ΕΓΚΩΜΙΟΝ</ti:label>
+    <ti:description xml:lang="grc">ΓΟΡΓΙΟΥ ΕΛΕΝΗΣ ΕΓΚΩΜΙΟΝ</ti:description>
+  </ti:edition>
+  <ti:edition urn="urn:cts:greekLit:tei.tei2.tei" workUrn="urn:cts:greekLit:tei.tei.tei">
+    <ti:label xml:lang="grc">ΕΛΕΝΗΣ ΕΓΚΩΜΙΟΝ</ti:label>
+    <ti:description xml:lang="grc">ΓΟΡΓΙΟΥ ΕΛΕΝΗΣ ΕΓΚΩΜΙΟΝ</ti:description>
+  </ti:edition>
+</ti:work>

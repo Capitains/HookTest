@@ -81,6 +81,7 @@ class Test(object):
         :param console: If set to true, print logs to the console
         :type console: bool
         """
+        self.depth = 10
         self.console = console
         self.path = path
         self.repository = repository
@@ -254,7 +255,7 @@ class Test(object):
                 logs.append(">>>>> " + name + status_str)
 
                 if self.verbose and len(unitlogs) > 0:
-                    logs.append("\n".join([log for log in unitlogs if log]))
+                    logs += [log for log in unitlogs if log]
 
                 results[name] = status
             additional += unit.urns
@@ -272,7 +273,7 @@ class Test(object):
                 logs.append(">>>>> " + name + status_str)
 
                 if self.verbose and len(unitlogs) > 0:
-                    logs.append("\n".join([log for log in unitlogs if log]))
+                    logs += [log for log in unitlogs if log]
 
                 results[name] = status
 
@@ -376,7 +377,8 @@ class Test(object):
         repo = git.repo.base.Repo.clone_from(
             url="https://github.com/{0}.git".format(self.repository),
             to_path=self.directory,
-            progress=self.progress
+            progress=self.progress,
+            depth=self.depth
         )
 
         if self.branch is None:

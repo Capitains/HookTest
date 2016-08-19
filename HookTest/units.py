@@ -9,6 +9,8 @@ import subprocess
 import re
 from collections import defaultdict
 from lxml.etree import XPathEvalError
+from MyCapytain.errors import DuplicateReference
+
 
 class TESTUnit(object):
     """ TestUnit Metaclass
@@ -58,12 +60,11 @@ class TESTUnit(object):
         :rtype: boolean
         """
         try:
-            f = open(self.path)
-            xml = etree.parse(f, TESTUnit.PARSER)
-            self.xml = xml
-            self.testable = True
-            self.log("Parsed")
-            f.close()
+            with open(self.path) as f:
+                xml = etree.parse(f, TESTUnit.PARSER)
+                self.xml = xml
+                self.testable = True
+                self.log("Parsed")
         except Exception as e:
             self.testable = False
             self.error(e)
@@ -115,12 +116,13 @@ class INVUnit(TESTUnit):
     :type path: basestring
     """
 
-    tests = ["parsable", "capitain", "metadata", "check_urns"]
+    tests = ["parsable", "capitain", "metadata", "check_urns", "filename"]
     readable = {
         "parsable": "File parsing",
         "capitain": "MyCapytain parsing",
         "metadata": "Metadata availability",
-        "check_urns": "URNs testing"
+        "check_urns": "URNs testing",
+        "filename": "Naming Convention"
     }
 
     def __init__(self, *args, **kwargs):
@@ -164,6 +166,13 @@ class INVUnit(TESTUnit):
 
             elif self.type == "work":
                 status = True
+
+                # Check that the work has a language
+                workLang = self.xml.xpath("//ti:work/@xml:lang", namespaces=TESTUnit.NS)
+                if len(workLang) != 1:
+                    status = False
+                    self.log("Work node is missing its lang attribute")
+
                 langs = self.xml.xpath("//ti:translation/@xml:lang", namespaces=TESTUnit.NS)
                 if len(langs) != len(self.xml.xpath("//ti:translation", namespaces=TESTUnit.NS)):
                     status = False
@@ -206,32 +215,88 @@ class INVUnit(TESTUnit):
                 ]
                 self.log("Group urn :" + "".join(self.xml.xpath("//ti:textgroup/@urn", namespaces=TESTUnit.NS)))
                 status = len(urns) == 1
+                if status:
+                    self.urn = urns[0]
             elif self.type == "work":
+                matches = True
+                onlyOneWork = True
+                allMembers = True
                 worksUrns = [
                         urn
                         for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
                         if urn and len(MyCapytain.common.reference.URN(urn)) == 4
-                    ] + [
+                    ]
+                groupUrns = [
                         urn
                         for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
                         if urn and len(MyCapytain.common.reference.URN(urn)) == 3
                     ]
-                self.log("Group urn : " + "".join(self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)))
-                self.log("Work urn : " + "".join(self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)))
+                self.urn = None
+                if len(worksUrns) == 1:
+                    self.urn = worksUrns[0]
+                    urn = MyCapytain.common.reference.URN(self.urn)
+                    if len(groupUrns) == len(worksUrns):
+                        missing = [
+                            key for key in ['namespace', 'work', 'textgroup']
+                            if getattr(urn, key) is None or len(getattr(urn, key)) == 0
+                        ]
+                        if missing:
+                            self.log("Work URN is missing: {}".format(", ".join(missing)))
+                            allMembers = False
+                        elif groupUrns[0] != urn.upTo(MyCapytain.common.reference.URN.TEXTGROUP):
+                            matches = False
+                            self.log("The Work URN is not a child of the Textgroup URN")
+                self.log("Group urn : " + "".join(groupUrns))
+                self.log("Work urn : " + "".join(worksUrns))
 
                 texts = self.xml.xpath("//ti:edition|//ti:translation", namespaces=TESTUnit.NS)
-                workUrnsText = []
 
                 for text in texts:
-                    self.urns.append(text.get("urn"))
-                    workUrnsText.append(text.get("workUrn"))
+                    t_urn = text.get("urn")
+                    if t_urn and t_urn.startswith("urn:cts:"):
+                        t_urn = MyCapytain.common.reference.URN(t_urn)
+                        missing = [
+                            key for key in ['namespace', 'work', 'version', 'textgroup']
+                            if getattr(t_urn, key) is None or len(getattr(t_urn, key)) == 0
+                        ]
+                        if missing:
+                            self.log("Text {} URN is missing: {}".format(str(t_urn), ", ".join(missing)))
+                            allMembers = False
+                        elif t_urn.upTo(MyCapytain.common.reference.URN.WORK) != str(urn):
+                            matches = False
+                            self.log("Text {} does not match parent URN".format(str(t_urn)))
+                    self.urns.append(t_urn)
+                    worksUrns.append(text.get("workUrn"))
 
-                workUrnsText = [urn for urn in workUrnsText if urn and len(MyCapytain.common.reference.URN(urn)) == 4]
-                self.urns = [urn for urn in self.urns if urn and len(MyCapytain.common.reference.URN(urn)) == 5]
+                if len(set(worksUrns)) > 1:
+                    onlyOneWork = False
+                    self.log("There is different workUrns in the metadata")
+
+                self.urns = [str(urn) for urn in self.urns if urn and len(urn) == 5]
+
                 self.log("Editions and translations urns : " + " ".join(self.urns))
 
-                status= len(worksUrns) == 2 and (len(texts)*2)==len(self.urns + workUrnsText)
+                status = allMembers and\
+                         matches and onlyOneWork and self.urn and \
+                            len(groupUrns) == 1 and \
+                            (len(texts)*2+1) == len(self.urns + worksUrns)
 
+        yield status
+
+    def filename(self):
+        status = False
+        if self.urn:
+            urn = MyCapytain.common.reference.URN(self.urn)
+            if self.type == "textgroup":
+                status = self.path.endswith("data/{textgroup}/__cts__.xml".format(textgroup=urn.textgroup))
+            elif self.type == "work":
+                self.log(str(urn))
+                status = self.path.endswith("data/{textgroup}/{work}/__cts__.xml".format(
+                    textgroup=urn.textgroup, work=urn.work
+                ))
+
+        if not status:
+            self.log("URN and path does not match")
         yield status
 
     def test(self):
@@ -258,10 +323,9 @@ class CTSUnit(TESTUnit):
 
     """
 
-    tests = ["parsable", "capitain", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory"]
+    tests = ["parsable", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory"]
     readable = {
         "parsable": "File parsing",
-        "capitain": "File ingesting in MyCapytain",
         "refsDecl": "RefsDecl parsing",
         "passages": "Passage level parsing",
         "epidoc": "Epidoc DTD validation",
@@ -273,35 +337,34 @@ class CTSUnit(TESTUnit):
     }
 
     def __init__(self, *args, **kwargs):
-        super(CTSUnit, self).__init__(*args, **kwargs)
         self.inv = list()
         self.scheme = None
+        self.Text = None
+        self.xml = None
+        super(CTSUnit, self).__init__(*args, **kwargs)
 
-    def capitain(self):
-        """ Load the file in MyCapytain
+    def parsable(self):
+        """ Override super(parsable) and add CapiTainS Ingesting to it
         """
-        if self.xml:
-            try:
-                self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
-                yield True
-            except XPathEvalError as E:
-                self.log("XPath given for citation can't be parsed")
-                yield False
-            except MyCapytain.errors.RefsDeclError as E:
-                self.error(E)
-                yield False
-            except (IndexError, TypeError) as E:
-                self.log("Text can't be read through Capitains standards")
-                yield False
+        status = next(
+            super(CTSUnit, self).parsable()
+        )
+        if status:
+            self.Text = MyCapytain.resources.texts.local.Text(resource=self.xml.getroot())
         else:
-            yield False
+            self.Text = None
+        yield status
 
     def refsDecl(self):
         """ Contains refsDecl informations
         """
         if self.Text:
-            self.log(str(len(self.Text.citation)) + " citation's level found")
-            yield len(self.Text.citation) > 0
+            # In 1.0.1, MyCapytain actually create an empty citation by default
+            if self.Text.citation.refsDecl:
+                self.log(str(len(self.Text.citation)) + " citation's level found")
+                yield len(self.Text.citation) > 0
+            else:
+                yield False
         else:
             yield False
 
@@ -335,19 +398,21 @@ class CTSUnit(TESTUnit):
         yield len(out) == 0 and len(error) == 0
 
     def passages(self):
-        if self.Text:
+        if self.Text and self.Text.citation.refsDecl:
             for i in range(0, len(self.Text.citation)):
                 try:
-                    with warnings.catch_warnings(record=True) as w:
+                    with warnings.catch_warnings(record=True) as warning_record:
                         # Cause all warnings to always be triggered.
                         warnings.simplefilter("always")
-                        passages = self.Text.getValidReff(level=i+1)
+                        passages = self.Text.getValidReff(level=i+1, _debug=True)
                         ids = [ref.split(".", i)[-1] for ref in passages]
                         space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
-                        status = len(passages) > 0 and len(w) == 0 and space_in_passage is None
+                        status = len(passages) > 0 and len(warning_record) == 0 and space_in_passage is None
                         self.log(str(len(passages)) + " found")
-                        if len(w) > 0:
-                            self.log("Duplicate references found : {0}".format(", ".join([str(v.message) for v in w])))
+                        for record in warning_record:
+                            if record.category == DuplicateReference:
+                                passages = sorted(str(record.message).split(", "))
+                                self.log("Duplicate references found : {0}".format(", ".join(passages)))
                         if space_in_passage and space_in_passage is not None:
                             self.log("Reference with forbidden characters found: {}".format(
                                 " ".join([
@@ -390,32 +455,39 @@ class CTSUnit(TESTUnit):
         except Exception:
             yield False
 
-
     def has_urn(self):
         """ Test that a file has its urn saved
         """
         if self.xml is not None:
             if self.scheme == "tei":
-                urns = self.xml.xpath("//tei:text[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+                urns = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
             else:
-                urns = self.xml.xpath("//tei:body/tei:div[@type='edition' and starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
-                urns += self.xml.xpath("//tei:body/tei:div[@type='translation' and starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+                urns = self.xml.xpath(
+                    "//tei:body/tei:div[@type='edition' and starts-with(@n, 'urn:cts:')]",
+                    namespaces=TESTUnit.NS
+                )
+                urns += self.xml.xpath(
+                    "//tei:body/tei:div[@type='translation' and starts-with(@n, 'urn:cts:')]",
+                    namespaces=TESTUnit.NS
+                )
             status = len(urns) > 0
             if status:
                 logs = urns[0].get("n")
-                try:
-                    urn = MyCapytain.common.reference.URN(logs)
-                    if len(urn) < 5:
-                        status = False
-                        self.log("Incomplete URN")
-                    elif urn["passage"]:
-                        status = False
-                        self.log("Reference not accepted in URN")
-                except:
+                urn = MyCapytain.common.reference.URN(logs)
+                missing_members = [
+                    key for key in ['namespace', 'work', 'version', 'textgroup']
+                    if getattr(urn, key) is None or len(getattr(urn, key)) == 0
+                ]
+                if len(urn) < 5:
                     status = False
-                finally:
-                    self.log(logs)
-                    self.urn = logs
+                    self.log("Incomplete URN")
+                elif urn.reference:
+                    status = False
+                    self.log("Reference not accepted in URN")
+                elif len(missing_members) > 0:
+                    status = False
+                    self.log("Elements of URN are empty: {}".format(", ".join(sorted(missing_members))))
+                self.urn = logs
         else:
             status = False
         yield status

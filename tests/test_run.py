@@ -12,6 +12,12 @@ class TestProcess(TestCase):
 
     Thanks to http://stackoverflow.com/questions/18160078/how-do-you-write-tests-for-the-argparse-portion-of-a-python-module
     """
+
+    def assertSubset(self, member, container, message):
+        self.assertTrue(
+            set(member).issubset(set(container)), message
+        )
+
     def read_logs(self, file):
         j = []
         with open(file) as file:
@@ -51,15 +57,23 @@ class TestProcess(TestCase):
         self.assertEqual(status, "failed", "Test should fail")
 
     def test_run_local_repo_errors(self):
-        """ Test a run on the local tests passages with console print
+        """ Test a run on the local error tests passages with console print
 
          This unit test should be used to check edge cases. Repo 2 is built for that
+        """
+        # Can be replace by HookTest.test.cmd(**vars(HookTest.cmd.parse_args()) for debug
+        status = HookTest.test.cmd(**vars(HookTest.cmd.parse_args([
+            "./tests/repo2",
+            "--scheme", "epidoc", "--verbose",
+            "--json", "cloning_dir/repo2.json"
+        ])))
         """
         status, logs = self.hooktest([
             "./tests/repo2", "--console",
             "--scheme", "epidoc", "--verbose",
             "--json", "cloning_dir/repo2.json"
         ])
+        """
         parsed = self.read_logs("cloning_dir/repo2.json")
         ####
         #
@@ -68,8 +82,19 @@ class TestProcess(TestCase):
         #
         ####
         text = self.filter(parsed, "/data/tlg2255/perseus001/tlg2255.perseus001.perseus-grc1.xml")
-        self.assertIn('>>>>>> 2 found', text["logs"], "Text should have 22 passages")
+        self.assertIn('>>>>>> 21 found', text["logs"], "Text should have 21 passages")
         self.assertTrue(text["status"], "Text tlg2255.p001.grc1 should pass")
+
+        ####
+        #
+        #   Test on subreference
+        #   Reference should make an issue
+        #
+        ####
+        text = self.filter(parsed, "/data/tlg2255/perseus001/subreference.xml")
+        self.assertFalse(text["units"]["URN informations"], "URN information fails")
+        self.assertIn(">>>>>> Reference not accepted in URN", text["logs"], "URN Reference error should display in logs")
+        self.assertFalse(text["status"], "Text subreference should fail because of URN")
 
         ####
         #
@@ -78,11 +103,11 @@ class TestProcess(TestCase):
         #
         ####
         text = self.filter(parsed, "/data/tlg2255/perseus001/false.xml")
-        self.assertFalse(text["status"], "Text tlg2255.p001.grc1 should not pass")
+        self.assertFalse(text["status"], "Text false.xml should not pass")
         self.assertFalse(text["units"]["File parsing"], "It should not be parsable")
         self.assertIn(
             '>>>>>> fatal: The element type "text" must be terminated by the matching end-tag "</text>". [In (L236 C22)]',
-            text["logs"][-1], "Fatal error should be parsed"
+            text["logs"], "Fatal error should be parsed"
         )
 
         ####
@@ -92,12 +117,70 @@ class TestProcess(TestCase):
         #
         ####
         text = self.filter(parsed, "/data/stuff/__cts__.xml")
-        self.assertIn(
-            '>>>>>> No metadata type detected (neither work nor textgroup)\n>>>>>> Inventory can\'t '\
-            'be read through Capitains standards',
-            text["logs"], "Fatal error should be parsed"
+        self.assertSubset(
+            [
+                '>>>>>> No metadata type detected (neither work nor textgroup)',
+                '>>>>>> Inventory can\'t be read through Capitains standards'
+             ],
+            text["logs"], "Absence of metadatafile should be spotted"
         )
         self.assertFalse(text["status"], "Wrong root node should fail file")
+
+        ####
+        #
+        #   /data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml
+        #   Has wrong root node
+        #
+        ####
+        text = self.filter(parsed, "/data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml")
+        self.assertEqual(
+            {'Naming conventions': False, 'RefsDecl parsing': False, 'Epidoc DTD validation': False,
+             'URN informations': False, 'File parsing': True, 'Passage level parsing': False,
+             'Available in inventory': False, 'Unique nodes found by XPath': False}
+            ,
+            text["units"], "Everything but XML parsing should fail in TEI.2 files"
+        )
+        self.assertFalse(text["status"], "Wrong XML scheme should fail file")
+
+        ####
+        #
+        #   /data/wrongmetadata/__cts__xml
+        #   Miss languages on groupname node and wrong path
+        #
+        ####
+        text = self.filter(parsed, "/data/wrongmetadata/__cts__.xml")
+        self.assertEqual(
+            {'Metadata availability': False, 'URNs testing': True, 'MyCapytain parsing': True, 'File parsing': True,
+             'Naming Convention': False}, text["units"],
+            "Naming Convention should fail as well as lang"
+        )
+        self.assertSubset(
+            [
+                ">>>>>> 0 groupname found",
+                ">>>>>> URN and path does not match"
+            ], text["logs"], "Logs should be detailed when failing on lang or naming convention"
+        )
+        self.assertFalse(text["status"], "Missing language and naming convention should fail file")
+
+        ####
+        #
+        #   /data/wrongmetadata/wrongmetadata/__cts__xml
+        #   Miss languages on work node and wrong path
+        #
+        ####
+        text = self.filter(parsed, "/data/wrongmetadata/wrongmetadata/__cts__.xml")
+        self.assertEqual(
+            {'Metadata availability': False, 'URNs testing': False, 'MyCapytain parsing': True, 'File parsing': True,
+             'Naming Convention': False}, text["units"],
+            "Naming Convention should fail as well as lang"
+        )
+        self.assertSubset(
+            [
+                ">>>>>> Work node is missing its lang attribute",
+                ">>>>>> URN and path does not match"
+            ], text["logs"], "Logs should be detailed when failing on lang or naming convention"
+        )
+        self.assertFalse(text["status"], "Missing language and naming convention should fail file")
 
     def test_run_local_console(self):
         """ Test a run on the local tests passages with console print """
@@ -114,20 +197,21 @@ class TestProcess(TestCase):
             "Unique nodes found by XPath passed", logs,
             "Normal file should be tested"
         )
-        self.assertTrue(
-            {
+        self.assertSubset(
+            [
                 ">>>> Testing /data/hafez/divan/__cts__.xml",
                 ">>>> Testing /data/hafez/__cts__.xml",
                 ">>>> Testing /hafez/divan/hafez.divan.perseus-far1.xml",
                 ">>>> Testing /hafez/divan/hafez.divan.perseus-eng1.xml",
                 ">>>> Testing /hafez/divan/hafez.divan.perseus-ger1.xml"
-            }.issubset(set(logs.split("\n"))),
+            ],
+            logs.split("\n"),
             "All files should be tested"
         )
         self.assertEqual(status, "failed", "Test should fail")
 
     def test_run_local_console_verbose(self):
-        """ Test a run on the local tests passages with console print """
+        """ Test a run on the local tests passages with console print and verbose """
         status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose"])
         self.assertIn(
             "[failed] 2 over 5 texts have fully passed the tests\n", logs,
@@ -137,7 +221,7 @@ class TestProcess(TestCase):
             "\n>>>>>> ", logs,
             "Marker of verbose should be available"
         )
-        self.assertTrue(
+        self.assertSubset(
             {
                 # List of file tested
                 ">>>> Testing /data/hafez/divan/__cts__.xml",
@@ -165,13 +249,14 @@ class TestProcess(TestCase):
                 ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
                 "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
 
-                }.issubset(set(logs.split("\n"))),
+            },
+            logs.split("\n"),
             "All files should be tested and verbosed"
         )
         self.assertEqual(status, "failed", "Test should fail")
 
     def test_run_local_console_verbose_epidoc(self):
-        """ Test a run on the local tests passages with console print """
+        """ Test a run on the local tests passages with console print as Epidoc """
         status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose", "--scheme", "epidoc"])
         self.assertIn(
             "[success] 5 over 5 texts have fully passed the tests\n", logs,
@@ -181,7 +266,7 @@ class TestProcess(TestCase):
             "\n>>>>>> ", logs,
             "Marker of verbose should be available"
         )
-        self.assertTrue(
+        self.assertSubset(
             {
                 # List of file tested
                 ">>>> Testing /data/hafez/divan/__cts__.xml",
@@ -209,7 +294,8 @@ class TestProcess(TestCase):
                 ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
                 "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
 
-                }.issubset(set(logs.split("\n"))),
+            },
+            logs.split("\n"),
             "All files should be tested and verbosed"
         )
         self.assertEqual(status, "success", "Test should fail")
@@ -221,6 +307,77 @@ class TestProcess(TestCase):
             ">>> [error] 0 over 0 texts have fully passed the tests", logs,
             "No file should result in no file tested"
         )
+
+    def test_run_tei_errors(self):
+        """ Test a run on the local error TEI Repo with console print
+
+         This unit test should be used to check edge cases. Repo tei is built for that
+        """
+        # Can be replace by HookTest.test.cmd(**vars(HookTest.cmd.parse_args()) for debug
+        status = HookTest.test.cmd(**vars(HookTest.cmd.parse_args([
+            "./tests/repotei",
+            "--scheme", "tei", "--verbose",
+            "--json", "cloning_dir/repotei.json"
+        ])))
+        status, logs = self.hooktest([
+            "./tests/repotei", "--console",
+            "--scheme", "tei", "--verbose",
+            "--json", "cloning_dir/repotei.json"
+        ])
+
+        parsed = self.read_logs("cloning_dir/repotei.json")
+        ####
+        #
+        #   Test on tei.tei.tei.xml
+        #   Checks TEI RNG parsing
+        #
+        ####
+        text = self.filter(parsed, "/data/tei/tei/tei.tei.tei.xml")
+        self.assertIn(
+            '>>>>>> error: element "varchar" not allowed anywhere [In (L3 C10)]', text["logs"],
+            "TEI RNG Error should show"
+        )
+        self.assertFalse(text["status"], "Wrong TEI File should not pass")
+
+        ####
+        #
+        #   Test on tei.tei.weirdurn.xml
+        #   Weird URN Exception should be catched
+        #
+        ####
+        text = self.filter(parsed, "/data/tei/tei/tei.tei.weirdurn.xml")
+        self.assertIn(
+            '>>>>>> error: element "encodingDesc" incomplete [In (L27 C20)]', text["logs"],
+            "TEI RNG Error should show"
+        )
+        self.assertIn(
+            ">>>>>> Elements of URN are empty: namespace, textgroup, version, work",
+            text["logs"], "Empty member of urn should raise issue"
+        )
+        self.assertEqual(
+            [False, False], [text["units"]["URN informations"], text["units"]["TEI DTD Validation"]], text["units"],
+        )
+        self.assertFalse(text["status"], "Wrong TEI File should not pass")
+
+        ####
+        #
+        #   Test on tei/tei/__cts__.xml
+        #   Weird URN Exception should be catched
+        #
+        ####
+        text = self.filter(parsed, "/data/tei/tei/__cts__.xml")
+        self.assertSubset(
+            {
+                '>>>>> URNs testing failed',
+                ">>>>>> The Work URN is not a child of the Textgroup URN",
+                ">>>>>> Text urn:cts:greekLit:tlg2255..perseus-grc1 URN is missing: work",
+                ">>>>>> Text urn:cts:greekLit:tei.tei. URN is missing: version",
+                ">>>>>> Text urn:cts:greekLit:tei.tei2.tei does not match parent URN",
+                ">>>>>> There is different workUrns in the metadata"
+            },
+            text["logs"], "Details about failing URN should be provided"
+        )
+        self.assertFalse(text["status"], "Misformated URNS or not descendants should not pass")
 
     def test_run_clone_branch(self):
         """ Test a clone on dummy empty repo with branch change"""
@@ -239,7 +396,6 @@ class TestProcess(TestCase):
             }.issubset(setlogs),
             "Logs should fail on Epidoc wrong"
         )
-
         self.assertTrue(
             {
                 ">>>>>> Duplicate references found : 1.1"
@@ -261,7 +417,7 @@ class TestProcess(TestCase):
             "[success] 5 over 5 texts have fully passed the tests\n", logs,
             "Test conclusion should be printed"
         )
-        self.assertTrue(
+        self.assertSubset(
             {
                 # List of file tested
                 ">>>> Testing PerseusDL/canonical-farsiLit/data/hafez/__cts__.xml",
@@ -287,6 +443,7 @@ class TestProcess(TestCase):
                 ">>>>>> Group urn : urn:cts:farsiLit:hafez",
                 ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan"
 
-            }.issubset(set(logs.split("\n"))),
+            },
+            logs.split("\n"),
             "All files should be tested and verbosed"
         )
