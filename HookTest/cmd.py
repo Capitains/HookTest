@@ -29,6 +29,9 @@ def parse_args(args):
     parser.add_argument('-s', "--scheme", help="'tei' or 'epidoc' scheme to be used", default="tei")
     parser.add_argument("-v", "--verbose", help="Show RNG's errors", action="store_true")
     parser.add_argument("-j", "--json", help="Save to specified json file the results", default=None)
+    parser.add_argument("-f", "--finder", help="Filter using the last part of the URN (eg. tlg0001.tlg001, tlg0001"
+                                               ", tlg0001.tlg001.p-grc1 for urn:cts:greekLit:tlg0001.tlg001.p-grc1",
+                        default=None)
     parser.add_argument(
         "-c", "--console", help="Print to console", action="store_true", default=False)
     parser.add_argument(
@@ -38,11 +41,15 @@ def parse_args(args):
         default=None
     )
 
-    return parser.parse_args(args)
+    args = parser.parse_args(args)
+    if args.finder:
+        args.finderoptions = {"include": args.finder}
+        args.finder = HookTest.test.FilterFinder
+    return args
 
 
 def cmd():
-    """ Run locally the software
+    """ Run locally the software. Should not be called outside of a python cmd.py call
     """
     status = HookTest.test.cmd(**vars(parse_args(sys.argv[1:])))
     if status is False:

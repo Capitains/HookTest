@@ -23,6 +23,73 @@ import HookTest.units
 pr_finder = re.compile("pull\/([0-9]+)\/head")
 
 
+class DefaultFinder(object):
+    """ Finder are object used in Test to retrieve the target files of the tests
+
+    """
+    def __init__(self, **options):
+        pass
+
+    def find(self, directory):
+        """ Return object to find
+
+        :param directory: Root Directory to search in
+
+        :returns: Path of xml text files, Path of __cts__.xml files
+        :rtype: (list, list)
+        """
+        data = glob.glob(os.path.join(directory, "data/*/*/*.xml")) + glob.glob(os.path.join(directory, "data/*/*.xml"))
+        files, cts = [f for f in data if "__cts__.xml" not in f], [f for f in data if "__cts__.xml" in f]
+
+        # For unit testing and human readable progression
+        cts.sort()
+        files.sort()
+        return files, cts
+
+
+class FilterFinder(DefaultFinder):
+    """ FilterFinder provide a filtering capacity to DefaultFinder.
+
+    It takes an include option which takes the form of the work urn (*ie.* in urn:cts:latinLit:phi1294.phi002.perseus-lat2 \
+    this would be phi1294.phi002.perseus-lat2, cut at any of the points : phi1294, phi1294.phi002, phi1294.phi002.perseus-lat2)
+
+    :param include: Representation of the work urn component (might be from one member down to the version member)
+    :type include: str
+    """
+    def __init__(self, include, **options):
+        self.include = include.split(".")
+
+    def find(self, directory):
+        """ Return object to find
+
+        :param directory: Root Directory to search in
+
+        :returns: Path of xml text files, Path of __cts__.xml files
+        :rtype: (list, list)
+        """
+        textgroup, work, version = "*", "*", "*.*.*",
+        if len(self.include) == 3:
+            version = ".".join(self.include)
+        if len(self.include) >= 2:
+            work = self.include[1]
+        if len(self.include) >= 1:
+            textgroup = self.include[0]
+
+        cts = glob.glob(os.path.join(directory, "data/{textgroup}/__cts__.xml".format(
+            textgroup=textgroup
+        ))) + \
+              glob.glob(os.path.join(directory, "data/{textgroup}/{work}/__cts__.xml".format(
+                  textgroup=textgroup, work=work
+              )))
+        files = glob.glob(os.path.join(directory, "data/{textgroup}/{work}/{version}.xml".format(
+            textgroup=textgroup, work=work, version=version
+        )))
+        # For unit testing and human readable progression
+        cts.sort()
+        files.sort()
+        return files, cts
+
+
 class Test(object):
     """ Create a Test object
 
@@ -44,6 +111,10 @@ class Test(object):
     :type ping: str
     :param console: If set to true, print logs to the console
     :type console: bool
+    :param finder: Test files retriever
+    :type finder: DefaultFinder
+    :param finderoptions: Dictionary of option to instantiate specific finders
+    :type finderoptions: dict
     """
     STACK_TRIGGER_SIZE = 10
     FAILURE = "failed"
@@ -58,6 +129,7 @@ class Test(object):
     def __init__(self, path,
          repository=None, branch=None, uuid=None, workers=1, scheme="tei",
          verbose=False, ping=None, secret="", triggering_size=None, console=False,
+         finder=DefaultFinder, finderoptions=None,
         **kwargs
     ):
         """ Create a Test object
@@ -110,6 +182,14 @@ class Test(object):
         self.text_files = []
         self.cts_files = []
         self.progress = None
+
+        self.finder = finder
+        if not finder:
+            self.finder = DefaultFinder
+        if finderoptions:
+            self.finder = self.finder(**finderoptions)
+        else:
+            self.finder = self.finder()
 
     @property
     def successes(self):
@@ -286,7 +366,7 @@ class Test(object):
         :rtype: (string, list, dict)
         """
 
-        self.text_files, self.cts_files = Test.find(self.directory)
+        self.text_files, self.cts_files = self.find()
         self.start()
         # We deal with Inventory files first to get a list of urns
 
@@ -396,8 +476,7 @@ class Test(object):
     def clean(self):
         shutil.rmtree(self.directory, ignore_errors=True)
 
-    @staticmethod
-    def find(directory):
+    def find(self):
         """ Find CTS files in a directory
         :param directory: Path of the directory
         :type directory: str
@@ -405,13 +484,8 @@ class Test(object):
         :returns: Path of xml text files, Path of __cts__.xml files
         :rtype: (list, list)
         """
-        data = glob.glob(os.path.join(directory, "data/*/*/*.xml")) + glob.glob(os.path.join(directory, "data/*/*.xml"))
-        files, cts = [f for f in data if "__cts__.xml" not in f], [f for f in data if "__cts__.xml" in f]
 
-        # For unit testing and human readable progression
-        cts.sort()
-        files.sort()
-        return files, cts
+        return self.finder.find(self.directory)
 
     def cover(self, name, test, logs=None):
         """ Given a dictionary, compute the coverage of one item
