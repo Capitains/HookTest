@@ -571,7 +571,7 @@ class TestTest(unittest.TestCase):
         mocked.assert_called_with("./1234", ignore_errors=True)
 
     def test_find(self):
-        reading, metadata = (HookTest.test.Test("./")).find("./tests/repo1")
+        reading, metadata = (HookTest.test.Test("./tests/repo1")).find()
         self.assertEqual(len(metadata), 2, "It should find two __cts__ in repo1")
         self.assertEqual(len(reading), 3, "It should find three texts in repo1")  # eng far ger
 
