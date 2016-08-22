@@ -49,7 +49,7 @@ def parse_args(args):
 
 
 def cmd():
-    """ Run locally the software
+    """ Run locally the software. Should not be called outside of a python cmd.py call
     """
     status = HookTest.test.cmd(**vars(parse_args(sys.argv[1:])))
     if status is False:

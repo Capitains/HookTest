@@ -90,7 +90,6 @@ class FilterFinder(DefaultFinder):
         return files, cts
 
 
-
 class Test(object):
     """ Create a Test object
 
@@ -114,6 +113,8 @@ class Test(object):
     :type console: bool
     :param finder: Test files retriever
     :type finder: DefaultFinder
+    :param finderoptions: Dictionary of option to instantiate specific finders
+    :type finderoptions: dict
     """
     STACK_TRIGGER_SIZE = 10
     FAILURE = "failed"
@@ -189,7 +190,6 @@ class Test(object):
             self.finder = self.finder(**finderoptions)
         else:
             self.finder = self.finder()
-
 
     @property
     def successes(self):
