@@ -308,6 +308,20 @@ class TestProcess(TestCase):
             "No file should result in no file tested"
         )
 
+    def test_run_filter(self):
+        """ Test a run on the local testFilers Repo with json
+
+        """
+        # Can be replace by HookTest.test.cmd(**vars(HookTest.cmd.parse_args()) for debug
+        status = HookTest.test.cmd(**vars(HookTest.cmd.parse_args([
+            "./tests/repoFilters",
+            "--scheme", "epidoc", "--verbose",
+            "--json", "cloning_dir/repofilter.json",
+            "--finder", "stoa0255.stoa004"
+        ])))
+        parsed = self.read_logs("cloning_dir/repofilter.json")
+        self.assertEqual(len(parsed["units"]), 4, "There should be 4 tests : two texts, two metadata")
+
     def test_run_tei_errors(self):
         """ Test a run on the local error TEI Repo with console print
 
