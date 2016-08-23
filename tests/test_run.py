@@ -322,6 +322,31 @@ class TestProcess(TestCase):
         parsed = self.read_logs("cloning_dir/repofilter.json")
         self.assertEqual(len(parsed["units"]), 4, "There should be 4 tests : two texts, two metadata")
 
+    def test_run_countwords(self):
+        """ Test a run on the local with counting words with json
+
+        """
+        # Can be replace by HookTest.test.cmd(**vars(HookTest.cmd.parse_args()) for debug
+        status = HookTest.test.cmd(**vars(HookTest.cmd.parse_args([
+            "./tests/repoFilters",
+            "--scheme", "epidoc", "--verbose",
+            "--json", "cloning_dir/repocount.json",
+            "--finder", "stoa0255.stoa004",
+            "--countwords"
+        ])))
+        parsed = self.read_logs("cloning_dir/repocount.json")
+        self.assertEqual(
+            sum([w["words"] for w in parsed["units"] if "words" in w]), 12830, "12830 Words should be found"
+        )
+        self.assertSubset(
+            {
+                '>>>>>> urn:cts:latinLit:stoa0255.stoa004.perseus-lat2 has 6415 words',
+                '>>>>>> urn:cts:latinLit:stoa0255.stoa004.perseus-fre2 has 6415 words'
+            }, [log for w in parsed["units"] if "words" in w for log in w["logs"]],
+            "Check that logs print the number of words in verbose"
+        )
+        self.assertEqual(len(parsed["units"]), 4, "There should be 4 tests : two texts, two metadata")
+
     def test_run_tei_errors(self):
         """ Test a run on the local error TEI Repo with console print
 

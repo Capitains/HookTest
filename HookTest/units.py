@@ -114,6 +114,26 @@ class INVUnit(TESTUnit):
 
     :param path: Path to the file
     :type path: basestring
+
+    :cvar tests: Contains the list of methods to be run again the text
+    :type tests: [str]
+    :cvar readable: Human friendly string associated to object methods
+    :type readable: dict
+
+    :ivar urns: List of URN retrieved in the file.
+    :type urns: [str]
+    :ivar type: Type of metadata (textgroup or work)
+    :type type: str
+
+    Shared variables with parent class:
+
+    :ivar path: Path for the resource
+    :type path: str
+    :ivar xml: XML resource, parsed in python. Used to do general checking
+    :type xml: lxml._etree.Element
+
+    .. note:: All method in CTSUnit.tests ("parsable", "capitain", "metadata", "check_urns", "filename" ) yield at \
+    least one boolean (might be more) which represents the success of it.
     """
 
     tests = ["parsable", "capitain", "metadata", "check_urns", "filename"]
@@ -155,6 +175,8 @@ class INVUnit(TESTUnit):
             yield False
 
     def metadata(self):
+        """ Check the presence of all metadata
+        """
         status = False
         if self.xml is not None and self.Text:
 
@@ -205,6 +227,10 @@ class INVUnit(TESTUnit):
         yield status
 
     def check_urns(self):
+        """ Check the validity and presence of urns in the text
+
+        .. note:: Populates self.urns
+        """
         status = False
         if self.xml:
             if self.type == "textgroup":
@@ -284,6 +310,8 @@ class INVUnit(TESTUnit):
         yield status
 
     def filename(self):
+        """ Check the filename and the path correctly represent the path
+        """
         status = False
         if self.urn:
             urn = MyCapytain.common.reference.URN(self.urn)
@@ -320,7 +348,30 @@ class CTSUnit(TESTUnit):
 
     :param path: Path to the file
     :type path: basestring
+    :param countwords: Count the number of words and log it if necessary
+    :type countwords: bool
 
+    :cvar tests: Contains the list of methods to be run again the text
+    :type tests: [str]
+    :cvar readable: Human friendly string associated to object methods
+    :type readable: dict
+
+    :ivar inv: List of URN retrieved in metadata. Used to check the availability of metadata for the text
+    :type inv: [str]
+    :ivar scheme: Scheme to be used to check the
+    :type scheme: str
+    :ivar Text: Text object according to MyCapytains parsing. Used to find passages
+    :type Text: MyCapytain.resources.text.local.Text
+
+    Shared variables with parent class:
+
+    :ivar path: Path for the resource
+    :type path: str
+    :ivar xml: XML resource, parsed in python. Used to do general checking
+    :type xml: lxml._etree.Element
+
+    .. note:: All method in CTSUnit.tests ( "parsable", "has_urn", "naming_convention", "refsDecl", "passages", \
+    "unique_passage", "inventory" ) yield at least one boolean (might be more) which represents the success of it.
     """
 
     tests = ["parsable", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory"]
@@ -333,18 +384,24 @@ class CTSUnit(TESTUnit):
         "has_urn": "URN informations",
         "naming_convention": "Naming conventions",
         "inventory": "Available in inventory",
-        "unique_passage": "Unique nodes found by XPath"
+        "unique_passage": "Unique nodes found by XPath",
+        "count_words": "Word Counting"
     }
+    splitter = re.compile(r'\S+', re.MULTILINE)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, path, countwords=False, *args, **kwargs):
         self.inv = list()
         self.scheme = None
         self.Text = None
         self.xml = None
-        super(CTSUnit, self).__init__(*args, **kwargs)
+        self.count = 0
+        self.countwords = countwords
+        super(CTSUnit, self).__init__(path, *args, **kwargs)
 
     def parsable(self):
-        """ Override super(parsable) and add CapiTainS Ingesting to it
+        """ Chacke that the text is parsable (as XML) and ingest it through MyCapytain then.
+
+        .. note:: Override super(parsable) and add CapiTainS Ingesting to it
         """
         status = next(
             super(CTSUnit, self).parsable()
@@ -356,7 +413,7 @@ class CTSUnit(TESTUnit):
         yield status
 
     def refsDecl(self):
-        """ Contains refsDecl informations
+        """ Check that the text contains refsDecl informations
         """
         if self.Text:
             # In 1.0.1, MyCapytain actually create an empty citation by default
@@ -369,6 +426,8 @@ class CTSUnit(TESTUnit):
             yield False
 
     def epidoc(self):
+        """ Check the original file against Epidoc rng through a java pipe
+        """
         test = subprocess.Popen(
             ["java", "-jar", TESTUnit.JING, TESTUnit.EPIDOC, self.path],
             stdout=subprocess.PIPE,
@@ -384,6 +443,8 @@ class CTSUnit(TESTUnit):
         yield len(out) == 0 and len(error) == 0
 
     def tei(self):
+        """ Check the original file against TEI rng through a java pipe
+        """
         test = subprocess.Popen(
             ["java", "-jar", TESTUnit.JING, TESTUnit.TEI_ALL, self.path],
             stdout=subprocess.PIPE,
@@ -398,6 +459,10 @@ class CTSUnit(TESTUnit):
         yield len(out) == 0 and len(error) == 0
 
     def passages(self):
+        """  Check that passages are available at each level. On top of that, it checks for forbidden characters \
+        and duplicate in references
+
+        """
         if self.Text and self.Text.citation.refsDecl:
             for i in range(0, len(self.Text.citation)):
                 try:
@@ -431,7 +496,7 @@ class CTSUnit(TESTUnit):
             yield False
 
     def unique_passage(self):
-        """ Check that citation scheme do not collide
+        """ Check that citation scheme do not collide (eg. Where text:1 would be the same node as text:1.1)
         """
         try:
             # Checking for duplicate
@@ -456,7 +521,7 @@ class CTSUnit(TESTUnit):
             yield False
 
     def has_urn(self):
-        """ Test that a file has its urn saved
+        """ Test that a file has its urn according to CapiTainS Guidelines in its scheme
         """
         if self.xml is not None:
             if self.scheme == "tei":
@@ -508,6 +573,20 @@ class CTSUnit(TESTUnit):
         else:
             yield False
 
+    def count_words(self):
+        """ Count words in a file
+        """
+        status = False
+        self.log(self.Text)
+        if self.Text and self.Text.citation.refsDecl:
+            self.log(self.Text)
+            self.Text.parse()
+            passages = self.Text.text(exclude=["tei:note"])
+            self.count = len(type(self).splitter.findall(passages))
+            self.log("{} has {} words".format(self.urn, self.count))
+            status = self.count > 0
+        yield status
+
     def test(self, scheme, inventory=None):
         """ Test a file with various checks
 
@@ -522,6 +601,8 @@ class CTSUnit(TESTUnit):
             self.inv = inventory
 
         tests = [] + CTSUnit.tests
+        if self.countwords:
+            tests.append("count_words")
         tests.append(scheme)
         self.scheme = scheme
 
