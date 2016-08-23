@@ -384,12 +384,14 @@ class CTSUnit(TESTUnit):
         "inventory": "Available in inventory",
         "unique_passage": "Unique nodes found by XPath"
     }
+    splitter = re.compile(r'\S+', re.MULTILINE)
 
     def __init__(self, *args, **kwargs):
         self.inv = list()
         self.scheme = None
         self.Text = None
         self.xml = None
+        self.count = 0
         super(CTSUnit, self).__init__(*args, **kwargs)
 
     def parsable(self):
@@ -566,6 +568,20 @@ class CTSUnit(TESTUnit):
             yield self.urn in self.inv
         else:
             yield False
+
+    def count_words(self):
+        """ Count words in a file
+        """
+        status = False
+        self.log(self.Text)
+        if self.Text and self.Text.citation.refsDecl:
+            self.log(self.Text)
+            self.Text.parse()
+            passages = self.Text.text(exclude=["tei:note"])
+            self.count = len(type(self).splitter.findall(passages))
+            self.log("{} has {} words".format(self.urn, self.count))
+            status = True
+        yield status
 
     def test(self, scheme, inventory=None):
         """ Test a file with various checks

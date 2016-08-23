@@ -235,3 +235,34 @@ class TestText(unittest.TestCase):
         unit.flush()
         results = [result for result in unit.passages()]
         self.assertEqual(results, [True, True], "Legal character should pass")
+
+    def test_count_words(self):
+        """ Test collision of passages
+        """
+        unit = HookTest.units.CTSUnit("tests/passages/test_passage_success.xml")
+        parsed = [a for a in unit.parsable()]
+        urn = [a for a in unit.has_urn()]
+        unit.flush()
+        a = list(unit.count_words())
+        self.assertEqual(
+            unit.logs, ['>>>>>> urn:cts:latinLit:phi1294.phi002.perseus-lat2 has 173 words'],
+            "Words should be logged"
+        )
+        self.assertEqual(
+            a, [True]
+        )
+
+    def test_count_words_fails(self):
+        """ Test collision of passages
+        """
+        unit = HookTest.units.CTSUnit("tests/repo2/data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml")
+        parsed = [a for a in unit.parsable()]
+        urn = [a for a in unit.has_urn()]
+        unit.flush()
+        a = list(unit.count_words())
+        self.assertEqual(
+            unit.logs, [], "Nothing should be logged"
+        )
+        self.assertEqual(
+            a, [False], "Test should fail"
+        )
