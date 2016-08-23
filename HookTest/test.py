@@ -115,6 +115,8 @@ class Test(object):
     :type finder: DefaultFinder
     :param finderoptions: Dictionary of option to instantiate specific finders
     :type finderoptions: dict
+    :param countwords: Enable counting words for text tests (False by default)
+    :type countwords: bool
     """
     STACK_TRIGGER_SIZE = 10
     FAILURE = "failed"
@@ -129,7 +131,7 @@ class Test(object):
     def __init__(self, path,
          repository=None, branch=None, uuid=None, workers=1, scheme="tei",
          verbose=False, ping=None, secret="", triggering_size=None, console=False,
-         finder=DefaultFinder, finderoptions=None,
+         finder=DefaultFinder, finderoptions=None, countwords=False,
         **kwargs
     ):
         """ Create a Test object
@@ -164,6 +166,7 @@ class Test(object):
         self.secret = bytes(secret, "utf-8")
         self.scheme = scheme
         self.verbose = verbose
+        self.countwords = countwords
         self.__triggering_size = None
         if isinstance(triggering_size, int):
             self.__triggering_size = triggering_size
@@ -341,7 +344,7 @@ class Test(object):
             additional += unit.urns
 
         else:
-            unit = HookTest.units.CTSUnit(filepath)
+            unit = HookTest.units.CTSUnit(filepath, countwords=self.countwords)
             logs.append(">>>> Testing " + filepath.split("data")[-1])
             for name, status, unitlogs in unit.test(self.scheme, self.inventory):
 
@@ -356,8 +359,10 @@ class Test(object):
                     logs += [log for log in unitlogs if log]
 
                 results[name] = status
-
-        return self.cover(filepath, results, logs=logs), filepath, additional
+            additional = {}
+            if self.countwords:
+                additional["words"] = unit.count
+        return self.cover(filepath, results, logs=logs, additional=additional), filepath, additional
 
     def run(self):
         """ Run the tests
@@ -487,7 +492,7 @@ class Test(object):
 
         return self.finder.find(self.directory)
 
-    def cover(self, name, test, logs=None):
+    def cover(self, name, test, logs=None, additional=None):
         """ Given a dictionary, compute the coverage of one item
 
         :param name:
@@ -511,7 +516,8 @@ class Test(object):
                 coverage=len([v for v in results if v is True])/len(results)*100,
                 status=False not in results,
                 logs=logs,
-                repository=self.repository
+                repository=self.repository,
+                additional=additional
             )
         else:
             return UnitLog(
@@ -626,7 +632,7 @@ class Progress(git.RemoteProgress):
 
 
 class UnitLog(object):
-    """ Initiate the object
+    """ Model for logging information
 
     :param name: Name of the tested unit
     :param units:
@@ -634,9 +640,12 @@ class UnitLog(object):
     :param status: Status of the unit
     :param logs: Logs
     :param sent: Status regarding the logging
+    :param repository: Repository
+    :param additional: Additional informations. Can be used for words counting
     """
 
-    def __init__(self, directory, name, units, coverage, status, logs=None, sent=False, repository=None):
+    def __init__(self, directory, name, units, coverage, status, logs=None, sent=False, repository=None, additional=None
+                 ):
         """ Initiate the object
 
         :param name: Name of the tested unit
@@ -657,6 +666,9 @@ class UnitLog(object):
 
         self.name = self.directory_replacer(name)
         self.logs = logs
+        self.additional = {}
+        if isinstance(additional, dict):
+            self.additional = additional
 
     @property
     def logs(self):
@@ -680,7 +692,7 @@ class UnitLog(object):
         :return: Dictionary representation of the object
         :rtype: dict
         """
-        return {
+        x = {
             "name": self.name,
             "units": self.units,
             "coverage": self.coverage,
@@ -688,6 +700,8 @@ class UnitLog(object):
             "logs": self.logs,
             "at": self.time
         }
+        x.update(self.additional)
+        return x
 
     def __str__(self):
         return "\n".join(self.logs)

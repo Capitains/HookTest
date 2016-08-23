@@ -32,6 +32,7 @@ def parse_args(args):
     parser.add_argument("-f", "--finder", help="Filter using the last part of the URN (eg. tlg0001.tlg001, tlg0001"
                                                ", tlg0001.tlg001.p-grc1 for urn:cts:greekLit:tlg0001.tlg001.p-grc1",
                         default=None)
+    parser.add_argument("--countwords", help="Count words in texts passing the tests", action="store_true", default=None)
     parser.add_argument(
         "-c", "--console", help="Print to console", action="store_true", default=False)
     parser.add_argument(

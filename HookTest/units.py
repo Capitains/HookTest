@@ -348,6 +348,8 @@ class CTSUnit(TESTUnit):
 
     :param path: Path to the file
     :type path: basestring
+    :param countwords: Count the number of words and log it if necessary
+    :type countwords: bool
 
     :cvar tests: Contains the list of methods to be run again the text
     :type tests: [str]
@@ -382,17 +384,19 @@ class CTSUnit(TESTUnit):
         "has_urn": "URN informations",
         "naming_convention": "Naming conventions",
         "inventory": "Available in inventory",
-        "unique_passage": "Unique nodes found by XPath"
+        "unique_passage": "Unique nodes found by XPath",
+        "count_words": "Word Counting"
     }
     splitter = re.compile(r'\S+', re.MULTILINE)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, path, countwords=False, *args, **kwargs):
         self.inv = list()
         self.scheme = None
         self.Text = None
         self.xml = None
         self.count = 0
-        super(CTSUnit, self).__init__(*args, **kwargs)
+        self.countwords = countwords
+        super(CTSUnit, self).__init__(path, *args, **kwargs)
 
     def parsable(self):
         """ Chacke that the text is parsable (as XML) and ingest it through MyCapytain then.
@@ -580,7 +584,7 @@ class CTSUnit(TESTUnit):
             passages = self.Text.text(exclude=["tei:note"])
             self.count = len(type(self).splitter.findall(passages))
             self.log("{} has {} words".format(self.urn, self.count))
-            status = True
+            status = self.count > 0
         yield status
 
     def test(self, scheme, inventory=None):
@@ -597,6 +601,8 @@ class CTSUnit(TESTUnit):
             self.inv = inventory
 
         tests = [] + CTSUnit.tests
+        if self.countwords:
+            tests.append("count_words")
         tests.append(scheme)
         self.scheme = scheme
 
