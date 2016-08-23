@@ -7,7 +7,9 @@
 .. image:: https://badge.fury.io/py/HookTest.svg
   :alt: PyPI version
   :target: http://badge.fury.io/py/HookTest
-
+.. image:: https://readthedocs.org/projects/docs/badge/?version=latest
+    :alt: Documentation
+    :target: https://capitains-hooktest.readthedocs.io/en/latest/
 What ?
 ######
 
@@ -57,6 +59,8 @@ The command is run with :code:`HookTest-Local [-h] [-i UUID] [-r REPOSITORY] [-b
 +----------------------------------------+----------------------------------------------------------------------+
 | -f FINDER, --finder Finder             | Filter using the last part of the URN (eg. tlg0001.tlg001, tlg0001,  |
 |                                        | tlg0001.tlg001.p-grc1 for urn:cts:greekLit:tlg0001.tlg001.p-grc1     |
++----------------------------------------+----------------------------------------------------------------------+
+| --countword                            | Count words in texts passing the tests                               |
 +----------------------------------------+----------------------------------------------------------------------+
 
 Licenses
