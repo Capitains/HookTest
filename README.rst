@@ -32,7 +32,7 @@ From there, you will be able to call it in your python scripts with `ìmport Hoo
 How ?
 #####
 
-The command is run with :code:`HookTest-Local [-h] [-i UUID] [-r REPOSITORY] [-b BRANCH] [-w WORKERS] [-s SCHEME] [-v] [-j JSON] [-c] [-p PING] [-f FINDER] path` where Path is the path to the containing repository (in which there is a folder data/)
+The command is run with :code:`hooktest [-h] [-i UUID] [-r REPOSITORY] [-b BRANCH] [-w WORKERS] [-s SCHEME] [-v] [-j JSON] [-c] [-p PING] [-f FINDER] path` where Path is the path to the containing repository (in which there is a folder data/)
 
 +----------------------------------------+----------------------------------------------------------------------+
 | Parameter in console                   | Detail about the Parameter                                           |
