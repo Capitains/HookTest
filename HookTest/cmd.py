@@ -10,7 +10,7 @@ def parse_args(args):
     :return: Parsed argument
     """
     parser = argparse.ArgumentParser(
-        prog='HookTest-Local',
+        prog='hooktest',
         description=" HookTest provides local and easy to use tests for CTS resources package"
     )
 
