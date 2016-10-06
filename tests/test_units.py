@@ -79,6 +79,8 @@ class TestText(unittest.TestCase):
         main = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><body><div n="{}"/></body></TEI>"""
         # When in Body
         body = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><teiHeader/><text><body n="{}"/></text></TEI>"""
+        # When in Body
+        xmlbase = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><teiHeader/><text xml:base="{}"><body/></text></TEI>"""
 
         # Epidoc should fail for TEI
         self.TEI.xml = etree.fromstring(edition.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
@@ -93,6 +95,9 @@ class TestText(unittest.TestCase):
         # Right when TEI
         self.TEI.xml = etree.fromstring(body.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
         self.assertEqual(self.TEI.has_urn().__next__(), True, "TEI URN should return True when urn is in text")
+        # Right when TEI with XML:BASE
+        self.TEI.xml = etree.fromstring(xmlbase.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
+        self.assertEqual(self.TEI.has_urn().__next__(), True, "TEI URN should return True when urn is in text xmlbase")
 
         # Epidoc should work with translation and edition
         self.Epidoc.xml = etree.fromstring(edition.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
