@@ -525,7 +525,8 @@ class CTSUnit(TESTUnit):
         """
         if self.xml is not None:
             if self.scheme == "tei":
-                urns = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS)
+                urns = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS) + \
+                        self.xml.xpath("//tei:text[starts-with(@xml:base, 'urn:cts:')]", namespaces=TESTUnit.NS)
             else:
                 urns = self.xml.xpath(
                     "//tei:body/tei:div[@type='edition' and starts-with(@n, 'urn:cts:')]",
@@ -538,6 +539,8 @@ class CTSUnit(TESTUnit):
             status = len(urns) > 0
             if status:
                 logs = urns[0].get("n")
+                if not logs:
+                    logs = urns[0].base
                 urn = MyCapytain.common.reference.URN(logs)
                 missing_members = [
                     key for key in ['namespace', 'work', 'version', 'textgroup']
