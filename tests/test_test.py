@@ -511,7 +511,7 @@ class TestTest(unittest.TestCase):
     @mock.patch("HookTest.test.git.repo.base.Remote")
     @mock.patch("HookTest.test.git.repo.base.Repo.clone_from")
     @mock.patch("HookTest.test.git.repo.base.Repo")
-    def test_clone(self, repo_mocked, clone_from_mocked, remote_mocked, progress_mocked):
+    def backup_clone(self, repo_mocked, clone_from_mocked, remote_mocked, progress_mocked):
         """ Check that the cloning is done correctly, ie. right branch, right path, etc. """
         # Finish mocking stuff
         pull = mock.MagicMock(return_value=True)

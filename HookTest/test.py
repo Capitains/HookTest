@@ -459,12 +459,8 @@ class Test(object):
         :rtype: bool
         """
         self.progress = Progress(parent=self)
-        repo = git.repo.base.Repo.clone_from(
-            url="https://github.com/{0}.git".format(self.repository),
-            to_path=self.directory,
-            progress=self.progress,
-            depth=self.depth
-        )
+        repo = git.repo.Repo.init(self.directory, mkdir=True)
+        repo.create_remote("origin", url="https://github.com/{0}.git".format(self.repository))
 
         if self.branch is None:
             self.branch = "refs/heads/master"
@@ -474,9 +470,13 @@ class Test(object):
         else:
             ref = self.branch
         if git.cmd.Git().version_info >= (2, 9, 0, 0):
-            repo.remote().pull(ref, progress=self.progress, allow_unrelated_histories=True)
+            repo.remote().pull(
+                ref, progress=self.progress, allow_unrelated_histories=True, depth=self.depth
+            )
         else:
-            repo.remote().pull(ref, progress=self.progress)
+            repo.remote().pull(
+                ref, progress=self.progress, depth=self.depth
+            )
 
         return repo is None
 
