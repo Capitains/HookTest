@@ -13,7 +13,7 @@ setup(
     install_requires=[
         "MyCapytain==1.0.4",
         "jingtrang==0.1.1",
-        "GitPython==1.0.1",
+        "GitPython==2.1.0",
         "requests>=2.7.0"
     ],
     tests_require=[

@@ -473,8 +473,10 @@ class Test(object):
             ref = "refs/{0}".format(self.branch)
         else:
             ref = self.branch
-
-        repo.remote().pull(ref, progress=self.progress)
+        if git.cmd.Git().version_info >= (2, 9, 0, 0):
+            repo.remote().pull(ref, progress=self.progress, allow_unrelated_histories=True)
+        else:
+            repo.remote().pull(ref, progress=self.progress)
 
         return repo is None
 
