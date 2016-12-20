@@ -3,6 +3,7 @@ import warnings
 import MyCapytain.resources.texts.local
 import MyCapytain.resources.inventory
 import MyCapytain.common.reference
+import MyCapytain.common.utils
 import MyCapytain.errors
 import pkg_resources
 import subprocess
@@ -159,17 +160,26 @@ class INVUnit(TESTUnit):
             if textgroup:
                 self.type = "textgroup"
                 self.log("TextGroup detected")
-                self.Text = MyCapytain.resources.inventory.TextGroup(resource=self.xml.getroot())
+                Trait = MyCapytain.resources.inventory.TextGroup
             elif work:
                 self.type = "work"
                 self.log("Work detected")
-                self.Text = MyCapytain.resources.inventory.Work(resource=self.xml.getroot())
+                Trait = MyCapytain.resources.inventory.Work
             else:
                 self.log("No metadata type detected (neither work nor textgroup)")
                 self.log("Inventory can't be read through Capitains standards")
                 yield False
 
-        if self.Text:
+        if self.type in ["textgroup", "work"]:
+            try:
+                self.Text = Trait(resource=self.xml.getroot())
+            except AttributeError as E:
+                self.log("Missing URN attribute")
+                self.error(E)
+            except Exception as E:
+                self.error(E)
+
+        if self.Text is not False:
             yield True
         else:
             yield False
@@ -178,10 +188,9 @@ class INVUnit(TESTUnit):
         """ Check the presence of all metadata
         """
         status = False
-        if self.xml is not None and self.Text:
+        if self.xml is not None and self.Text is not False:
 
             if self.type == "textgroup":
-
                 groups = len(self.Text.metadata["groupname"].children)
                 self.log("{0} groupname found".format(str(groups)))
                 status = groups > 0
@@ -332,7 +341,7 @@ class INVUnit(TESTUnit):
 
         :returns: List of urns
         :rtype: list.<str>
-        
+
         """
         self.urns = []
 

@@ -10,7 +10,7 @@ class TestCTS(unittest.TestCase):
     def test_lang(self):
         """ Test lang in translation check
         """
-        success = """<work xmlns="http://chs.harvard.edu/xmlns/cts" xml:lang="far">
+        success = """<work xmlns="http://chs.harvard.edu/xmlns/cts" xml:lang="far" urn="urn:cts:farsiLit:hafez.divan">
     <title xml:lang="eng">Div&#257;n</title>
     <edition urn="urn:cts:farsiLit:hafez.divan.perseus-far1" workUrn="urn:cts:farsiLit:hafez.divan">
         <label xml:lang="eng">Divan</label>
@@ -25,7 +25,7 @@ class TestCTS(unittest.TestCase):
         <description xml:lang="eng">as</description>
     </translation>
 </work>"""
-        fail = """<work xmlns="http://chs.harvard.edu/xmlns/cts">
+        fail = """<work xmlns="http://chs.harvard.edu/xmlns/cts" urn="urn:cts:farsiLit:hafez.divan">
     <title xml:lang="eng">Div&#257;n</title>
     <edition urn="urn:cts:farsiLit:hafez.divan.perseus-far1" workUrn="urn:cts:farsiLit:hafez.divan">
         <label xml:lang="eng">Divan</label>
@@ -54,6 +54,51 @@ class TestCTS(unittest.TestCase):
         unit.flush()
         self.assertEqual(unit.metadata().__next__(), False, "When lang fails, test should fail")
         self.assertIn(">>>>>> Translation(s) are missing lang attribute", unit.logs)
+
+    def test_miss_urn_parse(self):
+        """ Test lang in translation check
+        """
+        fail = """<work xmlns="http://chs.harvard.edu/xmlns/cts">
+    <title xml:lang="eng">Div&#257;n</title>
+    <edition urn="urn:cts:farsiLit:hafez.divan.perseus-far1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+        </edition>
+    <translation  xml:lang="eng" urn="urn:cts:farsiLit:hafez.divan.perseus-eng1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+    </translation>
+    <translation urn="urn:cts:farsiLit:hafez.divan.perseus-ger1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+    </translation>
+</work>"""
+        unit = HookTest.units.INVUnit("/a/b")
+        unit.xml = etree.ElementTree(etree.fromstring(fail))
+        self.assertEqual(
+            list(unit.capitain()), [False],
+            "Parsing should fail but not raise"
+        )
+        print(unit.logs)
+
+    def test_capitains_parse(self):
+        unit = HookTest.units.INVUnit("./tests/repo2/data/wrongmetadata/__cts__.xml")
+        self.assertEqual(
+            list(unit.parsable()) + list(unit.capitain()), [True, True],
+            "Parsing should work"
+        )
+
+    def test_capitains_metadatatextgroup(self):
+        unit = HookTest.units.INVUnit("./tests/repo2/data/wrongmetadata/__cts__.xml")
+        self.assertEqual(
+            list(unit.parsable()) + list(unit.capitain()) + list(unit.metadata()), [True, True, False],
+            "No lang in groupname should fail"
+        )
+        unit = HookTest.units.INVUnit("./tests/repo2/data/tlg2255/__cts__.xml")
+        self.assertEqual(
+            list(unit.parsable()) + list(unit.capitain()) + list(unit.metadata()), [True, True, True],
+            "Lang in groupname should fail"
+        )
 
 
 class TestText(unittest.TestCase):
