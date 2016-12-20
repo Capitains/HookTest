@@ -11,7 +11,7 @@ setup(
     license='MIT',
     packages=find_packages(exclude=("tests")),
     install_requires=[
-        "MyCapytain==1.0.1",
+        "MyCapytain==1.0.3",
         "jingtrang==0.1.1",
         "GitPython==1.0.1",
         "requests>=2.7.0"
