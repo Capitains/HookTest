@@ -486,3 +486,44 @@ class TestProcess(TestCase):
             logs.split("\n"),
             "All files should be tested and verbosed"
         )
+
+    def test_run_local_greek(self):
+        """ Test a run cloning a known working repository (PerseusDL/canonical-farsiLit)"""
+        status, logs = self.hooktest([
+            "./tests/greek", "--console", "--verbose", "--scheme", "epidoc"
+        ])
+        self.assertIn(
+            "[success] 3 over 3 texts have fully passed the tests\n", logs,
+            "Test conclusion should be printed"
+        )
+        print(logs)
+        self.assertSubset(
+            {
+                # List of file tested
+                ">>>> Testing PerseusDL/canonical-farsiLit/data/hafez/__cts__.xml",
+                ">>>> Testing PerseusDL/canonical-farsiLit/data/hafez/divan/__cts__.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-far1.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-eng1.xml",
+                ">>>> Testing /hafez/divan/hafez.divan.perseus-ger1.xml",
+
+                # Tests number of nodes showing
+                ">>>>>> 32 found",
+                ">>>>>> 498 found",
+                ">>>>>> 4243 found",
+                ">>>>>> 13613 found",
+
+                # RefsDecl verbosing should match
+                ">>>>> RefsDecl parsing passed",
+                ">>>>>> 4 citation's level found",
+
+                # URN Should fail because we are using Epidoc scheme here
+                ">>>>> URN informations passed",
+
+                # Metadata information found
+                ">>>>>> Group urn : urn:cts:farsiLit:hafez",
+                ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan"
+
+            },
+            logs.split("\n"),
+            "All files should be tested and verbosed"
+        )
