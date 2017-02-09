@@ -405,6 +405,7 @@ class CTSUnit(TESTUnit):
         self.xml = None
         self.count = 0
         self.countwords = countwords
+        self.citation = list()
         super(CTSUnit, self).__init__(path, *args, **kwargs)
 
     def parsable(self):
@@ -473,6 +474,7 @@ class CTSUnit(TESTUnit):
 
         """
         if self.Text and self.Text.citation.refsDecl:
+            citations = [c.name for c in self.Text.citation]
             for i in range(0, len(self.Text.citation)):
                 try:
                     with warnings.catch_warnings(record=True) as warning_record:
@@ -481,8 +483,10 @@ class CTSUnit(TESTUnit):
                         passages = self.Text.getValidReff(level=i+1, _debug=True)
                         ids = [ref.split(".", i)[-1] for ref in passages]
                         space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
-                        status = len(passages) > 0 and len(warning_record) == 0 and space_in_passage is None
-                        self.log(str(len(passages)) + " found")
+                        len_passage = len(passages)
+                        status = len_passage > 0 and len(warning_record) == 0 and space_in_passage is None
+                        self.log(str(len_passage) + " found")
+                        self.citation.append((i, len_passage, citations[i]))
                         for record in warning_record:
                             if record.category == DuplicateReference:
                                 passages = sorted(str(record.message).split(", "))

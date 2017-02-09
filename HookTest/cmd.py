@@ -35,6 +35,7 @@ def parse_args(args):
     parser.add_argument("--countwords", help="Count words in texts passing the tests", action="store_true", default=None)
     parser.add_argument(
         "-c", "--console", help="Print to console", action="store_true", default=False)
+    parser.add_argument("--travis", help="Produce Travis output", action="store_true", default=False)
     parser.add_argument(
         "-p",
         "--ping",
