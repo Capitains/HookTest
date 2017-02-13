@@ -20,7 +20,7 @@ from prettytable import PrettyTable as PT
 from prettytable import ALL as pt_all
 
 import HookTest.units
-from colored import fg, bg, attr
+from colors import white, magenta
 
 
 pr_finder = re.compile("pull\/([0-9]+)\/head")
@@ -509,19 +509,15 @@ class Test(object):
                     for unit in self.report['units']:
                         if not unit['name'].endswith('__cts__.xml'):
                             if unit['coverage'] != 100.0:
-                                text = fg('black')
-                                back = bg('orchid')
-                                reset = attr(0)
+                                text_color = lambda x: magenta(x)
                             else:
-                                text = ''
-                                back = ''
-                                reset = ''
+                                text_color = lambda x: white(x)
                             if unit['coverage'] == 0.0:
                                 failed_tests = 'All'
                             else:
                                 failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False])
                             display_table.add_row(
-                                ["{fg}{bg}{file}{attr}".format(fg=text, bg=back, file=os.path.basename(unit['name']), attr=reset),
+                                ["{}".format(text_color(os.path.basename(unit['name']))),
                                  str(unit['words']),
                                  ';'.join([str(x[1]) for x in unit['citations']]),
                                  failed_tests])
@@ -532,19 +528,15 @@ class Test(object):
                     for unit in self.report['units']:
                         if not unit['name'].endswith('__cts__.xml'):
                             if unit['coverage'] != 100.0:
-                                text = fg('black')
-                                back = bg('orchid')
-                                reset = attr(0)
+                                text_color = lambda x: magenta(x)
                             else:
-                                text = ''
-                                back = ''
-                                reset = ''
+                                text_color = lambda x: white(x)
                             if unit['coverage'] == 0.0:
                                 failed_tests = 'All'
                             else:
                                 failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False])
                             display_table.add_row(
-                                ["{fg}{bg}{file}{attr}".format(fg=text, bg=back, file=os.path.basename(unit['name']), attr=reset),
+                                ["{}".format(text_color(os.path.basename(unit['name']))),
                                  ';'.join([str(x[1]) for x in unit['citations']]),
                                  failed_tests])
                 print(display_table, flush=True)
