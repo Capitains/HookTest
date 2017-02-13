@@ -54,7 +54,7 @@ def cmd():
     """ Run locally the software. Should not be called outside of a python cmd.py call
     """
     status = HookTest.test.cmd(**vars(parse_args(sys.argv[1:])))
-    if status is False:
+    if status != HookTest.test.Test.SUCCESS:
         sys.exit(1)
     else:
         sys.exit(0)
