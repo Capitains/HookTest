@@ -14,7 +14,8 @@ setup(
         "MyCapytain==1.0.4",
         "jingtrang==0.1.1",
         "GitPython==2.1.0",
-        "requests>=2.7.0"
+        "requests>=2.7.0",
+        "prettytable==0.7.2"
     ],
     tests_require=[
         "mock==1.3.0",
