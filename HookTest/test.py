@@ -20,6 +20,7 @@ from prettytable import PrettyTable as PT
 from prettytable import ALL as pt_all
 
 import HookTest.units
+from colored import fg, bg, attr
 
 
 pr_finder = re.compile("pull\/([0-9]+)\/head")
@@ -487,7 +488,7 @@ class Test(object):
             failed = 0
             for unit in self.report['units']:
                 if unit['status'] is not True:
-                    display_table.add_row([unit['name'], '\n'.join(['{test} failed'.format(test=x) for x in unit['units'] if x is False])])
+                    display_table.add_row([unit['name'], '\n'.join(['{test} failed'.format(test=x) for x in unit['units'] if unit['units'][x] is False])])
                     failed += 1
             print('', flush=True)
             if failed > 0:
@@ -507,12 +508,20 @@ class Test(object):
                     display_table.hrules = pt_all
                     for unit in self.report['units']:
                         if not unit['name'].endswith('__cts__.xml'):
+                            if unit['coverage'] != 100.0:
+                                text = fg('black')
+                                back = bg('orchid')
+                                reset = attr(0)
+                            else:
+                                text = ''
+                                back = ''
+                                reset = ''
                             if unit['coverage'] == 0.0:
                                 failed_tests = 'All'
                             else:
                                 failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False])
                             display_table.add_row(
-                                [os.path.basename(unit['name']),
+                                ["{fg}{bg}{file}{attr}".format(fg=text, bg=back, file=os.path.basename(unit['name']), attr=reset),
                                  str(unit['words']),
                                  ';'.join([str(x[1]) for x in unit['citations']]),
                                  failed_tests])
@@ -522,12 +531,20 @@ class Test(object):
                     display_table.hrules = pt_all
                     for unit in self.report['units']:
                         if not unit['name'].endswith('__cts__.xml'):
+                            if unit['coverage'] != 100.0:
+                                text = fg('black')
+                                back = bg('orchid')
+                                reset = attr(0)
+                            else:
+                                text = ''
+                                back = ''
+                                reset = ''
                             if unit['coverage'] == 0.0:
                                 failed_tests = 'All'
                             else:
                                 failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False])
                             display_table.add_row(
-                                [os.path.basename(unit['name']),
+                                ["{fg}{bg}{file}{attr}".format(fg=text, bg=back, file=os.path.basename(unit['name']), attr=reset),
                                  ';'.join([str(x[1]) for x in unit['citations']]),
                                  failed_tests])
                 print(display_table, flush=True)
