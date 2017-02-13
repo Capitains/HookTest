@@ -501,6 +501,8 @@ class Test(object):
         """
         if self.console or self.travis:
             if self.travis:
+                num_texts = 0
+                num_failed = 0
                 print('', flush=True)
                 if self.countwords is True:
                     display_table = PT(["Identifier", "Words", "Nodes", "Failed Tests"])
@@ -508,7 +510,9 @@ class Test(object):
                     display_table.hrules = pt_all
                     for unit in self.report['units']:
                         if not unit['name'].endswith('__cts__.xml'):
+                            num_texts += 1
                             if unit['coverage'] != 100.0:
+                                num_failed += 1
                                 text_color = lambda x: magenta(x)
                             else:
                                 text_color = lambda x: white(x)
@@ -527,7 +531,9 @@ class Test(object):
                     display_table.hrules = pt_all
                     for unit in self.report['units']:
                         if not unit['name'].endswith('__cts__.xml'):
+                            num_texts += 1
                             if unit['coverage'] != 100.0:
+                                num_failed += 1
                                 text_color = lambda x: magenta(x)
                             else:
                                 text_color = lambda x: white(x)
@@ -540,10 +546,28 @@ class Test(object):
                                  ';'.join([str(x[1]) for x in unit['citations']]),
                                  failed_tests])
                 print(display_table, flush=True)
-            print(
+                print(
+                    ">>> End of the test !\n" \
+                    ">>> [{status}] {failed} out of {total} files did not pass the tests\n"
+                    ">>> {metafailed} of {metatotal} metadata files failed\n"
+                    ">>> {textfailed} of {texttotal} texts failed\n"
+                    ">>> Coverage: {coverage}%".format(
+                        failed=len(self.passing) - self.successes,
+                        total=len(self.passing),
+                        status=self.status,
+                        metafailed=(len(self.passing) - self.successes) - num_failed,
+                        metatotal=len(self.passing) - num_texts,
+                        textfailed=num_failed,
+                        texttotal=num_texts,
+                        coverage=round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
+                    ),
+                    flush=True
+                )
+            else:
+                print(
                 ">>> End of the test !\n" \
-                ">>> [{2}] {0} out of {1} texts have fully passed the tests".format(
-                    self.successes, len(self.passing), self.status
+                ">>> [{2}] {0} out of {1} files did not pass the tests".format(
+                    len(self.passing) - self.successes, len(self.passing), self.status
                 ),
                 flush=True
             )
