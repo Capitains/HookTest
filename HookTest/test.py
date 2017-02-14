@@ -486,7 +486,7 @@ class Test(object):
             display_table = PT(["Filename", "Failed Tests"])
             display_table.align["Filename", "Failed Tests"] = 'c'
             failed = 0
-            for unit in self.report['units']:
+            for unit in sorted(self.report['units'], key=lambda x: x['name']):
                 if unit['status'] is not True:
                     display_table.add_row([unit['name'], '\n'.join(['{test} failed'.format(test=x) for x in unit['units'] if unit['units'][x] is False])])
                     failed += 1
@@ -508,7 +508,7 @@ class Test(object):
                     display_table = PT(["Identifier", "Words", "Nodes", "Failed Tests"])
                     display_table.align['Identifier', 'Words', 'Nodes', "Failed Tests"] = "c"
                     display_table.hrules = pt_all
-                    for unit in self.report['units']:
+                    for unit in sorted(self.report['units'], key=lambda x: x['name']):
                         if not unit['name'].endswith('__cts__.xml'):
                             num_texts += 1
                             if unit['coverage'] != 100.0:
