@@ -520,9 +520,12 @@ class Test(object):
                             if unit['coverage'] == 0.0:
                                 failed_tests = 'All'
                             else:
-                                failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False and x != "Passage level parsing"])
+                                failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False and x != "Duplicate passages"])
                                 if unit['duplicates']:
-                                    failed_tests += '\nDuplicate Passages Found:\n{}'.format(', '.join(unit['duplicates'])).strip('\n')
+                                    failed_tests = '\n'.join([failed_tests, 'Duplicates found:\n'])
+                                    failed_tests += '\n'.join(['{}'.format(', '.join(unit['duplicates'][i:i + 5]))
+                                                                           for i in range(0, len(unit['duplicates']), 5)])
+                                    failed_tests = failed_tests.strip('\n')
                             display_table.add_row(
                                 ["{}".format(text_color(os.path.basename(unit['name']))),
                                  str(unit['words']),

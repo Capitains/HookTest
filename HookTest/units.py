@@ -383,11 +383,12 @@ class CTSUnit(TESTUnit):
     "unique_passage", "inventory" ) yield at least one boolean (might be more) which represents the success of it.
     """
 
-    tests = ["parsable", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory"]
+    tests = ["parsable", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory", "duplicate"]
     readable = {
         "parsable": "File parsing",
         "refsDecl": "RefsDecl parsing",
         "passages": "Passage level parsing",
+        "duplicate": "Duplicate passages",
         "epidoc": "Epidoc DTD validation",
         "tei": "TEI DTD Validation",
         "has_urn": "URN informations",
@@ -485,14 +486,14 @@ class CTSUnit(TESTUnit):
                         ids = [ref.split(".", i)[-1] for ref in passages]
                         space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
                         len_passage = len(passages)
-                        status = len_passage > 0 and len(warning_record) == 0 and space_in_passage is None
+                        status = len_passage > 0# and len(warning_record) == 0 and space_in_passage is None
                         self.log(str(len_passage) + " found")
                         self.citation.append((i, len_passage, citations[i]))
                         for record in warning_record:
                             if record.category == DuplicateReference:
                                 passages = sorted(str(record.message).split(", "))
-                                self.duplicates = passages
-                                self.log("Duplicate references found : {0}".format(", ".join(passages)))
+                                self.duplicates += passages
+                                #self.log("Duplicate references found : {0}".format(", ".join(passages)))
                         if space_in_passage and space_in_passage is not None:
                             self.log("Reference with forbidden characters found: {}".format(
                                 " ".join([
@@ -509,6 +510,16 @@ class CTSUnit(TESTUnit):
                     yield False
         else:
             yield False
+
+    def duplicate(self):
+        """ Detects duplicate references
+
+        """
+        if len(self.duplicates) > 0:
+            self.log("Duplicate references found : {0}".format(", ".join(self.duplicates)))
+            yield False
+        else:
+            yield True
 
     def unique_passage(self):
         """ Check that citation scheme do not collide (eg. Where text:1 would be the same node as text:1.1)
