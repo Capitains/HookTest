@@ -367,6 +367,7 @@ class Test(object):
                 results[name] = status
             additional = {}
             additional["citations"] = unit.citation
+            additional["duplicates"] = unit.duplicates
             if self.countwords:
                 additional["words"] = unit.count
         return self.cover(filepath, results, testtype=texttype, logs=logs, additional=additional), filepath, additional
@@ -519,7 +520,9 @@ class Test(object):
                             if unit['coverage'] == 0.0:
                                 failed_tests = 'All'
                             else:
-                                failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False])
+                                failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False and x != "Passage level parsing"])
+                                if unit['duplicates']:
+                                    failed_tests += '\nDuplicate Passages Found:\n{}'.format(', '.join(unit['duplicates'])).strip('\n')
                             display_table.add_row(
                                 ["{}".format(text_color(os.path.basename(unit['name']))),
                                  str(unit['words']),

@@ -406,6 +406,7 @@ class CTSUnit(TESTUnit):
         self.count = 0
         self.countwords = countwords
         self.citation = list()
+        self.duplicates = list()
         super(CTSUnit, self).__init__(path, *args, **kwargs)
 
     def parsable(self):
@@ -490,6 +491,7 @@ class CTSUnit(TESTUnit):
                         for record in warning_record:
                             if record.category == DuplicateReference:
                                 passages = sorted(str(record.message).split(", "))
+                                self.duplicates = passages
                                 self.log("Duplicate references found : {0}".format(", ".join(passages)))
                         if space_in_passage and space_in_passage is not None:
                             self.log("Reference with forbidden characters found: {}".format(
