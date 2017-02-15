@@ -487,6 +487,7 @@ class Test(object):
         if self.travis and self.verbose:
             display_table = PT(["Filename", "Failed Tests"])
             display_table.align["Filename", "Failed Tests"] = 'c'
+            display_table.hrules = pt_all
             failed = 0
             for unit in sorted(self.report['units'], key=lambda x: x['name']):
                 if unit['status'] is not True:
