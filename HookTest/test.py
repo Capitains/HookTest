@@ -368,6 +368,7 @@ class Test(object):
             additional = {}
             additional["citations"] = unit.citation
             additional["duplicates"] = unit.duplicates
+            additional["forbiddens"] = unit.forbiddens
             if self.countwords:
                 additional["words"] = unit.count
         return self.cover(filepath, results, testtype=texttype, logs=logs, additional=additional), filepath, additional
@@ -502,6 +503,8 @@ class Test(object):
         """
         if self.console or self.travis:
             if self.travis:
+                duplicate_nodes = ''
+                forbidden_chars = ''
                 num_texts = 0
                 num_failed = 0
                 print('', flush=True)
@@ -520,12 +523,13 @@ class Test(object):
                             if unit['coverage'] == 0.0:
                                 failed_tests = 'All'
                             else:
-                                failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False and x != "Duplicate passages"])
+                                failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False])
                                 if unit['duplicates']:
-                                    failed_tests = '\n'.join([failed_tests, 'Duplicates found:\n'])
-                                    failed_tests += '\n'.join(['{}'.format(', '.join(unit['duplicates'][i:i + 5]))
-                                                                           for i in range(0, len(unit['duplicates']), 5)])
-                                    failed_tests = failed_tests.strip('\n')
+                                    duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit['name'])),
+                                                                                  nodes=', '.join(unit['duplicates']))
+                                if unit['forbiddens']:
+                                    forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit['name'])),
+                                                                                  nodes=', '.join(unit['forbiddens']))
                             display_table.add_row(
                                 ["{}".format(text_color(os.path.basename(unit['name']))),
                                  str(unit['words']),
@@ -552,12 +556,22 @@ class Test(object):
                                  ';'.join([str(x[1]) for x in unit['citations']]),
                                  failed_tests])
                 print(display_table, flush=True)
+                print('', flush=True)
+                if self.verbose:
+                    if duplicate_nodes:
+                        duplicate_nodes = magenta('Duplicate nodes found:\n') + duplicate_nodes + '\n'
+                    if forbidden_chars:
+                        forbidden_chars = magenta('Forbidden characters found:\n') + forbidden_chars + '\n'
+                else:
+                    duplicate_nodes = forbidden_chars = ''
                 print(
-                    ">>> End of the test !\n" \
+                    "{dupes}{forbs}>>> End of the test !\n" \
                     ">>> [{status}] {failed} out of {total} files did not pass the tests\n"
                     ">>> {metafailed} of {metatotal} metadata files failed\n"
                     ">>> {textfailed} of {texttotal} texts failed\n"
-                    ">>> Coverage: {coverage}%".format(
+                    ">>> Coverage: {coverage}%\n".format(
+                        dupes=duplicate_nodes,
+                        forbs=forbidden_chars,
                         failed=len(self.passing) - self.successes,
                         total=len(self.passing),
                         status=self.status,

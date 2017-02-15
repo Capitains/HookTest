@@ -383,12 +383,13 @@ class CTSUnit(TESTUnit):
     "unique_passage", "inventory" ) yield at least one boolean (might be more) which represents the success of it.
     """
 
-    tests = ["parsable", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory", "duplicate"]
+    tests = ["parsable", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory", "duplicate", "forbidden"]
     readable = {
         "parsable": "File parsing",
         "refsDecl": "RefsDecl parsing",
         "passages": "Passage level parsing",
         "duplicate": "Duplicate passages",
+        "forbidden": "Forbidden characters",
         "epidoc": "Epidoc DTD validation",
         "tei": "TEI DTD Validation",
         "has_urn": "URN informations",
@@ -408,6 +409,7 @@ class CTSUnit(TESTUnit):
         self.countwords = countwords
         self.citation = list()
         self.duplicates = list()
+        self.forbiddens = list()
         super(CTSUnit, self).__init__(path, *args, **kwargs)
 
     def parsable(self):
@@ -491,17 +493,12 @@ class CTSUnit(TESTUnit):
                         self.citation.append((i, len_passage, citations[i]))
                         for record in warning_record:
                             if record.category == DuplicateReference:
-                                passages = sorted(str(record.message).split(", "))
-                                self.duplicates += passages
+                                self.duplicates += sorted(str(record.message).split(", "))
                                 #self.log("Duplicate references found : {0}".format(", ".join(passages)))
                         if space_in_passage and space_in_passage is not None:
-                            self.log("Reference with forbidden characters found: {}".format(
-                                " ".join([
-                                    "'{}'".format(n)
-                                    for ref, n in zip(ids, passages)
-                                    if TESTUnit.FORBIDDEN_CHAR.search(ref)
-                                ])
-                            ))
+                            self.forbiddens += ["'{}'".format(n)
+                                                for ref, n in zip(ids, passages)
+                                                if TESTUnit.FORBIDDEN_CHAR.search(ref)]
 
                         yield status
                 except Exception as E:
@@ -517,6 +514,16 @@ class CTSUnit(TESTUnit):
         """
         if len(self.duplicates) > 0:
             self.log("Duplicate references found : {0}".format(", ".join(self.duplicates)))
+            yield False
+        else:
+            yield True
+
+    def forbidden(self):
+        """ Checks for forbidden characters in references
+
+        """
+        if len(self.forbiddens) > 0:
+            self.log("Reference with forbidden characters found: {0}".format(", ".join(self.forbiddens)))
             yield False
         else:
             yield True
