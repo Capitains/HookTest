@@ -20,7 +20,7 @@ from prettytable import PrettyTable as PT
 from prettytable import ALL as pt_all
 
 import HookTest.units
-from colors import white, magenta
+from colors import white, magenta, black
 
 
 pr_finder = re.compile("pull\/([0-9]+)\/head")
@@ -502,6 +502,8 @@ class Test(object):
     def end(self):
         """ Deal with end logs
         """
+        total_units = 0
+        total_words = 0
         if self.console or self.travis:
             if self.travis:
                 duplicate_nodes = ''
@@ -536,6 +538,9 @@ class Test(object):
                                  str(unit['words']),
                                  ';'.join([str(x[1]) for x in unit['citations']]),
                                  failed_tests])
+                            for x in unit['citations']:
+                                total_units += x[1]
+                            total_words += unit['words']
                 else:
                     display_table = PT(["Identifier", "Nodes", "Failed Tests"])
                     display_table.align['Identifier', 'Nodes', "Failed Tests"] = "c"
@@ -556,6 +561,8 @@ class Test(object):
                                 ["{}".format(text_color(os.path.basename(unit['name']))),
                                  ';'.join([str(x[1]) for x in unit['citations']]),
                                  failed_tests])
+                            for x in unit['citations']:
+                                total_units += x[1]
                 print(display_table, flush=True)
                 print('', flush=True)
                 if self.verbose:
@@ -565,25 +572,25 @@ class Test(object):
                         forbidden_chars = magenta('Forbidden characters found:\n') + forbidden_chars + '\n'
                 else:
                     duplicate_nodes = forbidden_chars = ''
-                print(
-                    "{dupes}{forbs}>>> End of the test !\n" \
-                    ">>> [{status}] {failed} out of {total} files did not pass the tests\n"
-                    ">>> {metafailed} of {metatotal} metadata files failed\n"
-                    ">>> {textfailed} of {texttotal} texts failed\n"
-                    ">>> Coverage: {coverage}%\n".format(
-                        dupes=duplicate_nodes,
-                        forbs=forbidden_chars,
-                        failed=len(self.passing) - self.successes,
-                        total=len(self.passing),
-                        status=self.status,
-                        metafailed=(len(self.passing) - self.successes) - num_failed,
-                        metatotal=len(self.passing) - num_texts,
-                        textfailed=num_failed,
-                        texttotal=num_texts,
-                        coverage=round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
-                    ),
-                    flush=True
-                )
+                print("{dupes}{forbs}>>> End of the test !\n".format(dupes=duplicate_nodes, forbs=forbidden_chars))
+                t_pass = num_texts - num_failed
+                m_files = len(self.passing) - num_texts
+                m_pass = len(self.passing) - num_texts - ((len(self.passing) - self.successes) - num_failed)
+                cov = round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
+                results_table = PT(["HookTestResults", ""])
+                results_table.align["HookTestResults", ""] = "c"
+                results_table.hrules = pt_all
+                results_table.add_row(["Total Texts", num_texts])
+                results_table.add_row(["Passing Texts", t_pass])
+                results_table.add_row(["Metadata Files", m_files])
+                results_table.add_row(["Passing Metadata", m_pass])
+                results_table.add_row(["Coverage", cov])
+                results_table.add_row(["Total Citation Units", total_units])
+                if self.countwords is True:
+                    results_table.add_row(["Total Words", total_words])
+                print(results_table, flush=True)
+                print(black('#*# texts={texts} texts_passing={t_pass} metadata={meta} metadata_passing={m_pass} coverage_units={cov} total_nodes={nodes} words={words}'.format(
+                    texts=num_texts, t_pass=t_pass, meta=m_files, m_pass=m_pass, cov=cov, nodes=total_units, words=total_words)))
             else:
                 print(
                 ">>> End of the test !\n" \
