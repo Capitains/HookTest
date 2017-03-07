@@ -499,7 +499,6 @@ class CTSUnit(TESTUnit):
                             self.forbiddens += ["'{}'".format(n)
                                                 for ref, n in zip(ids, passages)
                                                 if TESTUnit.FORBIDDEN_CHAR.search(ref)]
-                        print(status, flush=True)
                         if status is False:
                             self.duplicates = False
                             self.forbiddens = False
