@@ -523,16 +523,16 @@ class Test(object):
                                 text_color = lambda x: magenta(x)
                             else:
                                 text_color = lambda x: white(x)
-                            if unit['coverage'] == 0.0:
+                            if unit['coverage'] == 0.0 or unit['units']['File parsing'] is False:
                                 failed_tests = 'All'
                             else:
                                 failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False])
-                                if unit['duplicates']:
-                                    duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit['name'])),
-                                                                                  nodes=', '.join(unit['duplicates']))
-                                if unit['forbiddens']:
-                                    forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit['name'])),
-                                                                                  nodes=', '.join(unit['forbiddens']))
+                            if unit['duplicates']:
+                                duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit['name'])),
+                                                                              nodes=', '.join(unit['duplicates']))
+                            if unit['forbiddens']:
+                                forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit['name'])),
+                                                                              nodes=', '.join(unit['forbiddens']))
                             display_table.add_row(
                                 ["{}".format(text_color(os.path.basename(unit['name']))),
                                  str(unit['words']),
