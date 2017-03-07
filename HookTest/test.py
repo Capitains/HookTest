@@ -523,7 +523,7 @@ class Test(object):
                                 text_color = lambda x: magenta(x)
                             else:
                                 text_color = lambda x: white(x)
-                            if unit['coverage'] == 0.0 or unit['units']['File parsing'] is False:
+                            if unit['coverage'] == 0.0:
                                 failed_tests = 'All'
                             else:
                                 failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False])

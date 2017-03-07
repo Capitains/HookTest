@@ -499,20 +499,28 @@ class CTSUnit(TESTUnit):
                             self.forbiddens += ["'{}'".format(n)
                                                 for ref, n in zip(ids, passages)
                                                 if TESTUnit.FORBIDDEN_CHAR.search(ref)]
-
+                        print(status, flush=True)
+                        if status is False:
+                            self.duplicates = False
+                            self.forbiddens = False
                         yield status
                 except Exception as E:
                     self.error(E)
                     self.log("Error when searching passages at level {0}".format(i+1))
                     yield False
         else:
+            self.duplicates = False
+            self.forbiddens = False
             yield False
 
     def duplicate(self):
         """ Detects duplicate references
 
         """
-        if len(self.duplicates) > 0:
+        if self.duplicates is False:
+            self.duplicates = list()
+            yield False
+        elif len(self.duplicates) > 0:
             self.log("Duplicate references found : {0}".format(", ".join(self.duplicates)))
             yield False
         else:
@@ -522,7 +530,10 @@ class CTSUnit(TESTUnit):
         """ Checks for forbidden characters in references
 
         """
-        if len(self.forbiddens) > 0:
+        if self.forbiddens is False:
+            self.forbiddens = list()
+            yield False
+        elif len(self.forbiddens) > 0:
             self.log("Reference with forbidden characters found: {0}".format(", ".join(self.forbiddens)))
             yield False
         else:
