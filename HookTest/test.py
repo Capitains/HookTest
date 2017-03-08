@@ -519,6 +519,8 @@ class Test(object):
                     display_table = PT(["Identifier", "Words", "Nodes", "Failed Tests"])
                     display_table.align['Identifier', 'Words', 'Nodes', "Failed Tests"] = "c"
                     display_table.hrules = pt_all
+                    #try using self.results and then the UnitLog attributes instead of self.report
+                    #also use operator.attrgetter('name') instead of lambda x in the for statement
                     for unit in sorted(self.report['units'], key=lambda x: x['name']):
                         if not unit['name'].endswith('__cts__.xml'):
                             num_texts += 1
@@ -603,6 +605,17 @@ class Test(object):
                 print(results_table, flush=True)
                 print(black('#*# texts={texts} texts_passing={t_pass} metadata={meta} metadata_passing={m_pass} coverage_units={cov} total_nodes={nodes} words={words}'.format(
                     texts=num_texts, t_pass=t_pass, meta=m_files, m_pass=m_pass, cov=cov, nodes=total_units, words=total_words)))
+                #Manifest of passing files
+                passing_temp = [x['name'] for x in self.report['units'] if x['coverage'] == 100.0]
+                passing = []
+                for f in passing_temp:
+                    if not f.endswith('__cts__.xml') and '{}/__cts__.xml'.format(os.path.dirname(f)) in passing_temp and '{}/__cts__.xml'.format('/'.join(f.split('/')[:-2])) in passing_temp:
+                        passing.append(f)
+                        passing.append('{}/__cts__.xml'.format(os.path.dirname(f)))
+                        passing.append('{}/__cts__.xml'.format('/'.join(f.split('/')[:-2])))
+                passing = sorted(list(set(passing)))
+                with open('manifest.txt', mode="w") as f:
+                    f.write('\n'.join(passing))
             else:
                 print(
                 ">>> End of the test !\n" \
