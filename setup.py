@@ -27,7 +27,7 @@ setup(
     },
     include_package_data=True,
     entry_points={
-        'console_scripts': ['hooktest=HookTest.cmd:cmd'],
+        'console_scripts': ['hooktest=HookTest.cmd:cmd', 'hooktest-build=HookTest.cmd:cmd_build']
     },
     test_suite="tests",
     zip_safe=False

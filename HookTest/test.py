@@ -614,7 +614,7 @@ class Test(object):
                         passing.append('{}/__cts__.xml'.format(os.path.dirname(f)))
                         passing.append('{}/__cts__.xml'.format('/'.join(f.split('/')[:-2])))
                 passing = sorted(list(set(passing)))
-                with open('manifest.txt', mode="w") as f:
+                with open('{}/manifest.txt'.format(self.path), mode="w") as f:
                     f.write('\n'.join(passing))
             else:
                 print(

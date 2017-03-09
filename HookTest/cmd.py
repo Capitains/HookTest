@@ -1,6 +1,7 @@
 import argparse
 import sys
 import HookTest.test
+import HookTest.build
 
 
 def parse_args(args):
@@ -59,6 +60,36 @@ def cmd():
     else:
         sys.exit(0)
 
+
+def parse_args_build(args):
+    """ Parsing function. Written to support unit test
+
+    :param args: List of command line argument
+    :return: Parsed argument
+    """
+    parser = argparse.ArgumentParser(
+        prog='hooktest-build',
+        description=" Builds a repository for release based on the results of HookTest"
+    )
+
+    parser.add_argument("path", help="Path containing the repository", default='./')
+
+    parser.add_argument(
+        "-d",
+        "--dest",
+        help="The folder in which the corpus without the failing files should be saved",
+        default='./'
+    )
+    parser.add_argument("--travis", help="Run build on Travis or similar CI environment", action="store_true", default=False)
+
+    args = parser.parse_args(args)
+    return args
+
+
+def cmd_build():
+    """ Run locally the software. Should not be called outside of a python cmd.py call
+    """
+    HookTest.build.cmd(**vars(parse_args_build(sys.argv[1:])))
 
 if __name__ == '__main__':
     cmd()
