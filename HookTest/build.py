@@ -61,4 +61,4 @@ def cmd(**kwargs):
     """
     print(kwargs)
     if kwargs['travis'] is True:
-        Travis(path=kwargs['path'], dest=kwargs['dest'])
+        Travis(path=kwargs['path'], dest=kwargs['dest']).run()
