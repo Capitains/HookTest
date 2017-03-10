@@ -36,7 +36,9 @@ class Travis(Build):
         except FileNotFoundError:
             print('There is no manifest.txt file to load.\nStopping build.')
             sys.exit(1)
-
+        passing = [x for x in passing if x != '']
+        if len(passing) == 0:
+            sys.exit(1)
         files = glob('data/*/*/*.xml'.format(self.path))
         files += glob('data/*/*.xml'.format(self.path))
         for file in files:

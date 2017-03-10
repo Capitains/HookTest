@@ -134,7 +134,7 @@ class Test(object):
     def __init__(self, path,
          repository=None, branch=None, uuid=None, workers=1, scheme="tei",
          verbose=False, ping=None, secret="", triggering_size=None, console=False, travis=False,
-         finder=DefaultFinder, finderoptions=None, countwords=False,
+         finder=DefaultFinder, finderoptions=None, countwords=False, allowfailure=False,
         **kwargs
     ):
         """ Create a Test object
@@ -171,6 +171,7 @@ class Test(object):
         self.scheme = scheme
         self.verbose = verbose
         self.countwords = countwords
+        self.allowfailure = allowfailure
         self.__triggering_size = None
         if isinstance(triggering_size, int):
             self.__triggering_size = triggering_size
@@ -264,6 +265,8 @@ class Test(object):
 
         if self.count_files == 0 or len(self.passing) != self.count_files:
             return Test.ERROR
+        elif self.allowfailure is True and self.count_files > 0 and self.successes > 0:
+            return Test.SUCCESS
         elif self.count_files > 0 and self.successes == len(self.passing):
             return Test.SUCCESS
         else:

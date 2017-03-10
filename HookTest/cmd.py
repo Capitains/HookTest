@@ -43,6 +43,9 @@ def parse_args(args):
         help="Send results to a server",
         default=None
     )
+    parser.add_argument("--allowfailure",
+                        help="Returns a passing test result as long as at least one text passes.",
+                        action="store_true", default=False)
 
     args = parser.parse_args(args)
     if args.finder:
@@ -56,7 +59,7 @@ def cmd():
     """
     status = HookTest.test.cmd(**vars(parse_args(sys.argv[1:])))
     if status != HookTest.test.Test.SUCCESS:
-        sys.exit(0)
+        sys.exit(1)
     else:
         sys.exit(0)
 
