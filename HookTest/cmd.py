@@ -56,7 +56,7 @@ def cmd():
     """
     status = HookTest.test.cmd(**vars(parse_args(sys.argv[1:])))
     if status != HookTest.test.Test.SUCCESS:
-        sys.exit(1)
+        sys.exit(0)
     else:
         sys.exit(0)
 
