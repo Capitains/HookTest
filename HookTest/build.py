@@ -1,6 +1,7 @@
 import os
 from glob import glob
 import sys
+import tarfile
 
 
 class Build:
@@ -51,6 +52,10 @@ class Travis(Build):
                 os.removedirs(d)
             except OSError:
                 continue
+        to_zip = [x for x in glob('*')]
+        with tarfile.open("release.tar.gz", mode="w:gz") as f:
+            for file in sorted(to_zip):
+                f.add(file)
 
 
 def cmd(**kwargs):
