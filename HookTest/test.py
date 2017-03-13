@@ -550,7 +550,7 @@ class Test(object):
                                                                               nodes=', '.join(unit['forbiddens']))
                             display_table.add_row(
                                 ["{}".format(text_color(os.path.basename(unit['name']))),
-                                 str(unit['words']),
+                                 "{:,}".format(unit['words']),
                                  ';'.join([str(x[1]) for x in unit['citations']]),
                                  failed_tests])
                             for x in unit['citations']:
@@ -602,12 +602,12 @@ class Test(object):
                 results_table.add_row(["Metadata Files", m_files])
                 results_table.add_row(["Passing Metadata", m_pass])
                 results_table.add_row(["Coverage", cov])
-                results_table.add_row(["Total Citation Units", total_units])
+                results_table.add_row(["Total Citation Units", "{:,}".format(total_units)])
                 if self.countwords is True:
-                    results_table.add_row(["Total Words", total_words])
+                    results_table.add_row(["Total Words", "{:,}".format(total_words)])
                 print(results_table, flush=True)
                 print(black('#*# texts={texts} texts_passing={t_pass} metadata={meta} metadata_passing={m_pass} coverage_units={cov} total_nodes={nodes} words={words}'.format(
-                    texts=num_texts, t_pass=t_pass, meta=m_files, m_pass=m_pass, cov=cov, nodes=total_units, words=total_words)))
+                    texts=num_texts, t_pass=t_pass, meta=m_files, m_pass=m_pass, cov=cov, nodes="{:,}".format(total_units), words="{:,}".format(total_words))))
                 #Manifest of passing files
                 passing_temp = [x['name'] for x in self.report['units'] if x['coverage'] == 100.0]
                 passing = []
