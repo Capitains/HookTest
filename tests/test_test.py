@@ -181,7 +181,7 @@ class TestTest(unittest.TestCase):
         self.test_print.end()
         self.assertEqual(len(printed.mock_calls), 1, msg="End should print once")
         printed.assert_called_with(
-            ">>> End of the test !\n>>> [failed] 5 over 7 texts have fully passed the tests", flush=True
+            ">>> End of the test !\n>>> [failed] 2 out of 7 files did not pass the tests", flush=True
         )
 
     @mock.patch('HookTest.test.print', create=True)
@@ -430,19 +430,23 @@ class TestTest(unittest.TestCase):
 
     @mock.patch("HookTest.test.time.strftime", return_value="Time")
     def test_unit_text_mute(self, time_mocked):
+        # test is the mocked 'test' method of the unit
         test = mock.MagicMock()
         test.return_value = [
             ("MyCapytain", True, []),
             ("Folder Name", True, ["It should be in a subfolder"])
         ]
-        INVObject = mock.Mock(
-            test=test
+        # UnitInstance is a mock which has a test method is a mock
+        UnitInstance = mock.Mock(
+            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation']
         )
+        # ctsunit is a mock of the class CTSUnit and will return the instance UnitInstance
         ctsunit = mock.Mock(
-            return_value=INVObject
+            return_value=UnitInstance
         )
         with mock.patch("HookTest.test.HookTest.units.CTSUnit", ctsunit):
             logs, filepath, additional = self.test.unit("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml")
+            ctsunit.assert_called_with("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml", countwords=False)
             self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs.logs)
             self.assertIn(">>>>> MyCapytain passed", logs.logs)
             self.assertIn(">>>>> Folder Name passed", logs.logs)
@@ -453,6 +457,9 @@ class TestTest(unittest.TestCase):
                 'at': 'Time',
                 'coverage': 100.0,
                 'status': True,
+                'citations': ['citation'],
+                'duplicates': ['duplicate'],
+                'forbiddens': ['forbid'],
                 'units': {
                     'Folder Name': True,
                     'MyCapytain': True
@@ -475,13 +482,14 @@ class TestTest(unittest.TestCase):
             ("Folder Name", False, ["It should be in a subfolder"])
         ]
         INVObject = mock.Mock(
-            test=test
+            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation']
         )
         ctsunit = mock.Mock(
             return_value=INVObject
         )
         with mock.patch("HookTest.test.HookTest.units.CTSUnit", ctsunit):
             logs, filepath, additional = self.test.unit("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml")
+            ctsunit.assert_called_with("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml", countwords=False)
             self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs.logs)
             self.assertIn(">>>>> MyCapytain passed", logs.logs)
             self.assertIn(">>>>> Folder Name failed", logs.logs)
@@ -493,6 +501,9 @@ class TestTest(unittest.TestCase):
                 'name': "/phi1294/phi002/phi1294.phi002.perseus-lat2.xml",
                 'coverage': 50.0,
                 'status': False,
+                'citations': ['citation'],
+                'duplicates': ['duplicate'],
+                'forbiddens': ['forbid'],
                 'units': {
                     'Folder Name': False,
                     'MyCapytain': True
