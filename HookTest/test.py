@@ -535,9 +535,9 @@ class Test(object):
                                     pass
                             if unit['coverage'] != 100.0:
                                 num_failed += 1
-                                text_color = lambda x: magenta(x)
+                                text_color = magenta
                             else:
-                                text_color = lambda x: white(x)
+                                text_color = white
                             if unit['coverage'] == 0.0:
                                 failed_tests = 'All'
                             else:
@@ -567,9 +567,9 @@ class Test(object):
                                 [show.remove(x) for x in ("duplicate", "forbidden")]
                             if unit['coverage'] != 100.0:
                                 num_failed += 1
-                                text_color = lambda x: magenta(x)
+                                text_color = magenta
                             else:
-                                text_color = lambda x: white(x)
+                                text_color = white
                             if unit['coverage'] == 0.0:
                                 failed_tests = 'All'
                             else:
