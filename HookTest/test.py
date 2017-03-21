@@ -563,8 +563,12 @@ class Test(object):
                     for unit in self.report['units']:
                         if not unit['name'].endswith('__cts__.xml'):
                             num_texts += 1
-                            if unit['units']["passages"] is False and self.verbose:
-                                [show.remove(x) for x in ("duplicate", "forbidden")]
+                            if unit['units']["Passage level parsing"] is False:
+                                try:
+                                    show.remove("Duplicate passages")
+                                    show.remove("Forbidden characters")
+                                except:
+                                    pass
                             if unit['coverage'] != 100.0:
                                 num_failed += 1
                                 text_color = magenta
@@ -573,7 +577,7 @@ class Test(object):
                             if unit['coverage'] == 0.0:
                                 failed_tests = 'All'
                             else:
-                                failed_tests = '\n'.join([x for x in show if unit['units'][x] is False])
+                                failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False and x in show])
                             display_table.add_row(
                                 ["{}".format(text_color(os.path.basename(unit['name']))),
                                  ';'.join([str(x[1]) for x in unit['citations']]),

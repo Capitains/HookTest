@@ -2,6 +2,8 @@ import os
 from glob import glob
 import sys
 import tarfile
+import shutil
+import os
 
 
 class Build:
@@ -16,6 +18,43 @@ class Build:
         """
         self.path = path
         self.dest = dest
+
+    def repo_file_list(self):
+        """ Build the list of XML files for the source repo represented by self.path
+
+        :return: List of the XML file in the repo
+        :rtype: [str]
+        """
+        files = glob('{}/data/*/*/*.xml'.format(self.path))
+        files += glob('{}/data/*/*.xml'.format(self.path))
+        return files
+
+    def remove_failing(self, files, passing):
+        """ Remove the failing files from the repository"""
+        # Covers the case where source and destination directories are the same, i.e., the changes should be made in place
+        if self.path == self.dest:
+            for file in files:
+                if file.replace(self.path, '') not in passing:
+                    os.remove(file)
+            dirs = [x for x in glob('{}/data/*/*'.format(self.dest)) if os.path.isdir(x)]
+            for d in dirs:
+                try:
+                    os.removedirs(d)
+                except OSError:
+                    continue
+        # Covers the case where the source and destination directories are different, so files are copied instead of removed
+        else:
+            try:
+                shutil.rmtree('{}/data'.format(self.dest))
+            except:
+                pass
+            for file in files:
+                if file.replace(self.path, '') in passing:
+                    try:
+                        shutil.copy2(file, file.replace(self.path, self.dest))
+                    except FileNotFoundError:
+                        os.makedirs(os.path.dirname(file.replace(self.path, self.dest)))
+                        shutil.copy2(file, file.replace(self.path, self.dest))
 
     def run(self):
         """ creates a new corpus directory containing only the passing text files and their metadata files
@@ -32,28 +71,16 @@ class Travis(Build):
 
     def run(self):
         try:
-            with open('manifest.txt'.format(self.path)) as f:
+            with open('{}/manifest.txt'.format(self.path)) as f:
                 passing = f.read().split('\n')
         except FileNotFoundError:
-            print('There is no manifest.txt file to load.\nStopping build.')
-            sys.exit(1)
-        passing = [x for x in passing if x != '']
+            sys.exit('There is no manifest.txt file to load.\nStopping build.')
+        passing = [x for x in passing if x.strip() != '']
         if len(passing) == 0:
-            sys.exit(1)
-        files = glob('data/*/*/*.xml'.format(self.path))
-        files += glob('data/*/*.xml'.format(self.path))
-        for file in files:
-            if file not in passing:
-                os.remove(file)
-
-        dirs = [x for x in glob('data/*/*') if os.path.isdir(x)]
-        for d in dirs:
-            try:
-                os.removedirs(d)
-            except OSError:
-                continue
-        to_zip = [x for x in glob('*')]
-        with tarfile.open("release.tar.gz", mode="w:gz") as f:
+            sys.exit('The manifest file is empty.\nStopping build.')
+        self.remove_failing(self.repo_file_list(), passing)
+        to_zip = [x for x in glob('{}/*'.format(self.dest))]
+        with tarfile.open("{}/release.tar.gz".format(self.dest), mode="w:gz") as f:
             for file in sorted(to_zip):
                 f.add(file)
 
@@ -66,6 +93,5 @@ def cmd(**kwargs):
     :return:
     :rtype:
     """
-    print(kwargs)
     if kwargs['travis'] is True:
         Travis(path=kwargs['path'], dest=kwargs['dest']).run()
