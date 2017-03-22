@@ -6,18 +6,25 @@ import shutil
 import os
 
 
-class Build:
+class Build(object):
+    """
+
+    :param path: the path to the directory that contains the corpus's data directory
+    :type path: str
+    :param dest: the folder in which to save the cleaned corpus
+    :type dest: str
+    """
 
     def __init__(self, path, dest):
-        """
 
-        :param path: the path to the directory that contains the corpus's data directory
-        :type path: str
-        :param dest: the folder in which to save the cleaned corpus
-        :type dest: str
-        """
-        self.path = path
-        self.dest = dest
+        if path.endswith('/'):
+            self.path = path
+        else:
+            self.path = path + '/'
+        if dest.endswith('/'):
+            self.dest = dest
+        else:
+            self.dest = dest + '/'
 
     def repo_file_list(self):
         """ Build the list of XML files for the source repo represented by self.path
@@ -25,8 +32,8 @@ class Build:
         :return: List of the XML file in the repo
         :rtype: [str]
         """
-        files = glob('{}/data/*/*/*.xml'.format(self.path))
-        files += glob('{}/data/*/*.xml'.format(self.path))
+        files = glob('{}data/*/*/*.xml'.format(self.path))
+        files += glob('{}data/*/*.xml'.format(self.path))
         return files
 
     def remove_failing(self, files, passing):
@@ -36,7 +43,7 @@ class Build:
             for file in files:
                 if file.replace(self.path, '') not in passing:
                     os.remove(file)
-            dirs = [x for x in glob('{}/data/*/*'.format(self.dest)) if os.path.isdir(x)]
+            dirs = [x for x in glob('{}data/*/*'.format(self.dest)) if os.path.isdir(x)]
             for d in dirs:
                 try:
                     os.removedirs(d)
@@ -45,7 +52,7 @@ class Build:
         # Covers the case where the source and destination directories are different, so files are copied instead of removed
         else:
             try:
-                shutil.rmtree('{}/data'.format(self.dest))
+                shutil.rmtree('{}data'.format(self.dest))
             except:
                 pass
             for file in files:
@@ -71,7 +78,7 @@ class Travis(Build):
 
     def run(self):
         try:
-            with open('{}/manifest.txt'.format(self.path)) as f:
+            with open('{}manifest.txt'.format(self.path)) as f:
                 passing = f.read().split('\n')
         except FileNotFoundError:
             sys.exit('There is no manifest.txt file to load.\nStopping build.')
@@ -79,8 +86,8 @@ class Travis(Build):
         if len(passing) == 0:
             sys.exit('The manifest file is empty.\nStopping build.')
         self.remove_failing(self.repo_file_list(), passing)
-        to_zip = [x for x in glob('{}/*'.format(self.dest))]
-        with tarfile.open("{}/release.tar.gz".format(self.dest), mode="w:gz") as f:
+        to_zip = [x for x in glob('{}*'.format(self.dest))]
+        with tarfile.open("{}release.tar.gz".format(self.dest), mode="w:gz") as f:
             for file in sorted(to_zip):
                 f.add(file)
 
@@ -95,3 +102,5 @@ def cmd(**kwargs):
     """
     if kwargs['travis'] is True:
         Travis(path=kwargs['path'], dest=kwargs['dest']).run()
+    else:
+        sys.exit('You cannot run build on the base class')
