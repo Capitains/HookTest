@@ -81,7 +81,7 @@ class Travis(Build):
             with open('{}manifest.txt'.format(self.path)) as f:
                 passing = f.read().split('\n')
         except FileNotFoundError:
-            sys.exit('There is no manifest.txt file to load.\nStopping build.')
+            return False, 'There is no manifest.txt file to load.\nStopping build.'
         passing = [x for x in passing if x.strip() != '']
         if len(passing) == 0:
             sys.exit('The manifest file is empty.\nStopping build.')

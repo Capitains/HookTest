@@ -425,30 +425,6 @@ class Test(object):
         """
         if self.travis is True:
             if isinstance(log, UnitLog):
-                """if self.verbose:
-                    if log.status is True:
-                        if log.testtype == 'CTSText':
-                            citations = ', '.join(['(s): '.join((x[2], str(x[1]))) for x in log.additional['citations']])
-                            print("{path} passes, {citations}".format(path=os.path.basename(log.name), citations=citations), flush=True)
-                            #I assume that if everything passes we don't want to print anything extra for --verbose
-                            #if self.verbose:
-                            # do something with verbose.
-                            #print(verbose stuff)
-                    elif log.coverage == 0.0:
-                        print("{path} failed all tests".format(path=os.path.basename(log.name)), flush=True)
-                    else:
-                        print("{path} failed some tests".format(path=os.path.basename(log.name)), flush=True)
-                        for test, result in log.units.items():
-                            if result == False:
-                                print("\t{test} failed".format(test=test), flush=True)
-                else:
-                    if log.status is True:
-                        sys.stdout.write('.')
-                        sys.stdout.flush()
-                    else:
-                        sys.stdout.write('X')
-                        sys.stdout.flush()
-                        """
                 if log.status is True:
                     sys.stdout.write('.')
                     sys.stdout.flush()
