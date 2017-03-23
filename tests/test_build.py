@@ -78,12 +78,20 @@ class TestTravis(unittest.TestCase):
         self.assertEqual(a.path, "test/path/", "'path' was incorrectly initialized")
         self.assertEqual(a.dest, "test/dest/", "'dest' was incorrectly initialized")
 
-    def test_terminal_default(self):
+    def test_args_default(self):
         """ Test to make sure that hooktest-build called with no arguments returns the correct defaults"""
         a = HookTest.cmd.parse_args_build(['./'])
         self.assertEqual(a.path, './', 'Default "path" was not set to current directory.')
         self.assertEqual(a.dest, './', 'Default "dest" was not set to current directory.')
         self.assertEqual(a.travis, False, 'Default "travis" was not set to False')
+
+    def test_terminal_default(self):
+        """ Tests to determine if build runs correctly from the command line"""
+        self.createTestDir('tests/emptyDir')
+        args = ['hooktest-build', self.TESTDIR]
+        with mock.patch('sys.argv', args):
+            with self.assertRaisesRegex(SystemExit, 'You cannot run build on the base class'):
+                HookTest.cmd.cmd_build()
 
     def test_no_manifest(self):
         """ tests to make sure an error is raised and the build is stopped if there is no manifest.txt in 'path'"""
