@@ -84,12 +84,13 @@ class Travis(Build):
             return False, 'There is no manifest.txt file to load.\nStopping build.'
         passing = [x for x in passing if x.strip() != '']
         if len(passing) == 0:
-            sys.exit('The manifest file is empty.\nStopping build.')
+            return False, 'The manifest file is empty.\nStopping build.'
         self.remove_failing(self.repo_file_list(), passing)
         to_zip = [x for x in glob('{}*'.format(self.dest))]
         with tarfile.open("{}release.tar.gz".format(self.dest), mode="w:gz") as f:
             for file in sorted(to_zip):
                 f.add(file)
+        return True, 'Build successful.'
 
 
 def cmd(**kwargs):
@@ -101,6 +102,7 @@ def cmd(**kwargs):
     :rtype:
     """
     if kwargs['travis'] is True:
-        Travis(path=kwargs['path'], dest=kwargs['dest']).run()
+        status, message = Travis(path=kwargs['path'], dest=kwargs['dest']).run()
+        return status, message
     else:
-        sys.exit('You cannot run build on the base class')
+        return False, 'You cannot run build on the base class'

@@ -93,24 +93,36 @@ class TestTravis(unittest.TestCase):
             with self.assertRaisesRegex(SystemExit, 'You cannot run build on the base class'):
                 HookTest.cmd.cmd_build()
 
+    def test_terminal_travis_no_manifest(self):
+        """ Tests if a Travis run from the terminal where there is no manifest.txt in 'path' fails correctly"""
+        self.createTestDir('tests/emptyDir')
+        args = ['hooktest-build', self.TESTDIR, '--travis']
+        with mock.patch('sys.argv', args):
+            with self.assertRaisesRegex(SystemExit, 'There is no manifest.txt file to load.\nStopping build.'):
+                HookTest.cmd.cmd_build()
+
     def test_no_manifest(self):
         """ tests to make sure an error is raised and the build is stopped if there is no manifest.txt in 'path'"""
         self.createTestDir('tests/emptyDir')
-        with self.assertRaisesRegex(SystemExit, 'There is no manifest.txt file to load.\nStopping build.'):
-            HookTest.build.Travis(path=self.TESTDIR, dest='./').run()
+        status, message = HookTest.build.Travis(path=self.TESTDIR, dest='./').run()
+        self.assertFalse(status)
+        self.assertEqual(message, 'There is no manifest.txt file to load.\nStopping build.')
 
     def test_empty_manifest(self):
         """ tests to make sure that when there are no passing files in the manifest.txt that the build exits"""
         self.createTestDir('tests/emptyManifest')
         # Tests with a completely empty manifest.txt file, i.e., no whitespace, no line breaks
-        with self.assertRaisesRegex(SystemExit, 'The manifest file is empty.\nStopping build.'):
-            HookTest.build.Travis(path=self.TESTDIR, dest='./').run()
+        status, message = HookTest.build.Travis(path=self.TESTDIR, dest='./').run()
+        self.assertFalse(status)
+        self.assertEqual(message, 'The manifest file is empty.\nStopping build.')
+
 
     def test_whitespace_manifest(self):
         # Tests with a manifest.txt file that has whitespace and line breaks"""
         self.createTestDir('tests/whitespaceManifest')
-        with self.assertRaisesRegex(SystemExit, 'The manifest file is empty.\nStopping build.'):
-            HookTest.build.Travis(path=self.TESTDIR, dest='./').run()
+        status, message = HookTest.build.Travis(path=self.TESTDIR, dest='./').run()
+        self.assertFalse(status)
+        self.assertEqual(message, 'The manifest file is empty.\nStopping build.')
 
     def test_repo_file_list(self):
         """ Tests to make sure that all XML files from a repo are added to the file list for comparison with the manifest"""
@@ -213,7 +225,8 @@ class TestTravis(unittest.TestCase):
     def test_build_cmd(self):
         """ Tests to make sure build.cmd receives kwargs correctly and runs the correct sub-class"""
         self.createTestDir('tests/emptyDir')
-        with self.assertRaisesRegex(SystemExit, 'There is no manifest.txt file to load.\nStopping build.'):
-            HookTest.build.cmd(path=self.TESTDIR, dest='./', travis=True).run()
-        with self.assertRaisesRegex(SystemExit, 'You cannot run build on the base class'):
-            HookTest.build.cmd(path=self.TESTDIR, dest='./', travis=False).run()
+        status, message = HookTest.build.cmd(**vars(HookTest.cmd.parse_args_build([self.TESTDIR,
+                                                                                   '--dest', self.TESTDIR,
+                                                                                   '--travis'])))
+        self.assertFalse(status)
+        self.assertEqual(message, 'There is no manifest.txt file to load.\nStopping build.')

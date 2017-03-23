@@ -93,7 +93,11 @@ def parse_args_build(args):
 def cmd_build():
     """ Run locally the software. Should not be called outside of a python cmd.py call
     """
-    HookTest.build.cmd(**vars(parse_args_build(sys.argv[1:])))
+    status, message = HookTest.build.cmd(**vars(parse_args_build(sys.argv[1:])))
+    if status is True:
+        sys.exit(0)
+    else:
+        sys.exit(message)
 
 if __name__ == '__main__':
     cmd()
