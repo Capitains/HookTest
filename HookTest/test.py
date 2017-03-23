@@ -21,6 +21,7 @@ from prettytable import ALL as pt_all
 
 import HookTest.units
 from colors import white, magenta, black
+from operator import attrgetter
 
 
 pr_finder = re.compile("pull\/([0-9]+)\/head")
@@ -498,65 +499,65 @@ class Test(object):
                     display_table.hrules = pt_all
                     #try using self.results and then the UnitLog attributes instead of self.report
                     #also use operator.attrgetter('name') instead of lambda x in the for statement
-                    for unit in sorted(self.report['units'], key=lambda x: x['name']):
-                        if not unit['name'].endswith('__cts__.xml'):
+                    for unit in sorted(self.results.values(), key=attrgetter('name')):
+                        if not unit.name.endswith('__cts__.xml'):
                             num_texts += 1
-                            if unit['units']["Passage level parsing"] is False:
+                            if unit.units["Passage level parsing"] is False:
                                 try:
                                     show.remove("Duplicate passages")
                                     show.remove("Forbidden characters")
                                 except:
                                     pass
-                            if unit['coverage'] != 100.0:
+                            if unit.coverage != 100.0:
                                 num_failed += 1
                                 text_color = magenta
                             else:
                                 text_color = white
-                            if unit['coverage'] == 0.0:
+                            if unit.coverage == 0.0:
                                 failed_tests = 'All'
                             else:
-                                failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False and x in show])
-                            if unit['duplicates']:
-                                duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit['name'])),
-                                                                              nodes=', '.join(unit['duplicates']))
-                            if unit['forbiddens']:
-                                forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit['name'])),
-                                                                              nodes=', '.join(unit['forbiddens']))
+                                failed_tests = '\n'.join([x for x in unit.units if unit.units[x] is False and x in show])
+                            if unit.additional['duplicates']:
+                                duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                              nodes=', '.join(unit.additional['duplicates']))
+                            if unit.additional['forbiddens']:
+                                forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                              nodes=', '.join(unit.additional['forbiddens']))
                             display_table.add_row(
-                                ["{}".format(text_color(os.path.basename(unit['name']))),
-                                 "{:,}".format(unit['words']),
-                                 ';'.join([str(x[1]) for x in unit['citations']]),
+                                ["{}".format(text_color(os.path.basename(unit.name))),
+                                 "{:,}".format(unit.additional['words']),
+                                 ';'.join([str(x[1]) for x in unit.additional['citations']]),
                                  failed_tests])
-                            for x in unit['citations']:
+                            for x in unit.additional['citations']:
                                 total_units += x[1]
-                            total_words += unit['words']
+                            total_words += unit.additional['words']
                 else:
                     display_table = PT(["Identifier", "Nodes", "Failed Tests"])
                     display_table.align['Identifier', 'Nodes', "Failed Tests"] = "c"
                     display_table.hrules = pt_all
-                    for unit in self.report['units']:
-                        if not unit['name'].endswith('__cts__.xml'):
+                    for unit in sorted(self.results.values(), key=attrgetter('name')):
+                        if not unit.name.endswith('__cts__.xml'):
                             num_texts += 1
-                            if unit['units']["Passage level parsing"] is False:
+                            if unit.units["Passage level parsing"] is False:
                                 try:
                                     show.remove("Duplicate passages")
                                     show.remove("Forbidden characters")
                                 except:
                                     pass
-                            if unit['coverage'] != 100.0:
+                            if unit.coverage != 100.0:
                                 num_failed += 1
                                 text_color = magenta
                             else:
                                 text_color = white
-                            if unit['coverage'] == 0.0:
+                            if unit.coverage == 0.0:
                                 failed_tests = 'All'
                             else:
-                                failed_tests = '\n'.join([x for x in unit['units'] if unit['units'][x] is False and x in show])
+                                failed_tests = '\n'.join([x for x in unit.units if unit.units[x] is False and x in show])
                             display_table.add_row(
-                                ["{}".format(text_color(os.path.basename(unit['name']))),
-                                 ';'.join([str(x[1]) for x in unit['citations']]),
+                                ["{}".format(text_color(os.path.basename(unit.name))),
+                                 ';'.join([str(x[1]) for x in unit.additional['citations']]),
                                  failed_tests])
-                            for x in unit['citations']:
+                            for x in unit.additional['citations']:
                                 total_units += x[1]
                 print(display_table, flush=True)
                 print('', flush=True)

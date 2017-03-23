@@ -743,6 +743,49 @@ class TestTest(unittest.TestCase):
             mock.call('All Metadata Files Passed', flush=True)
         ])
 
+    @mock.patch("HookTest.test.print", create=True)  # We patch and feed print to PrintMock
+    @mock.patch("HookTest.test.PT", create=True)  # We patch PrettyTable and feed it as PTMock
+    def test_end_travis(self, PTMock, printMock):
+        """ Ensure PrettyTable are created when travis is True and verbose as well """
+
+        # PTMock being a class (PrettyTable), on instantiation it returns a new object.
+        # So when python executes PT(["Filename", "Failed Tests"]), we need to have access to
+        # the instance this call would create
+        # Hence creating a mock and feeding it as return_value of PTMock
+        InstanceMock = mock.MagicMock(create=True)
+        PTMock.return_value = InstanceMock
+
+        # We create a process of Test and feed weird results
+        process = HookTest.test.Test("./tests/repo1", travis=True, verbose=True)
+        process.results = unitlog_dict()
+        process.results["001"].units = {
+            "Metadata": True,
+            "Filename": True,
+            'Passage level parsing': True
+        }
+        process.results["001"].citation = [2, 3, 4]
+        process.results["002"].units = {
+            "Metadata": True,
+            "Filename": False,
+            'Passage level parsing': False
+        }
+        process.results["002"].citation = []
+
+        # We run the method we want to verify
+        process.end()
+
+        # We check each call that should be done
+        PTMock.assert_called_with(["Identifier", "Words", "Nodes", "Failed Tests"])
+        InstanceMock.align.__setitem__.assert_called_with(("Identifier", "Words", "Nodes", "Failed Tests"), "c")
+        # assert_called_once_with checks both that there has been only one call on the function tested, and then checks
+        # that the parameters are the same
+        InstanceMock.add_row.assert_called_once_with(["002", "Filename failed"])
+
+        printMock.assert_has_calls([
+            mock.call('', flush=True),
+            mock.call(InstanceMock, flush=True)
+        ])
+
 
 class TestProgress(unittest.TestCase):
     """ Test Github.Progress own implementation """
