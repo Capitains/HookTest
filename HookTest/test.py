@@ -425,30 +425,6 @@ class Test(object):
         """
         if self.travis is True:
             if isinstance(log, UnitLog):
-                """if self.verbose:
-                    if log.status is True:
-                        if log.testtype == 'CTSText':
-                            citations = ', '.join(['(s): '.join((x[2], str(x[1]))) for x in log.additional['citations']])
-                            print("{path} passes, {citations}".format(path=os.path.basename(log.name), citations=citations), flush=True)
-                            #I assume that if everything passes we don't want to print anything extra for --verbose
-                            #if self.verbose:
-                            # do something with verbose.
-                            #print(verbose stuff)
-                    elif log.coverage == 0.0:
-                        print("{path} failed all tests".format(path=os.path.basename(log.name)), flush=True)
-                    else:
-                        print("{path} failed some tests".format(path=os.path.basename(log.name)), flush=True)
-                        for test, result in log.units.items():
-                            if result == False:
-                                print("\t{test} failed".format(test=test), flush=True)
-                else:
-                    if log.status is True:
-                        sys.stdout.write('.')
-                        sys.stdout.flush()
-                    else:
-                        sys.stdout.write('X')
-                        sys.stdout.flush()
-                        """
                 if log.status is True:
                     sys.stdout.write('.')
                     sys.stdout.flush()
@@ -488,19 +464,17 @@ class Test(object):
         :rtype:
         """
         if self.travis and self.verbose:
-            display_table = PT(["Filename", "Failed Tests"])
-            display_table.align["Filename", "Failed Tests"] = 'c'
-            display_table.hrules = pt_all
-            failed = 0
-            for unit in sorted(self.report['units'], key=lambda x: x['name']):
-                if unit['status'] is not True:
-                    display_table.add_row([unit['name'], '\n'.join(['{test} failed'.format(test=x) for x in unit['units'] if unit['units'][x] is False])])
-                    failed += 1
             print('', flush=True)
-            if failed > 0:
-                print(display_table, flush=True)
-            else:
+            if False not in [unit.status for unit in self.results.values()]:
                 print('All Metadata Files Passed', flush=True)
+            else:
+                display_table = PT(["Filename", "Failed Tests"])
+                display_table.align["Filename", "Failed Tests"] = 'c'
+                display_table.hrules = pt_all
+                for unit in sorted(self.report['units'], key=lambda x: x['name']):
+                    if unit['status'] is not True:
+                        display_table.add_row([unit['name'], '\n'.join(['{test} failed'.format(test=x) for x in unit['units'] if unit['units'][x] is False])])
+                print(display_table, flush=True)
 
     def end(self):
         """ Deal with end logs
