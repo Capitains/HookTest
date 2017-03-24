@@ -464,6 +464,7 @@ class Test(object):
         :return:
         :rtype:
         """
+        self.m_files = self.m_passing = len(self.results.values())
         if self.travis and self.verbose:
             print('', flush=True)
             if False not in [unit.status for unit in self.results.values()]:
@@ -474,6 +475,7 @@ class Test(object):
                 display_table.hrules = pt_all
                 for unit in sorted(self.report['units'], key=lambda x: x['name']):
                     if unit['status'] is not True:
+                        self.m_passing -= 1
                         display_table.add_row([unit['name'], '\n'.join(['{test} failed'.format(test=x) for x in unit['units'] if unit['units'][x] is False])])
                 print(display_table, flush=True)
 
@@ -553,6 +555,12 @@ class Test(object):
                                 failed_tests = 'All'
                             else:
                                 failed_tests = '\n'.join([x for x in unit.units if unit.units[x] is False and x in show])
+                            if unit.additional['duplicates']:
+                                duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                              nodes=', '.join(unit.additional['duplicates']))
+                            if unit.additional['forbiddens']:
+                                forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                              nodes=', '.join(unit.additional['forbiddens']))
                             display_table.add_row(
                                 ["{}".format(text_color(os.path.basename(unit.name))),
                                  ';'.join([str(x[1]) for x in unit.additional['citations']]),
@@ -570,32 +578,23 @@ class Test(object):
                     duplicate_nodes = forbidden_chars = ''
                 print("{dupes}{forbs}>>> End of the test !\n".format(dupes=duplicate_nodes, forbs=forbidden_chars))
                 t_pass = num_texts - num_failed
-                m_files = len(self.passing) - num_texts
-                m_pass = len(self.passing) - num_texts - ((len(self.passing) - self.successes) - num_failed)
                 cov = round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
                 results_table = PT(["HookTestResults", ""])
                 results_table.align["HookTestResults", ""] = "c"
                 results_table.hrules = pt_all
                 results_table.add_row(["Total Texts", num_texts])
                 results_table.add_row(["Passing Texts", t_pass])
-                results_table.add_row(["Metadata Files", m_files])
-                results_table.add_row(["Passing Metadata", m_pass])
+                results_table.add_row(["Metadata Files", self.m_files])
+                results_table.add_row(["Passing Metadata", self.m_passing])
                 results_table.add_row(["Coverage", cov])
                 results_table.add_row(["Total Citation Units", "{:,}".format(total_units)])
                 if self.countwords is True:
                     results_table.add_row(["Total Words", "{:,}".format(total_words)])
                 print(results_table, flush=True)
-                print(black('#*# texts={texts} texts_passing={t_pass} metadata={meta} metadata_passing={m_pass} coverage_units={cov} total_nodes={nodes} words={words}'.format(
-                    texts=num_texts, t_pass=t_pass, meta=m_files, m_pass=m_pass, cov=cov, nodes="{:,}".format(total_units), words="{:,}".format(total_words))))
+                #print(black('#*# texts={texts} texts_passing={t_pass} metadata={meta} metadata_passing={m_pass} coverage_units={cov} total_nodes={nodes} words={words}'.format(
+                #    texts=num_texts, t_pass=t_pass, meta=self.m_files, m_pass=self.m_passing, cov=cov, nodes="{:,}".format(total_units), words="{:,}".format(total_words))))
                 #Manifest of passing files
-                passing_temp = [x['name'] for x in self.report['units'] if x['coverage'] == 100.0]
-                passing = []
-                for f in passing_temp:
-                    if not f.endswith('__cts__.xml') and '{}/__cts__.xml'.format(os.path.dirname(f)) in passing_temp and '{}/__cts__.xml'.format('/'.join(f.split('/')[:-2])) in passing_temp:
-                        passing.append(f)
-                        passing.append('{}/__cts__.xml'.format(os.path.dirname(f)))
-                        passing.append('{}/__cts__.xml'.format('/'.join(f.split('/')[:-2])))
-                passing = sorted(list(set(passing)))
+                passing = self.create_manifest()
                 with open('{}/manifest.txt'.format(self.path), mode="w") as f:
                     f.write('\n'.join(passing))
             else:
@@ -610,6 +609,20 @@ class Test(object):
             report = self.report
             report["units"] = [unit.dict for unit in self.stack]
             self.send(report)
+
+    def create_manifest(self):
+        """ Creates a manifest.txt file in the source directory that contains an ordered list of passing files
+        """
+        passing_temp = [x.name for x in self.results.values() if x.coverage == 100.0]
+        passing = []
+        for f in passing_temp:
+            if not f.endswith('__cts__.xml') and '{}/__cts__.xml'.format(
+                    os.path.dirname(f)) in passing_temp and '{}/__cts__.xml'.format(
+                    '/'.join(f.split('/')[:-2])) in passing_temp:
+                passing.append(f)
+                passing.append('{}/__cts__.xml'.format(os.path.dirname(f)))
+                passing.append('{}/__cts__.xml'.format('/'.join(f.split('/')[:-2])))
+        return sorted(list(set(passing)))
 
     def clone(self):
         """ Clone the repository
