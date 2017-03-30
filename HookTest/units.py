@@ -410,6 +410,7 @@ class CTSUnit(TESTUnit):
         self.citation = list()
         self.duplicates = list()
         self.forbiddens = list()
+        self.test_status = defaultdict(bool)
         super(CTSUnit, self).__init__(path, *args, **kwargs)
 
     def parsable(self):
@@ -488,39 +489,36 @@ class CTSUnit(TESTUnit):
                         ids = [ref.split(".", i)[-1] for ref in passages]
                         space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
                         len_passage = len(passages)
-                        status = len_passage > 0# and len(warning_record) == 0 and space_in_passage is None
+                        status = len_passage > 0
                         self.log(str(len_passage) + " found")
                         self.citation.append((i, len_passage, citations[i]))
                         for record in warning_record:
                             if record.category == DuplicateReference:
                                 self.duplicates += sorted(str(record.message).split(", "))
-                                #self.log("Duplicate references found : {0}".format(", ".join(passages)))
                         if space_in_passage and space_in_passage is not None:
                             self.forbiddens += ["'{}'".format(n)
                                                 for ref, n in zip(ids, passages)
                                                 if TESTUnit.FORBIDDEN_CHAR.search(ref)]
                         if status is False:
-                            self.duplicates = False
-                            self.forbiddens = False
+                            yield status
+                            break
                         yield status
                 except Exception as E:
                     self.error(E)
                     self.log("Error when searching passages at level {0}".format(i+1))
                     yield False
+                    break
         else:
-            self.duplicates = False
-            self.forbiddens = False
             yield False
 
     def duplicate(self):
         """ Detects duplicate references
 
         """
-        if self.duplicates is False:
-            self.duplicates = list()
-            yield False
-        elif len(self.duplicates) > 0:
+        if len(self.duplicates) > 0:
             self.log("Duplicate references found : {0}".format(", ".join(self.duplicates)))
+            yield False
+        elif self.test_status['passages'] is False:
             yield False
         else:
             yield True
@@ -529,11 +527,10 @@ class CTSUnit(TESTUnit):
         """ Checks for forbidden characters in references
 
         """
-        if self.forbiddens is False:
-            self.forbiddens = list()
-            yield False
-        elif len(self.forbiddens) > 0:
+        if len(self.forbiddens) > 0:
             self.log("Reference with forbidden characters found: {0}".format(", ".join(self.forbiddens)))
+            yield False
+        elif self.test_status['passages'] is False:
             yield False
         else:
             yield True
@@ -655,5 +652,6 @@ class CTSUnit(TESTUnit):
         for test in tests:
             # Show the logs and return the status
             status = False not in [status for status in getattr(self, test)()]
+            self.test_status[test] = status
             yield (CTSUnit.readable[test], status, self.logs)
             self.flush()

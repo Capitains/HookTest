@@ -205,6 +205,7 @@ class TestText(unittest.TestCase):
         parsed = [a for a in unit.parsable()]
         unit.flush()
         results = [result for result in unit.passages()]
+        unit.test_status['passages'] = True
         passages = list(unit.duplicate())
         self.assertEqual(passages, [True], "No collision should result in success")
 
@@ -215,6 +216,20 @@ class TestText(unittest.TestCase):
         passages = list(unit.duplicate())
         self.assertEqual(passages, [False], "Collision should result in fail")
         self.assertIn(">>>>>> Duplicate references found : 1, 1.2, 1.pr, 3.1, 1.2.1, 1.pr.1, 3.1.1, 3.1.2", unit.logs)
+
+    def test_passage_wrong_refsDecl_middle(self):
+        """ Test collision of passages
+        """
+        unit = HookTest.units.CTSUnit("tests/passages/test_passage_fail_second_level.xml")
+        parsed = [a for a in unit.parsable()]
+        unit.flush()
+        results = [result for result in unit.passages()]
+        self.assertEqual(results, [True, False], "Wrong refsDecl should stop the test")
+        unit.test_status['passages'] = False
+        passages = list(unit.duplicate())
+        self.assertEqual(passages, [False], "Failing passages should result in duplicate failure")
+        passages = list(unit.forbidden())
+        self.assertEqual(passages, [False], "Failing passages should result in forbidden failure")
 
     def test_node_collision(self):
         """ Test unique_passage
@@ -272,6 +287,7 @@ class TestText(unittest.TestCase):
         unit.flush()
         results = [result for result in unit.passages()]
         self.assertEqual(results, [True, True], "Passages are found")
+        unit.test_status['passages'] = True
         results = list(unit.forbidden())
         self.assertEqual(results, [True], "Illegal characters should pass if no forbidden characters")
         self.assertEqual(unit.forbiddens, [], "All passage IDs containing forbidden characters should be stored.")
