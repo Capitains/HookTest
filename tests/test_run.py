@@ -136,7 +136,8 @@ class TestProcess(TestCase):
         self.assertEqual(
             {'Naming conventions': False, 'RefsDecl parsing': False, 'Epidoc DTD validation': False,
              'URN informations': False, 'File parsing': True, 'Passage level parsing': False,
-             'Available in inventory': False, 'Unique nodes found by XPath': False}
+             'Available in inventory': False, 'Unique nodes found by XPath': False,
+             'Duplicate passages': False, 'Forbidden characters': False, 'Correct xml:lang attribute': False}
             ,
             text["units"], "Everything but XML parsing should fail in TEI.2 files"
         )
@@ -186,7 +187,7 @@ class TestProcess(TestCase):
         """ Test a run on the local tests passages with console print """
         status, logs = self.hooktest(["./tests/repo1", "--console"])
         self.assertIn(
-            "[failed] 2 over 5 texts have fully passed the tests\n", logs,
+            "[failed] 3 out of 5 files did not pass the tests\n", logs,
             "Test conclusion should be printed"
         )
         self.assertIn(
@@ -214,7 +215,7 @@ class TestProcess(TestCase):
         """ Test a run on the local tests passages with console print and verbose """
         status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose"])
         self.assertIn(
-            "[failed] 2 over 5 texts have fully passed the tests\n", logs,
+            "[failed] 3 out of 5 files did not pass the tests\n", logs,
             "Test conclusion should be printed"
         )
         self.assertIn(
@@ -259,7 +260,7 @@ class TestProcess(TestCase):
         """ Test a run on the local tests passages with console print as Epidoc """
         status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose", "--scheme", "epidoc"])
         self.assertIn(
-            "[success] 5 over 5 texts have fully passed the tests\n", logs,
+            ">>> [success] 0 out of 5 files did not pass the tests\n", logs,
             "Test conclusion should be printed"
         )
         self.assertIn(
@@ -304,8 +305,8 @@ class TestProcess(TestCase):
         """ Test a clone on dummy empty repo """
         status, logs = self.hooktest(["./cloning_dir", "--repository", "Capitains/DH2016", "--console"])
         self.assertIn(
-            ">>> [error] 0 over 0 texts have fully passed the tests", logs,
-            "No file should result in no file tested"
+            ">>> [error] 0 out of 0 files did not pass the tests", logs,
+            "No file should result in an [error] and no file tested"
         )
 
     def test_run_filter(self):
@@ -453,7 +454,7 @@ class TestProcess(TestCase):
             "--console", "--verbose", "--scheme", "epidoc"
         ])
         self.assertIn(
-            "[success] 5 over 5 texts have fully passed the tests\n", logs,
+            ">>> [success] 0 out of 5 files did not pass the tests\n", logs,
             "Test conclusion should be printed"
         )
         self.assertSubset(
@@ -493,6 +494,6 @@ class TestProcess(TestCase):
             "./tests/greek", "--console", "--verbose", "--scheme", "epidoc"
         ])
         self.assertIn(
-            "[success] 3 over 3 texts have fully passed the tests\n", logs,
+            ">>> [success] 0 out of 3 files did not pass the tests\n", logs,
             "Test conclusion should be printed"
         )

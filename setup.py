@@ -14,7 +14,9 @@ setup(
         "MyCapytain==1.0.4",
         "jingtrang==0.1.1",
         "GitPython==2.1.0",
-        "requests>=2.7.0"
+        "requests>=2.7.0",
+        "prettytable==0.7.2",
+        "ansicolors==1.0.2"
     ],
     tests_require=[
         "mock==1.3.0",
@@ -25,7 +27,7 @@ setup(
     },
     include_package_data=True,
     entry_points={
-        'console_scripts': ['hooktest=HookTest.cmd:cmd'],
+        'console_scripts': ['hooktest=HookTest.cmd:cmd', 'hooktest-build=HookTest.cmd:cmd_build']
     },
     test_suite="tests",
     zip_safe=False

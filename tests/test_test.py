@@ -5,6 +5,8 @@ import mock
 import json
 from multiprocessing.pool import Pool
 from collections import OrderedDict
+import shutil
+import os
 
 
 def unitlog_dict():
@@ -29,6 +31,8 @@ def unitlog_dict():
 
 
 class TestTest(unittest.TestCase):
+    TESTDIR = 'currentTest/'
+
     def setUp(self):
         self.test = HookTest.test.Test(
             "./",
@@ -45,6 +49,18 @@ class TestTest(unittest.TestCase):
             uuid="1234",
             secret="PerseusDL"
         )
+
+    def tearDown(self):
+        if os.path.isdir(self.TESTDIR):
+            shutil.rmtree(self.TESTDIR)
+
+    def createTestDir(self, d):
+        """ Creates directory to test file system actions
+
+        :param d: the source directory to be copied
+        :type d: str
+        """
+        shutil.copytree(d, self.TESTDIR)
 
     def test_init_conditions(self):
         """ Try special case of init """
@@ -181,7 +197,7 @@ class TestTest(unittest.TestCase):
         self.test_print.end()
         self.assertEqual(len(printed.mock_calls), 1, msg="End should print once")
         printed.assert_called_with(
-            ">>> End of the test !\n>>> [failed] 5 over 7 texts have fully passed the tests", flush=True
+            ">>> End of the test !\n>>> [failed] 2 out of 7 files did not pass the tests", flush=True
         )
 
     @mock.patch('HookTest.test.print', create=True)
@@ -430,19 +446,23 @@ class TestTest(unittest.TestCase):
 
     @mock.patch("HookTest.test.time.strftime", return_value="Time")
     def test_unit_text_mute(self, time_mocked):
+        # test is the mocked 'test' method of the unit
         test = mock.MagicMock()
         test.return_value = [
             ("MyCapytain", True, []),
             ("Folder Name", True, ["It should be in a subfolder"])
         ]
-        INVObject = mock.Mock(
-            test=test
+        # UnitInstance is a mock which has a test method is a mock
+        UnitInstance = mock.Mock(
+            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation'], lang="grc"
         )
+        # ctsunit is a mock of the class CTSUnit and will return the instance UnitInstance
         ctsunit = mock.Mock(
-            return_value=INVObject
+            return_value=UnitInstance
         )
         with mock.patch("HookTest.test.HookTest.units.CTSUnit", ctsunit):
             logs, filepath, additional = self.test.unit("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml")
+            ctsunit.assert_called_with("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml", countwords=False)
             self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs.logs)
             self.assertIn(">>>>> MyCapytain passed", logs.logs)
             self.assertIn(">>>>> Folder Name passed", logs.logs)
@@ -453,6 +473,9 @@ class TestTest(unittest.TestCase):
                 'at': 'Time',
                 'coverage': 100.0,
                 'status': True,
+                'citations': ['citation'],
+                'duplicates': ['duplicate'],
+                'forbiddens': ['forbid'],
                 'units': {
                     'Folder Name': True,
                     'MyCapytain': True
@@ -461,7 +484,8 @@ class TestTest(unittest.TestCase):
                     ">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml",
                     ">>>>> MyCapytain passed",
                     ">>>>> Folder Name passed"
-                ]
+                ],
+                'language': 'grc'
             })
             self.assertEqual(logs.status, True)
             self.assertEqual(logs, self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"])
@@ -475,13 +499,14 @@ class TestTest(unittest.TestCase):
             ("Folder Name", False, ["It should be in a subfolder"])
         ]
         INVObject = mock.Mock(
-            test=test
+            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation'], lang="grc"
         )
         ctsunit = mock.Mock(
             return_value=INVObject
         )
         with mock.patch("HookTest.test.HookTest.units.CTSUnit", ctsunit):
             logs, filepath, additional = self.test.unit("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml")
+            ctsunit.assert_called_with("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml", countwords=False)
             self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs.logs)
             self.assertIn(">>>>> MyCapytain passed", logs.logs)
             self.assertIn(">>>>> Folder Name failed", logs.logs)
@@ -493,6 +518,9 @@ class TestTest(unittest.TestCase):
                 'name': "/phi1294/phi002/phi1294.phi002.perseus-lat2.xml",
                 'coverage': 50.0,
                 'status': False,
+                'citations': ['citation'],
+                'duplicates': ['duplicate'],
+                'forbiddens': ['forbid'],
                 'units': {
                     'Folder Name': False,
                     'MyCapytain': True
@@ -502,7 +530,8 @@ class TestTest(unittest.TestCase):
                     ">>>>> MyCapytain passed",
                     ">>>>> Folder Name failed",
                     "It should be in a subfolder"
-                ]
+                ],
+                'language': 'grc'
             })
             self.assertEqual(self.test.passing["phi1294.phi002.perseus-lat2.xml"], False)
             self.assertEqual(logs, self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"])
@@ -633,6 +662,404 @@ class TestTest(unittest.TestCase):
                 }
             )
 
+    @mock.patch('HookTest.test.sys.stdout', create=True)
+    def test_log_travis_pass(self, sysmocked):
+        """ Testing a unit that passes prints . in stdout and then flush it """
+        process = HookTest.test.Test("./tests/repo1", travis=True)
+        logs_dict = unitlog_dict()
+
+        process.log(logs_dict["001"])
+        sysmocked.write.assert_called_with(".")
+        sysmocked.flush.assert_called_with()
+
+    @mock.patch('HookTest.test.sys.stdout', create=True)
+    def test_log_travis_fail(self, sysmocked):
+        """ Testing a unit that fails prints X in stdout and then flush it """
+        process = HookTest.test.Test("./tests/repo1", travis=True)
+        logs_dict = unitlog_dict()
+
+        process.log(logs_dict["002"])
+        sysmocked.write.assert_called_with("X")
+        sysmocked.flush.assert_called_with()
+
+    @mock.patch("HookTest.test.PT")
+    def test_middle_nottravis_not_called(self, PTMock):
+        """ Ensure PrettyTable are not created when travis is False """
+        process = HookTest.test.Test("./tests/repo1", travis=False, verbose=False)
+        process.results = unitlog_dict()
+        process.results["001"].units = {
+            "Metadata": True,
+            "Filename": True
+        }
+        process.results["002"].units = {
+            "Metadata": True,
+            "Filename": False
+        }
+        process.middle()
+        process.middle()
+        PTMock.assert_not_called()
+
+    @mock.patch("HookTest.test.print", create=True)  # We patch and feed print to PrintMock
+    @mock.patch("HookTest.test.PT", create=True)  #  We patch PrettyTable and feed it as PTMock
+    def test_middle_travis(self, PTMock, printMock):
+        """ Ensure PrettyTable are created when travis is True and verbose as well """
+
+        # PTMock being a class (PrettyTable), on instantiation it returns a new object.
+        # So when python executes PT(["Filename", "Failed Tests"]), we need to have access to
+        # the instance this call would create
+        # Hence creating a mock and feeding it as return_value of PTMock
+        InstanceMock = mock.MagicMock(create=True)
+        PTMock.return_value = InstanceMock
+
+        # We create a process of Test and feed weird results
+        process = HookTest.test.Test("./tests/repo1", travis=True, verbose=True)
+        process.results = unitlog_dict()
+        process.results["001"].units = {
+            "Metadata": True,
+            "Filename": True
+        }
+        process.results["002"].units = {
+            "Metadata": True,
+            "Filename": False
+        }
+
+        # We run the method we want to verify
+        process.middle()
+
+        # We check each call that should be done
+        PTMock.assert_called_with(["Filename", "Failed Tests"])
+        InstanceMock.align.__setitem__.assert_called_with(("Filename", "Failed Tests"), "c")
+        # assert_called_once_with checks both that there has been only one call on the function tested, and then checks
+        # that the parameters are the same
+        InstanceMock.add_row.assert_called_once_with(["002", "Filename failed"])
+
+        printMock.assert_has_calls([
+            mock.call('', flush=True),
+            mock.call(InstanceMock, flush=True)
+        ])
+        self.assertEqual(process.m_files, 2)
+        self.assertEqual(process.m_passing, 1)
+
+    @mock.patch("HookTest.test.print", create=True)  # We patch and feed print to PrintMock
+    def test_middle_travis_pass(self, printMock):
+        """ Ensure PrettyTable are created when travis is True and verbose as well """
+        # We create a process of Test and feed weird results
+        process = HookTest.test.Test("./tests/repo1", travis=True, verbose=True)
+        process.results = unitlog_dict()
+        process.results["001"].units = {
+            "Metadata": True,
+            "Filename": True
+        }
+        process.results["002"].units = {
+            "Metadata": True,
+            "Filename": True
+        }
+        process.results["002"].status = True
+
+        process.middle()
+
+        printMock.assert_has_calls([
+            mock.call('', flush=True),
+            mock.call('All Metadata Files Passed', flush=True)
+        ])
+        self.assertEqual(process.m_files, 2)
+        self.assertEqual(process.m_passing, 2)
+
+    @mock.patch("HookTest.test.print", create=True)  # We patch and feed print to PrintMock
+    @mock.patch("HookTest.test.PT", create=True)  # We patch PrettyTable and feed it as PTMock
+    def test_end_no_counts(self, PTMock, printMock):
+        """ Ensure PrettyTable is correctly created when travis is True and verbose as well """
+
+        self.createTestDir('./tests/repo1')
+        # PTMock being a class (PrettyTable), on instantiation it returns a new object.
+        # So when python executes PT(["Filename", "Failed Tests"]), we need to have access to
+        # the instance this call would create
+        # Hence creating a mock and feeding it as return_value of PTMock
+        InstanceMock = mock.MagicMock(create=True)
+        PTMock.return_value = InstanceMock
+
+        # We create a process of Test and feed weird results
+        process = HookTest.test.Test(self.TESTDIR, travis=True, verbose=True)
+        process.results = unitlog_dict()
+        process.results["001"].units = {
+            "Metadata": True,
+            "Filename": True,
+            'Passage level parsing': True
+        }
+        process.results["001"].additional['citations'] = [(0, 2, 'Book'), (1, 3, 'Chapter'), (2, 4, 'Section')]
+        process.results["001"].additional['duplicates'] = []
+        process.results["001"].additional['forbiddens'] = []
+        process.results["002"].units = {
+            "Metadata": True,
+            "Filename": False,
+            'Passage level parsing': False
+        }
+        process.results["002"].additional['citations'] = []
+        process.results["002"].additional['duplicates'] = ['1.1', '1.2']
+        process.results["002"].additional['forbiddens'] = ['1$1', '1-1']
+        # add a unit where all tests fail
+        process.results['003'] = HookTest.test.UnitLog(
+            directory=".",
+            name='003',
+            units={},
+            coverage=0.0,
+            status=False
+        )
+        process.results['003'].units = {
+            "Metadata": False,
+            "Filename": False,
+            'Passage level parsing': False
+        }
+        process.results["003"].additional['citations'] = []
+        process.results["003"].additional['words'] = 0
+        process.results["003"].additional['duplicates'] = []
+        process.results["003"].additional['forbiddens'] = []
+        process.m_passing = 3
+        process.m_files = 3
+
+        # We run the method we want to verify
+        process.end()
+
+        # We check each call that should be done
+        PTMock.assert_has_calls([mock.call(['Identifier', 'Nodes', 'Failed Tests']),
+                                 mock.call().align.__setitem__(('Identifier', 'Nodes', 'Failed Tests'), 'c'),
+                                 mock.call().add_row(['\x1b[37m001\x1b[0m', '2;3;4', '']),
+                                 mock.call().add_row(['\x1b[35m002\x1b[0m', '', 'Passage level parsing']),
+                                 mock.call().add_row(['\x1b[35m003\x1b[0m', '', 'All']),
+                                 mock.call(['HookTestResults', '']),
+                                 mock.call().align.__setitem__(('HookTestResults', ''), 'c'),
+                                 mock.call().add_row(['Total Texts', 3]),
+                                 mock.call().add_row(['Passing Texts', 1]),
+                                 mock.call().add_row(['Metadata Files', 3]),
+                                 mock.call().add_row(['Passing Metadata', 3]),
+                                 mock.call().add_row(['Coverage', 50.0]),
+                                 mock.call().add_row(['Total Citation Units', '9'])])
+
+        duplicate_nodes = '\x1b[35mDuplicate nodes found:\n\x1b[0m\t\x1b[35m002\x1b[0m\t1.1, 1.2\n\n'
+        forbidden_chars = '\x1b[35mForbidden characters found:\n\x1b[0m\t\x1b[35m002\x1b[0m\t1$1, 1-1\n\n'
+        printMock.assert_has_calls([
+            mock.call('', flush=True),
+            mock.call(InstanceMock, flush=True),
+            mock.call("{dupes}{forbs}>>> End of the test !\n".format(dupes=duplicate_nodes, forbs=forbidden_chars))
+        ], any_order=True)
+
+    @mock.patch("HookTest.test.print", create=True)  # We patch and feed print to PrintMock
+    @mock.patch("HookTest.test.PT", create=True)  # We patch PrettyTable and feed it as PTMock
+    def test_end_with_counts(self, PTMock, printMock):
+        """ Ensure PrettyTable is correctly created when travis, verbose and countwords are True """
+
+        self.createTestDir('./tests/repo1')
+        # PTMock being a class (PrettyTable), on instantiation it returns a new object.
+        # So when python executes PT(["Filename", "Failed Tests"]), we need to have access to
+        # the instance this call would create
+        # Hence creating a mock and feeding it as return_value of PTMock
+        InstanceMock = mock.MagicMock(create=True)
+        PTMock.return_value = InstanceMock
+
+        # We create a process of Test and feed weird results
+        process = HookTest.test.Test(self.TESTDIR, travis=True, verbose=True, countwords=True)
+        process.results = unitlog_dict()
+        process.results["001"].units = {
+            "Metadata": True,
+            "Filename": True,
+            'Passage level parsing': True
+        }
+        process.results["001"].additional['citations'] = [(0, 2, 'Book'), (1, 3, 'Chapter'), (2, 4, 'Section')]
+        process.results["001"].additional['words'] = 100
+        process.results["001"].additional['duplicates'] = []
+        process.results["001"].additional['forbiddens'] = []
+        process.results["001"].additional['language'] = 'UNK'
+        process.results["002"].units = {
+            "Metadata": True,
+            "Filename": False,
+            'Passage level parsing': False
+        }
+        process.results["002"].additional['citations'] = []
+        process.results["002"].additional['words'] = 50
+        process.results["002"].additional['duplicates'] = ['1.1', '1.2']
+        process.results["002"].additional['forbiddens'] = ['1$1', '1-1']
+        process.results["002"].additional['language'] = 'UNK'
+        # add a unit where all tests fail
+        process.results['003'] = HookTest.test.UnitLog(
+            directory=".",
+            name='003',
+            units={},
+            coverage=0.0,
+            status=False
+        )
+        process.results['003'].units = {
+            "Metadata": False,
+            "Filename": False,
+            'Passage level parsing': False
+        }
+        process.results["003"].additional['citations'] = []
+        process.results["003"].additional['words'] = 0
+        process.results["003"].additional['duplicates'] = []
+        process.results["003"].additional['forbiddens'] = []
+        process.results["003"].additional['language'] = 'UNK'
+        process.m_passing = 3
+        process.m_files = 3
+
+        # We run the method we want to verify
+        process.end()
+
+        # We check each call that should be done
+        PTMock.assert_has_calls([mock.call(["Identifier", "Words", "Nodes", "Failed Tests"]),
+                                 mock.call().align.__setitem__(("Identifier", "Words", "Nodes", "Failed Tests"), 'c'),
+                                 mock.call().add_row(['\x1b[37m001\x1b[0m', '100', '2;3;4', '']),
+                                 mock.call().add_row(['\x1b[35m002\x1b[0m', '50', '', 'Passage level parsing']),
+                                 mock.call().add_row(['\x1b[35m003\x1b[0m', '0', '', 'All']),
+                                 mock.call(['HookTestResults', '']),
+                                 mock.call().align.__setitem__(('HookTestResults', ''), 'c'),
+                                 mock.call().add_row(['Total Texts', 3]),
+                                 mock.call().add_row(['Passing Texts', 1]),
+                                 mock.call().add_row(['Metadata Files', 3]),
+                                 mock.call().add_row(['Passing Metadata', 3]),
+                                 mock.call().add_row(['Coverage', 50.0]),
+                                 mock.call().add_row(['Total Citation Units', '9']),
+                                 mock.call().add_row(['Total Words', '150'])])
+
+        duplicate_nodes = '\x1b[35mDuplicate nodes found:\n\x1b[0m\t\x1b[35m002\x1b[0m\t1.1, 1.2\n\n'
+        forbidden_chars = '\x1b[35mForbidden characters found:\n\x1b[0m\t\x1b[35m002\x1b[0m\t1$1, 1-1\n\n'
+        printMock.assert_has_calls([
+            mock.call('', flush=True),
+            mock.call(InstanceMock, flush=True),
+            mock.call("{dupes}{forbs}>>> End of the test !\n".format(dupes=duplicate_nodes, forbs=forbidden_chars))
+        ], any_order=True)
+
+    @mock.patch("HookTest.test.print", create=True)  # We patch and feed print to PrintMock
+    @mock.patch("HookTest.test.PT", create=True)  # We patch PrettyTable and feed it as PTMock
+    def test_end_not_verbose(self, PTMock, printMock):
+        """ Ensure PrettyTable is correctly created when travis is True and verbose as well """
+
+        self.createTestDir('./tests/repo1')
+        # PTMock being a class (PrettyTable), on instantiation it returns a new object.
+        # So when python executes PT(["Filename", "Failed Tests"]), we need to have access to
+        # the instance this call would create
+        # Hence creating a mock and feeding it as return_value of PTMock
+        InstanceMock = mock.MagicMock(create=True)
+        PTMock.return_value = InstanceMock
+
+        # We create a process of Test and feed weird results
+        process = HookTest.test.Test(self.TESTDIR, travis=True, verbose=False)
+        process.results = unitlog_dict()
+        process.results["001"].units = {
+            "Metadata": True,
+            "Filename": True,
+            'Passage level parsing': True
+        }
+        process.results["001"].additional['citations'] = [(0, 2, 'Book'), (1, 3, 'Chapter'), (2, 4, 'Section')]
+        process.results["001"].additional['duplicates'] = []
+        process.results["001"].additional['forbiddens'] = []
+        process.results["002"].units = {
+            "Metadata": True,
+            "Filename": False,
+            'Passage level parsing': False
+        }
+        process.results["002"].additional['citations'] = []
+        process.results["002"].additional['duplicates'] = ['1.1', '1.2']
+        process.results["002"].additional['forbiddens'] = ['1$1', '1-1']
+        # add a unit where all tests fail
+        process.results['003'] = HookTest.test.UnitLog(
+            directory=".",
+            name='003',
+            units={},
+            coverage=0.0,
+            status=False
+        )
+        process.results['003'].units = {
+            "Metadata": False,
+            "Filename": False,
+            'Passage level parsing': False
+        }
+        process.results["003"].additional['citations'] = []
+        process.results["003"].additional['words'] = 0
+        process.results["003"].additional['duplicates'] = []
+        process.results["003"].additional['forbiddens'] = []
+        process.m_passing = 3
+        process.m_files = 3
+
+        # We run the method we want to verify
+        process.end()
+
+        # We check each call that should be done
+        PTMock.assert_has_calls([mock.call(['Identifier', 'Nodes', 'Failed Tests']),
+                                 mock.call().align.__setitem__(('Identifier', 'Nodes', 'Failed Tests'), 'c'),
+                                 mock.call().add_row(['\x1b[37m001\x1b[0m', '2;3;4', '']),
+                                 mock.call().add_row(['\x1b[35m002\x1b[0m', '', 'Passage level parsing']),
+                                 mock.call().add_row(['\x1b[35m003\x1b[0m', '', 'All']),
+                                 mock.call(['HookTestResults', '']),
+                                 mock.call().align.__setitem__(('HookTestResults', ''), 'c'),
+                                 mock.call().add_row(['Total Texts', 3]),
+                                 mock.call().add_row(['Passing Texts', 1]),
+                                 mock.call().add_row(['Metadata Files', 3]),
+                                 mock.call().add_row(['Passing Metadata', 3]),
+                                 mock.call().add_row(['Coverage', 50.0]),
+                                 mock.call().add_row(['Total Citation Units', '9'])])
+
+        duplicate_nodes = ''
+        forbidden_chars = ''
+        printMock.assert_has_calls([
+            mock.call('', flush=True),
+            mock.call(InstanceMock, flush=True),
+            mock.call("{dupes}{forbs}>>> End of the test !\n".format(dupes=duplicate_nodes, forbs=forbidden_chars))
+        ], any_order=True)
+
+    def test_manifest_build(self):
+        """ Ensure that the manifest is created correctly,
+            adding only the files that have a passing group-level and work-level __cts__.xml file
+            and a passing CTS text file
+        """
+
+        self.createTestDir('./tests/repo1')
+
+        process = HookTest.test.Test(self.TESTDIR, travis=True, verbose=True, countwords=True)
+        process.results = unitlog_dict()
+        process.results['001'].name = 'test/test/test'
+        process.results["002"].name = 'test/test/__cts__.xml'
+        process.results['002'].coverage = 100.0
+        process.results['003'] = HookTest.test.UnitLog(
+            directory=".",
+            name='test/__cts__.xml',
+            units={},
+            coverage=100.0,
+            status=False
+        )
+        # this statement is necessary because for some reason the assignment of the .name attr above leaves out the .
+        process.results['003'].name = 'test/__cts__.xml'
+        # produce 3 new constellations of files that will fail at some point
+        for n in (4, 7, 10):
+            process.results['00{}'.format(n)] = HookTest.test.UnitLog(
+                directory=".",
+                name='test{0}/test{0}/test{0}'.format(n),
+                units={},
+                coverage=100.0,
+                status=False
+            )
+            process.results['00{}'.format(n + 1)] = HookTest.test.UnitLog(
+                directory=".",
+                name='test{0}/test{0}/__cts__.xml'.format(n),
+                units={},
+                coverage=100.0,
+                status=False
+            )
+            process.results['00{}'.format(n + 1)].name = 'test{0}/test{0}/__cts__.xml'.format(n)
+            process.results['00{}'.format(n + 2)] = HookTest.test.UnitLog(
+                directory=".",
+                name='test{0}/__cts__.xml'.format(n),
+                units={},
+                coverage=100.0,
+                status=False
+            )
+            process.results['00{}'.format(n + 2)].name = 'test{0}/__cts__.xml'.format(n)
+        # case where the text file fails
+        process.results['004'].coverage = 50.0
+        # case where the work-level __cts__.xml file fails
+        process.results['008'].coverage = 50.0
+        # case where the group-level __cts__.xml file fails
+        process.results['0012'].coverage = 50.0
+        # We run the method we want to verify
+        self.assertEqual(process.create_manifest(), ['test/__cts__.xml', 'test/test/__cts__.xml', 'test/test/test'])
 
 class TestProgress(unittest.TestCase):
     """ Test Github.Progress own implementation """

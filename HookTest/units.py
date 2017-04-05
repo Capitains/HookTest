@@ -383,18 +383,21 @@ class CTSUnit(TESTUnit):
     "unique_passage", "inventory" ) yield at least one boolean (might be more) which represents the success of it.
     """
 
-    tests = ["parsable", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory"]
+    tests = ["parsable", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory", "duplicate", "forbidden", 'language']
     readable = {
         "parsable": "File parsing",
         "refsDecl": "RefsDecl parsing",
         "passages": "Passage level parsing",
+        "duplicate": "Duplicate passages",
+        "forbidden": "Forbidden characters",
         "epidoc": "Epidoc DTD validation",
         "tei": "TEI DTD Validation",
         "has_urn": "URN informations",
         "naming_convention": "Naming conventions",
         "inventory": "Available in inventory",
         "unique_passage": "Unique nodes found by XPath",
-        "count_words": "Word Counting"
+        "count_words": "Word Counting",
+        "language": "Correct xml:lang attribute"
     }
     splitter = re.compile(r'\S+', re.MULTILINE)
 
@@ -405,6 +408,11 @@ class CTSUnit(TESTUnit):
         self.xml = None
         self.count = 0
         self.countwords = countwords
+        self.citation = list()
+        self.duplicates = list()
+        self.forbiddens = list()
+        self.test_status = defaultdict(bool)
+        self.lang = ''
         super(CTSUnit, self).__init__(path, *args, **kwargs)
 
     def parsable(self):
@@ -473,6 +481,7 @@ class CTSUnit(TESTUnit):
 
         """
         if self.Text and self.Text.citation.refsDecl:
+            citations = [c.name for c in self.Text.citation]
             for i in range(0, len(self.Text.citation)):
                 try:
                     with warnings.catch_warnings(record=True) as warning_record:
@@ -481,28 +490,52 @@ class CTSUnit(TESTUnit):
                         passages = self.Text.getValidReff(level=i+1, _debug=True)
                         ids = [ref.split(".", i)[-1] for ref in passages]
                         space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
-                        status = len(passages) > 0 and len(warning_record) == 0 and space_in_passage is None
-                        self.log(str(len(passages)) + " found")
+                        len_passage = len(passages)
+                        status = len_passage > 0
+                        self.log(str(len_passage) + " found")
+                        self.citation.append((i, len_passage, citations[i]))
                         for record in warning_record:
                             if record.category == DuplicateReference:
-                                passages = sorted(str(record.message).split(", "))
-                                self.log("Duplicate references found : {0}".format(", ".join(passages)))
+                                self.duplicates += sorted(str(record.message).split(", "))
                         if space_in_passage and space_in_passage is not None:
-                            self.log("Reference with forbidden characters found: {}".format(
-                                " ".join([
-                                    "'{}'".format(n)
-                                    for ref, n in zip(ids, passages)
-                                    if TESTUnit.FORBIDDEN_CHAR.search(ref)
-                                ])
-                            ))
-
+                            self.forbiddens += ["'{}'".format(n)
+                                                for ref, n in zip(ids, passages)
+                                                if TESTUnit.FORBIDDEN_CHAR.search(ref)]
+                        if status is False:
+                            yield status
+                            break
                         yield status
                 except Exception as E:
                     self.error(E)
                     self.log("Error when searching passages at level {0}".format(i+1))
                     yield False
+                    break
         else:
             yield False
+
+    def duplicate(self):
+        """ Detects duplicate references
+
+        """
+        if len(self.duplicates) > 0:
+            self.log("Duplicate references found : {0}".format(", ".join(self.duplicates)))
+            yield False
+        elif self.test_status['passages'] is False:
+            yield False
+        else:
+            yield True
+
+    def forbidden(self):
+        """ Checks for forbidden characters in references
+
+        """
+        if len(self.forbiddens) > 0:
+            self.log("Reference with forbidden characters found: {0}".format(", ".join(self.forbiddens)))
+            yield False
+        elif self.test_status['passages'] is False:
+            yield False
+        else:
+            yield True
 
     def unique_passage(self):
         """ Check that citation scheme do not collide (eg. Where text:1 would be the same node as text:1.1)
@@ -599,6 +632,32 @@ class CTSUnit(TESTUnit):
             status = self.count > 0
         yield status
 
+    def language(self):
+        """ Tests to make sure an xml:lang element is on the correct node
+        """
+        if self.scheme == "epidoc":
+            try:
+                self.lang = self.xml.xpath('/tei:TEI/tei:text/tei:body/tei:div[@type="edition" or @type="translation"]',
+                                           namespaces=TESTUnit.NS)[0].get('{http://www.w3.org/XML/1998/namespace}lang')
+            except:
+                self.lang = ''
+            if self.lang == '' or self.lang is None:
+                self.lang = 'UNK'
+                yield False
+            else:
+                yield True
+        elif self.scheme == "tei":
+            try:
+                self.lang = self.xml.xpath('/tei:TEI/tei:text/tei:body',
+                                           namespaces=TESTUnit.NS)[0].get('{http://www.w3.org/XML/1998/namespace}lang')
+            except:
+                self.lang = ''
+            if self.lang == '' or self.lang is None:
+                self.lang = 'UNK'
+                yield False
+            else:
+                yield True
+
     def test(self, scheme, inventory=None):
         """ Test a file with various checks
 
@@ -621,5 +680,6 @@ class CTSUnit(TESTUnit):
         for test in tests:
             # Show the logs and return the status
             status = False not in [status for status in getattr(self, test)()]
+            self.test_status[test] = status
             yield (CTSUnit.readable[test], status, self.logs)
             self.flush()

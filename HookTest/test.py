@@ -16,8 +16,12 @@ import requests
 import hashlib
 import hmac
 import time
+from prettytable import PrettyTable as PT
+from prettytable import ALL as pt_all
 
 import HookTest.units
+from colors import white, magenta, black
+from operator import attrgetter
 
 
 pr_finder = re.compile("pull\/([0-9]+)\/head")
@@ -130,8 +134,8 @@ class Test(object):
 
     def __init__(self, path,
          repository=None, branch=None, uuid=None, workers=1, scheme="tei",
-         verbose=False, ping=None, secret="", triggering_size=None, console=False,
-         finder=DefaultFinder, finderoptions=None, countwords=False,
+         verbose=False, ping=None, secret="", triggering_size=None, console=False, travis=False,
+         finder=DefaultFinder, finderoptions=None, countwords=False, allowfailure=False,
         **kwargs
     ):
         """ Create a Test object
@@ -157,6 +161,7 @@ class Test(object):
         """
         self.depth = 10
         self.console = console
+        self.travis = travis
         self.path = path
         self.repository = repository
         self.branch = branch
@@ -167,6 +172,7 @@ class Test(object):
         self.scheme = scheme
         self.verbose = verbose
         self.countwords = countwords
+        self.allowfailure = allowfailure
         self.__triggering_size = None
         if isinstance(triggering_size, int):
             self.__triggering_size = triggering_size
@@ -260,6 +266,8 @@ class Test(object):
 
         if self.count_files == 0 or len(self.passing) != self.count_files:
             return Test.ERROR
+        elif self.allowfailure is True and self.count_files > 0 and self.successes > 0:
+            return Test.SUCCESS
         elif self.count_files > 0 and self.successes == len(self.passing):
             return Test.SUCCESS
         else:
@@ -327,6 +335,7 @@ class Test(object):
         additional = []
         if filepath.endswith("__cts__.xml"):
             unit = HookTest.units.INVUnit(filepath)
+            texttype = "CTSMetadata"
             logs.append(">>>> Testing " + filepath)
             for name, status, unitlogs in unit.test():
 
@@ -345,6 +354,7 @@ class Test(object):
 
         else:
             unit = HookTest.units.CTSUnit(filepath, countwords=self.countwords)
+            texttype = "CTSText"
             logs.append(">>>> Testing " + filepath.split("data")[-1])
             for name, status, unitlogs in unit.test(self.scheme, self.inventory):
 
@@ -360,9 +370,13 @@ class Test(object):
 
                 results[name] = status
             additional = {}
+            additional["citations"] = unit.citation
+            additional["duplicates"] = unit.duplicates
+            additional["forbiddens"] = unit.forbiddens
+            additional['language'] = unit.lang
             if self.countwords:
                 additional["words"] = unit.count
-        return self.cover(filepath, results, logs=logs, additional=additional), filepath, additional
+        return self.cover(filepath, results, testtype=texttype, logs=logs, additional=additional), filepath, additional
 
     def run(self):
         """ Run the tests
@@ -387,6 +401,7 @@ class Test(object):
             # Required for coverage
             executor.close()
             executor.join()
+            self.middle() #to print the results from the metadata file tests
 
         # We load a thread pool which has 5 maximum workers
         with Pool(processes=self.workers) as executor:
@@ -410,7 +425,15 @@ class Test(object):
         :type log: UnitLog
         :return: None
         """
-        if self.console:
+        if self.travis is True:
+            if isinstance(log, UnitLog):
+                if log.status is True:
+                    sys.stdout.write('.')
+                    sys.stdout.flush()
+                else:
+                    sys.stdout.write('X')
+                    sys.stdout.flush()
+        elif self.console:
             print(str(log), flush=True)
         elif self.ping and len(self.stack) >= self.triggering_size:
             self.flush(self.stack)
@@ -419,7 +442,7 @@ class Test(object):
         """ Deal with the start of the process
 
         """
-        if self.console:
+        if self.console or self.travis:
             print(">>> Starting tests !", flush=True)
             print(">>> Files to test : "+str(self.count_files), flush=True)
         elif self.ping:
@@ -436,14 +459,154 @@ class Test(object):
         if self.console:
             print("\n".join([f for f in self.progress.json if f]), flush=True)
 
+    def middle(self):
+        """
+        to print out the results for the metadata files that failed the tests
+        :return:
+        :rtype:
+        """
+        self.m_files = self.m_passing = len(self.results.values())
+        if self.travis and self.verbose:
+            print('', flush=True)
+            if False not in [unit.status for unit in self.results.values()]:
+                print('All Metadata Files Passed', flush=True)
+            else:
+                display_table = PT(["Filename", "Failed Tests"])
+                display_table.align["Filename", "Failed Tests"] = 'c'
+                display_table.hrules = pt_all
+                for unit in sorted(self.report['units'], key=lambda x: x['name']):
+                    if unit['status'] is not True:
+                        self.m_passing -= 1
+                        display_table.add_row([unit['name'], '\n'.join(['{test} failed'.format(test=x) for x in unit['units'] if unit['units'][x] is False])])
+                print(display_table, flush=True)
+
     def end(self):
         """ Deal with end logs
         """
-        if self.console:
-            print(
+        total_units = 0
+        total_words = 0
+        language_words = defaultdict(int)
+        show = list(HookTest.units.CTSUnit.readable.values())
+        if not self.verbose:
+            show.remove("Duplicate passages")
+            show.remove("Forbidden characters")
+        if self.console or self.travis:
+            if self.travis:
+                duplicate_nodes = ''
+                forbidden_chars = ''
+                num_texts = 0
+                num_failed = 0
+                print('', flush=True)
+                if self.countwords is True:
+                    display_table = PT(["Identifier", "Words", "Nodes", "Failed Tests"])
+                    display_table.align['Identifier', 'Words', 'Nodes', "Failed Tests"] = "c"
+                    display_table.hrules = pt_all
+                    #try using self.results and then the UnitLog attributes instead of self.report
+                    #also use operator.attrgetter('name') instead of lambda x in the for statement
+                    for unit in sorted(self.results.values(), key=attrgetter('name')):
+                        if not unit.name.endswith('__cts__.xml'):
+                            num_texts += 1
+                            if unit.units["Passage level parsing"] is False:
+                                try:
+                                    show.remove("Duplicate passages")
+                                    show.remove("Forbidden characters")
+                                except:
+                                    pass
+                            if unit.coverage != 100.0:
+                                num_failed += 1
+                                text_color = magenta
+                            else:
+                                text_color = white
+                            if unit.coverage == 0.0:
+                                failed_tests = 'All'
+                            else:
+                                failed_tests = '\n'.join([x for x in unit.units if unit.units[x] is False and x in show])
+                            if unit.additional['duplicates']:
+                                duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                              nodes=', '.join(unit.additional['duplicates']))
+                            if unit.additional['forbiddens']:
+                                forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                              nodes=', '.join(unit.additional['forbiddens']))
+                            display_table.add_row(
+                                ["{}".format(text_color(os.path.basename(unit.name))),
+                                 "{:,}".format(unit.additional['words']),
+                                 ';'.join([str(x[1]) for x in unit.additional['citations']]),
+                                 failed_tests])
+                            for x in unit.additional['citations']:
+                                total_units += x[1]
+                            total_words += unit.additional['words']
+                            language_words[unit.additional['language']] += unit.additional['words']
+                else:
+                    display_table = PT(["Identifier", "Nodes", "Failed Tests"])
+                    display_table.align['Identifier', 'Nodes', "Failed Tests"] = "c"
+                    display_table.hrules = pt_all
+                    for unit in sorted(self.results.values(), key=attrgetter('name')):
+                        if not unit.name.endswith('__cts__.xml'):
+                            num_texts += 1
+                            if unit.units["Passage level parsing"] is False:
+                                try:
+                                    show.remove("Duplicate passages")
+                                    show.remove("Forbidden characters")
+                                except:
+                                    pass
+                            if unit.coverage != 100.0:
+                                num_failed += 1
+                                text_color = magenta
+                            else:
+                                text_color = white
+                            if unit.coverage == 0.0:
+                                failed_tests = 'All'
+                            else:
+                                failed_tests = '\n'.join([x for x in unit.units if unit.units[x] is False and x in show])
+                            if unit.additional['duplicates']:
+                                duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                              nodes=', '.join(unit.additional['duplicates']))
+                            if unit.additional['forbiddens']:
+                                forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                              nodes=', '.join(unit.additional['forbiddens']))
+                            display_table.add_row(
+                                ["{}".format(text_color(os.path.basename(unit.name))),
+                                 ';'.join([str(x[1]) for x in unit.additional['citations']]),
+                                 failed_tests])
+                            for x in unit.additional['citations']:
+                                total_units += x[1]
+                print(display_table, flush=True)
+                print('', flush=True)
+                if self.verbose:
+                    if duplicate_nodes:
+                        duplicate_nodes = magenta('Duplicate nodes found:\n') + duplicate_nodes + '\n'
+                    if forbidden_chars:
+                        forbidden_chars = magenta('Forbidden characters found:\n') + forbidden_chars + '\n'
+                else:
+                    duplicate_nodes = forbidden_chars = ''
+                print("{dupes}{forbs}>>> End of the test !\n".format(dupes=duplicate_nodes, forbs=forbidden_chars))
+                t_pass = num_texts - num_failed
+                cov = round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
+                results_table = PT(["HookTestResults", ""])
+                results_table.align["HookTestResults", ""] = "c"
+                results_table.hrules = pt_all
+                results_table.add_row(["Total Texts", num_texts])
+                results_table.add_row(["Passing Texts", t_pass])
+                results_table.add_row(["Metadata Files", self.m_files])
+                results_table.add_row(["Passing Metadata", self.m_passing])
+                results_table.add_row(["Coverage", cov])
+                results_table.add_row(["Total Citation Units", "{:,}".format(total_units)])
+                if self.countwords is True:
+                    results_table.add_row(["Total Words", "{:,}".format(total_words)])
+                    for l, words in language_words.items():
+                        results_table.add_row(["Words in {}".format(l.upper()), "{:,}".format(words)])
+                print(results_table, flush=True)
+                #print(black('#*# texts={texts} texts_passing={t_pass} metadata={meta} metadata_passing={m_pass} coverage_units={cov} total_nodes={nodes} words={words}'.format(
+                #    texts=num_texts, t_pass=t_pass, meta=self.m_files, m_pass=self.m_passing, cov=cov, nodes="{:,}".format(total_units), words="{:,}".format(total_words))))
+                #Manifest of passing files
+                passing = self.create_manifest()
+                with open('{}/manifest.txt'.format(self.path), mode="w") as f:
+                    f.write('\n'.join(passing))
+            else:
+                print(
                 ">>> End of the test !\n" \
-                ">>> [{2}] {0} over {1} texts have fully passed the tests".format(
-                    self.successes, len(self.passing), self.status
+                ">>> [{2}] {0} out of {1} files did not pass the tests".format(
+                    len(self.passing) - self.successes, len(self.passing), self.status
                 ),
                 flush=True
             )
@@ -451,6 +614,20 @@ class Test(object):
             report = self.report
             report["units"] = [unit.dict for unit in self.stack]
             self.send(report)
+
+    def create_manifest(self):
+        """ Creates a manifest.txt file in the source directory that contains an ordered list of passing files
+        """
+        passing_temp = [x.name for x in self.results.values() if x.coverage == 100.0]
+        passing = []
+        for f in passing_temp:
+            if not f.endswith('__cts__.xml') and '{}/__cts__.xml'.format(
+                    os.path.dirname(f)) in passing_temp and '{}/__cts__.xml'.format(
+                    '/'.join(f.split('/')[:-2])) in passing_temp:
+                passing.append(f)
+                passing.append('{}/__cts__.xml'.format(os.path.dirname(f)))
+                passing.append('{}/__cts__.xml'.format('/'.join(f.split('/')[:-2])))
+        return sorted(list(set(passing)))
 
     def clone(self):
         """ Clone the repository
@@ -494,7 +671,7 @@ class Test(object):
 
         return self.finder.find(self.directory)
 
-    def cover(self, name, test, logs=None, additional=None):
+    def cover(self, name, test, testtype=None, logs=None, additional=None):
         """ Given a dictionary, compute the coverage of one item
 
         :param name:
@@ -503,6 +680,8 @@ class Test(object):
         :type test: boolean
         :param logs: List of logs for one unit
         :type logs: list
+        :param testtype: the type of file tested (e.g., CTSMetadata or CTSText)
+        :type testtype: str
         :returns: Passing status
         :rtype: dict
         """
@@ -519,7 +698,8 @@ class Test(object):
                 status=False not in results,
                 logs=logs,
                 repository=self.repository,
-                additional=additional
+                additional=additional,
+                testtype=testtype
             )
         else:
             return UnitLog(
@@ -529,7 +709,8 @@ class Test(object):
                 coverage=0.0,
                 status=False,
                 logs=logs,
-                repository=self.repository
+                repository=self.repository,
+                testtype=testtype
             )
 
     @staticmethod
@@ -646,7 +827,7 @@ class UnitLog(object):
     :param additional: Additional informations. Can be used for words counting
     """
 
-    def __init__(self, directory, name, units, coverage, status, logs=None, sent=False, repository=None, additional=None
+    def __init__(self, directory, name, units, coverage, status, testtype=None, logs=None, sent=False, repository=None, additional=None
                  ):
         """ Initiate the object
 
@@ -669,6 +850,7 @@ class UnitLog(object):
         self.name = self.directory_replacer(name)
         self.logs = logs
         self.additional = {}
+        self.testtype = testtype
         if isinstance(additional, dict):
             self.additional = additional
 

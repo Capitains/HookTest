@@ -1,0 +1,3 @@
+data/stoa0040a/__cts__.xml
+data/stoa0040a/stoa002/__cts__.xml
+data/stoa0040a/stoa002/stoa0040a.stoa002.opp-lat1.xml

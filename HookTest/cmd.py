@@ -1,6 +1,7 @@
 import argparse
 import sys
 import HookTest.test
+import HookTest.build
 
 
 def parse_args(args):
@@ -35,12 +36,17 @@ def parse_args(args):
     parser.add_argument("--countwords", help="Count words in texts passing the tests", action="store_true", default=None)
     parser.add_argument(
         "-c", "--console", help="Print to console", action="store_true", default=False)
+    parser.add_argument('--console_mode', help='Format of console output', choices=['table', 'line'], default='line')
+    parser.add_argument("--travis", help="Produce Travis output", action="store_true", default=False)
     parser.add_argument(
         "-p",
         "--ping",
         help="Send results to a server",
         default=None
     )
+    parser.add_argument("--allowfailure",
+                        help="Returns a passing test result as long as at least one text passes.",
+                        action="store_true", default=False)
 
     args = parser.parse_args(args)
     if args.finder:
@@ -53,11 +59,45 @@ def cmd():
     """ Run locally the software. Should not be called outside of a python cmd.py call
     """
     status = HookTest.test.cmd(**vars(parse_args(sys.argv[1:])))
-    if status is False:
+    if status != HookTest.test.Test.SUCCESS:
         sys.exit(1)
     else:
         sys.exit(0)
 
+
+def parse_args_build(args):
+    """ Parsing function. Written to support unit test
+
+    :param args: List of command line argument
+    :return: Parsed argument
+    """
+    parser = argparse.ArgumentParser(
+        prog='hooktest-build',
+        description=" Builds a repository for release based on the results of HookTest"
+    )
+
+    parser.add_argument("path", help="Path containing the repository", default='./')
+
+    parser.add_argument(
+        "-d",
+        "--dest",
+        help="The folder in which the corpus without the failing files should be saved",
+        default='./'
+    )
+    parser.add_argument("--travis", help="Run build on Travis or similar CI environment", action="store_true", default=False)
+
+    args = parser.parse_args(args)
+    return args
+
+
+def cmd_build():
+    """ Run locally the software. Should not be called outside of a python cmd.py call
+    """
+    status, message = HookTest.build.cmd(**vars(parse_args_build(sys.argv[1:])))
+    if status is True:
+        sys.exit(0)
+    else:
+        sys.exit(message)
 
 if __name__ == '__main__':
     cmd()
