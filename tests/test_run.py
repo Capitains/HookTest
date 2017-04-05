@@ -137,7 +137,7 @@ class TestProcess(TestCase):
             {'Naming conventions': False, 'RefsDecl parsing': False, 'Epidoc DTD validation': False,
              'URN informations': False, 'File parsing': True, 'Passage level parsing': False,
              'Available in inventory': False, 'Unique nodes found by XPath': False,
-             'Duplicate passages': False, 'Forbidden characters': False}
+             'Duplicate passages': False, 'Forbidden characters': False, 'Correct xml:lang attribute': False}
             ,
             text["units"], "Everything but XML parsing should fail in TEI.2 files"
         )

@@ -383,7 +383,7 @@ class CTSUnit(TESTUnit):
     "unique_passage", "inventory" ) yield at least one boolean (might be more) which represents the success of it.
     """
 
-    tests = ["parsable", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory", "duplicate", "forbidden"]
+    tests = ["parsable", "has_urn", "naming_convention", "refsDecl", "passages", "unique_passage", "inventory", "duplicate", "forbidden", 'language']
     readable = {
         "parsable": "File parsing",
         "refsDecl": "RefsDecl parsing",
@@ -396,7 +396,8 @@ class CTSUnit(TESTUnit):
         "naming_convention": "Naming conventions",
         "inventory": "Available in inventory",
         "unique_passage": "Unique nodes found by XPath",
-        "count_words": "Word Counting"
+        "count_words": "Word Counting",
+        "language": "Correct xml:lang attribute"
     }
     splitter = re.compile(r'\S+', re.MULTILINE)
 
@@ -411,6 +412,7 @@ class CTSUnit(TESTUnit):
         self.duplicates = list()
         self.forbiddens = list()
         self.test_status = defaultdict(bool)
+        self.lang = ''
         super(CTSUnit, self).__init__(path, *args, **kwargs)
 
     def parsable(self):
@@ -629,6 +631,32 @@ class CTSUnit(TESTUnit):
             self.log("{} has {} words".format(self.urn, self.count))
             status = self.count > 0
         yield status
+
+    def language(self):
+        """ Tests to make sure an xml:lang element is on the correct node
+        """
+        if self.scheme == "epidoc":
+            try:
+                self.lang = self.xml.xpath('/tei:TEI/tei:text/tei:body/tei:div[@type="edition" or @type="translation"]',
+                                           namespaces=TESTUnit.NS)[0].get('{http://www.w3.org/XML/1998/namespace}lang')
+            except:
+                self.lang = ''
+            if self.lang == '' or self.lang is None:
+                self.lang = 'UNK'
+                yield False
+            else:
+                yield True
+        elif self.scheme == "tei":
+            try:
+                self.lang = self.xml.xpath('/tei:TEI/tei:text/tei:body',
+                                           namespaces=TESTUnit.NS)[0].get('{http://www.w3.org/XML/1998/namespace}lang')
+            except:
+                self.lang = ''
+            if self.lang == '' or self.lang is None:
+                self.lang = 'UNK'
+                yield False
+            else:
+                yield True
 
     def test(self, scheme, inventory=None):
         """ Test a file with various checks

@@ -373,6 +373,7 @@ class Test(object):
             additional["citations"] = unit.citation
             additional["duplicates"] = unit.duplicates
             additional["forbiddens"] = unit.forbiddens
+            additional['language'] = unit.lang
             if self.countwords:
                 additional["words"] = unit.count
         return self.cover(filepath, results, testtype=texttype, logs=logs, additional=additional), filepath, additional
@@ -484,6 +485,7 @@ class Test(object):
         """
         total_units = 0
         total_words = 0
+        language_words = defaultdict(int)
         show = list(HookTest.units.CTSUnit.readable.values())
         if not self.verbose:
             show.remove("Duplicate passages")
@@ -533,6 +535,7 @@ class Test(object):
                             for x in unit.additional['citations']:
                                 total_units += x[1]
                             total_words += unit.additional['words']
+                            language_words[unit.additional['language']] += unit.additional['words']
                 else:
                     display_table = PT(["Identifier", "Nodes", "Failed Tests"])
                     display_table.align['Identifier', 'Nodes', "Failed Tests"] = "c"
@@ -590,6 +593,8 @@ class Test(object):
                 results_table.add_row(["Total Citation Units", "{:,}".format(total_units)])
                 if self.countwords is True:
                     results_table.add_row(["Total Words", "{:,}".format(total_words)])
+                    for l, words in language_words.items():
+                        results_table.add_row(["Words in {}".format(l.upper()), "{:,}".format(words)])
                 print(results_table, flush=True)
                 #print(black('#*# texts={texts} texts_passing={t_pass} metadata={meta} metadata_passing={m_pass} coverage_units={cov} total_nodes={nodes} words={words}'.format(
                 #    texts=num_texts, t_pass=t_pass, meta=self.m_files, m_pass=self.m_passing, cov=cov, nodes="{:,}".format(total_units), words="{:,}".format(total_words))))

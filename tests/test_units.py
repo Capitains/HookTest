@@ -322,3 +322,69 @@ class TestText(unittest.TestCase):
         self.assertEqual(
             a, [False], "Test should fail"
         )
+
+    def test_correct_xml_lang_epidoc_edition(self):
+        """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
+        """
+        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_passing_epidoc.xml")
+        unit.xml = etree.parse("tests/lang_tests/xml_lang_passing_epidoc.xml", HookTest.units.TESTUnit.PARSER)
+        unit.scheme = "epidoc"
+        unit.flush()
+        results = [result for result in unit.language()]
+        self.assertEqual(results, [True], "Existing xml:lang attribute should return True")
+        self.assertEqual(unit.lang, "lat", "unit.lang should be set to the correct language code")
+
+    def test_incorrect_xml_lang_epidoc_edition(self):
+        """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
+        """
+        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_failing_epidoc.xml")
+        unit.xml = etree.parse("tests/lang_tests/xml_lang_failing_epidoc.xml", HookTest.units.TESTUnit.PARSER)
+        unit.scheme = "epidoc"
+        unit.flush()
+        results = [result for result in unit.language()]
+        self.assertEqual(results, [False], "Non-existent xml:lang attribute should return False")
+        self.assertEqual(unit.lang, "UNK", "Non-existing xml:lang attribute should result in unit.lang being set to 'UNK'")
+
+    def test_correct_xml_lang_tei_edition(self):
+        """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
+        """
+        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_passing_tei.xml")
+        unit.xml = etree.parse("tests/lang_tests/xml_lang_passing_tei.xml", HookTest.units.TESTUnit.PARSER)
+        unit.scheme = "tei"
+        unit.flush()
+        results = [result for result in unit.language()]
+        self.assertEqual(results, [True], "Existing xml:lang attribute should return True")
+        self.assertEqual(unit.lang, "grc", "unit.lang should be set to the correct language code")
+
+    def test_incorrect_xml_lang_tei_edition(self):
+        """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
+        """
+        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_failing_tei.xml")
+        unit.xml = etree.parse("tests/lang_tests/xml_lang_failing_tei.xml", HookTest.units.TESTUnit.PARSER)
+        unit.scheme = "tei"
+        unit.flush()
+        results = [result for result in unit.language()]
+        self.assertEqual(results, [False], "Non-existent xml:lang attribute should return False")
+        self.assertEqual(unit.lang, "UNK", "Non-existing xml:lang attribute should result in unit.lang being set to 'UNK'")
+
+    def test_correct_xml_lang_epidoc_translation(self):
+        """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
+        """
+        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_passing_translation.xml")
+        unit.xml = etree.parse("tests/lang_tests/xml_lang_passing_translation.xml", HookTest.units.TESTUnit.PARSER)
+        unit.scheme = "epidoc"
+        unit.flush()
+        results = [result for result in unit.language()]
+        self.assertEqual(results, [True], "Existing xml:lang attribute should return True")
+        self.assertEqual(unit.lang, "lat", "unit.lang should be set to the correct language code")
+
+    def test_incorrect_xml_lang_epidoc_translation(self):
+        """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
+        """
+        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_failing_translation.xml")
+        unit.xml = etree.parse("tests/lang_tests/xml_lang_failing_translation.xml", HookTest.units.TESTUnit.PARSER)
+        unit.scheme = "epidoc"
+        unit.flush()
+        results = [result for result in unit.language()]
+        self.assertEqual(results, [False], "Non-existent xml:lang attribute should return False")
+        self.assertEqual(unit.lang, "UNK", "Non-existing xml:lang attribute should result in unit.lang being set to 'UNK'")

@@ -454,7 +454,7 @@ class TestTest(unittest.TestCase):
         ]
         # UnitInstance is a mock which has a test method is a mock
         UnitInstance = mock.Mock(
-            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation']
+            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation'], lang="grc"
         )
         # ctsunit is a mock of the class CTSUnit and will return the instance UnitInstance
         ctsunit = mock.Mock(
@@ -484,7 +484,8 @@ class TestTest(unittest.TestCase):
                     ">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml",
                     ">>>>> MyCapytain passed",
                     ">>>>> Folder Name passed"
-                ]
+                ],
+                'language': 'grc'
             })
             self.assertEqual(logs.status, True)
             self.assertEqual(logs, self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"])
@@ -498,7 +499,7 @@ class TestTest(unittest.TestCase):
             ("Folder Name", False, ["It should be in a subfolder"])
         ]
         INVObject = mock.Mock(
-            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation']
+            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation'], lang="grc"
         )
         ctsunit = mock.Mock(
             return_value=INVObject
@@ -529,7 +530,8 @@ class TestTest(unittest.TestCase):
                     ">>>>> MyCapytain passed",
                     ">>>>> Folder Name failed",
                     "It should be in a subfolder"
-                ]
+                ],
+                'language': 'grc'
             })
             self.assertEqual(self.test.passing["phi1294.phi002.perseus-lat2.xml"], False)
             self.assertEqual(logs, self.test.results["/phi1294/phi002/phi1294.phi002.perseus-lat2.xml"])
@@ -866,6 +868,7 @@ class TestTest(unittest.TestCase):
         process.results["001"].additional['words'] = 100
         process.results["001"].additional['duplicates'] = []
         process.results["001"].additional['forbiddens'] = []
+        process.results["001"].additional['language'] = 'UNK'
         process.results["002"].units = {
             "Metadata": True,
             "Filename": False,
@@ -875,6 +878,7 @@ class TestTest(unittest.TestCase):
         process.results["002"].additional['words'] = 50
         process.results["002"].additional['duplicates'] = ['1.1', '1.2']
         process.results["002"].additional['forbiddens'] = ['1$1', '1-1']
+        process.results["002"].additional['language'] = 'UNK'
         # add a unit where all tests fail
         process.results['003'] = HookTest.test.UnitLog(
             directory=".",
@@ -892,6 +896,7 @@ class TestTest(unittest.TestCase):
         process.results["003"].additional['words'] = 0
         process.results["003"].additional['duplicates'] = []
         process.results["003"].additional['forbiddens'] = []
+        process.results["003"].additional['language'] = 'UNK'
         process.m_passing = 3
         process.m_files = 3
 
