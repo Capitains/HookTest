@@ -10,6 +10,7 @@
 .. image:: https://readthedocs.org/projects/docs/badge/?version=latest
     :alt: Documentation
     :target: https://capitains-hooktest.readthedocs.io/en/latest/
+
 What ?
 ######
 

@@ -1,0 +1,12 @@
+## 0.2.0 - 2017-04-05
+
+New console system ! HookTest has been slightly rebuilt and redesign to accomodate with Travis Workflow
+
+Huge work from @sonofmun
+
+- Have a build command that creates CapiTainS proof resource directory ( Fixed #57 )
+- Add a --travis command ( Fixed #56 )
+- Wordcount should be language based ( Fixed #68 )
+- Keep track of test status in units.py  ( Fixed #67  )
+- Add a return to cmd_build ( Fixed #66 )
+- Add / Correct unit tests ( Fixed #63 )
