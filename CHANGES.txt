@@ -10,3 +10,4 @@ Huge work from @sonofmun
 - Keep track of test status in units.py  ( Fixed #67  )
 - Add a return to cmd_build ( Fixed #66 )
 - Add / Correct unit tests ( Fixed #63 )
+- Add test for correct xml:lang attribute
