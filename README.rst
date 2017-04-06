@@ -3,6 +3,9 @@
    :align: center
 
 
+----------
+
+
 .. image:: https://coveralls.io/repos/Capitains/HookTest/badge.svg?service=github
   :alt: Coverage Status
   :target: https://coveralls.io/github/Capitains/HookTest
@@ -16,18 +19,28 @@
     :alt: Documentation
     :target: https://capitains-hooktest.readthedocs.io/en/latest/
     
-|
-|
 
-* `What is HookTest`_
+----------
+
+
+* `What are HookTest and CapiTainS`_
 * `How to use locally`_ 
 * `Running HookTest on Travis CI`_ 
 * `Licenses`_
 
-What is HookTest
-################
+What are HookTest and CapiTainS
+###############################
 
-Capitains HookTest is a python library and commandline tool for testing Capitains CTS packages or CTS files individually.
++-----------+-----------------------------------------------------------------------------------------------------------------------------+
+| |logoCap| | CapiTainS provides resources for people to publish, use and reuse texts with/for standards API.                             |
+|           |                                                                                                                             |
+|           | Capitains HookTest is a python library and commandline tool for testing Capitains textual repositories with their metadata. |
++-----------+-----------------------------------------------------------------------------------------------------------------------------+
+
+
+
+.. |logoCap| image:: docs/_static/images/capitains.png
+    :target: http://capitains.github.io
 
 Installation Instructions
 *************************
@@ -39,7 +52,7 @@ To install it, simply do : :code:`pip3 install HookTest` or
     cd HookTest
     python3 setup.py install
 
-From there, you will be able to call it in your python scripts with `ìmport HookTest` or you can use it in your terminal session
+From there, you will be able to call it in your python scripts with `import HookTest` or you can use it in your terminal session
 
 **Be careful, as Capitains requires java for Schematron and RelaxNG tests**
 
