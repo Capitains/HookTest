@@ -1,3 +1,8 @@
+.. image:: docs/_static/images/header.png
+   :scale: 80 %
+   :align: center
+
+
 .. image:: https://coveralls.io/repos/Capitains/HookTest/badge.svg?service=github
   :alt: Coverage Status
   :target: https://coveralls.io/github/Capitains/HookTest
