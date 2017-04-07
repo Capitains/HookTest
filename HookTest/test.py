@@ -342,21 +342,21 @@ class Test(object):
         avatar = ''
         try:
             if event_type == 'pull_request':
-                print(os.environ['TRAVIS_PULL_REQUEST_SHA'])
                 status = requests.get(
-                    "repos/{slug}/pulls/{id}".format(slug=slug, id=os.environ['TRAVIS_PULL_REQUEST_SHA'])
-                )
+                    "https://api.github.com/repos/{slug}/pulls/{_id}".format(slug=slug,
+                                                                             _id=os.environ['TRAVIS_PULL_REQUEST'])
+                ).json()
                 username = status[0]['user']['login']
                 avatar = status[0]['user']['avatar_url']
             elif event_type == 'push':
-                print(os.environ['TRAVIS_COMMIT'])
                 status = requests.get(
-                    "repos/{slug}/commits/{id}".format(slug=slug, id=os.environ['TRAVIS_COMMIT'])
-                )
+                    "https://api.github.com/repos/{slug}/commits/{_id}".format(slug=slug,
+                                                                               _id=os.environ['TRAVIS_COMMIT'])
+                ).json()
                 username = status[0]['author']['login']
                 avatar = status[0]['author']['avatar_url']
-        except:
-            pass
+        except Exception as E:
+            print(E)
         return username, avatar
 
     def unit(self, filepath):
