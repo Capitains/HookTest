@@ -336,25 +336,27 @@ class Test(object):
         :return: (Username, Avatar_URL)
         :rtype: tuple(str, str)
         """
-        event_type = os.environ['TRAVIS_EVENT_TYPE']
-        slug = os.environ['TRAVIS_REPO_SLUG']
+        event_type = os.environ.get('TRAVIS_EVENT_TYPE')
+        slug = os.environ.get('TRAVIS_REPO_SLUG')
         username = slug
         avatar = ''
+        print(event_type)
+        print(os.environ.get('TRAVIS_COMMIT'))
         try:
             if event_type == 'pull_request':
                 status = requests.get(
                     "https://api.github.com/repos/{slug}/pulls/{_id}".format(slug=slug,
                                                                              _id=os.environ['TRAVIS_PULL_REQUEST'])
                 ).json()
-                username = status[0]['user']['login']
-                avatar = status[0]['user']['avatar_url']
+                username = status['user']['login']
+                avatar = status['user']['avatar_url']
             elif event_type == 'push':
                 status = requests.get(
                     "https://api.github.com/repos/{slug}/commits/{_id}".format(slug=slug,
                                                                                _id=os.environ['TRAVIS_COMMIT'])
                 ).json()
-                username = status[0]['author']['login']
-                avatar = status[0]['author']['avatar_url']
+                username = status['author']['login']
+                avatar = status['author']['avatar_url']
         except Exception as E:
             raise E
         return username, avatar
