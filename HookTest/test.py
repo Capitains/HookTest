@@ -342,12 +342,14 @@ class Test(object):
         avatar = ''
         try:
             if event_type == 'pull_request':
+                print(os.environ['TRAVIS_PULL_REQUEST_SHA'])
                 status = requests.get(
                     "repos/{slug}/pulls/{id}".format(slug=slug, id=os.environ['TRAVIS_PULL_REQUEST_SHA'])
                 )
                 username = status[0]['user']['login']
                 avatar = status[0]['user']['avatar_url']
             elif event_type == 'push':
+                print(os.environ['TRAVIS_COMMIT'])
                 status = requests.get(
                     "repos/{slug}/commits/{id}".format(slug=slug, id=os.environ['TRAVIS_COMMIT'])
                 )
