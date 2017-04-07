@@ -322,6 +322,41 @@ class Test(object):
             headers={"HookTest-Secure-X": hashed, "HookTest-UUID": self.uuid}
         )
 
+    def get_user(self):
+        """
+
+        :param owner: Owner of the repository (organization or repo owner name)
+        :type owner: str
+        :param repo: Name of the repository
+        :type repo: str
+        :param event_type: Event type according to Travis ENV
+        :type event_type: str
+        :param event_id: Either commit sha or pull request ID
+        :type event_id: str
+        :return: (Username, Avatar_URL)
+        :rtype: tuple(str, str)
+        """
+        event_type = os.environ['TRAVIS_EVENT_TYPE']
+        slug = os.environ['TRAVIS_REPO_SLUG']
+        username = slug
+        avatar = ''
+        try:
+            if event_type == 'pull_request':
+                status = requests.get(
+                    "repos/{slug}/pulls/{id}".format(slug=slug, id=os.environ['TRAVIS_PULL_REQUEST_SHA'])
+                )
+                username = status[0]['user']['login']
+                avatar = status[0]['user']['avatar_url']
+            elif event_type == 'push':
+                status = requests.get(
+                    "repos/{slug}/commits({id}".format(slug=slug, id=os.environ['TRAVIS_COMMIT'])
+                )
+                username = status[0]['author']['login']
+                avatar = status[0]['author']['avatar_url']
+        except:
+            pass
+        return username, avatar
+
     def unit(self, filepath):
         """ Do test for a file and print the results
 
@@ -492,6 +527,12 @@ class Test(object):
             show.remove("Forbidden characters")
         if self.console or self.travis:
             if self.travis:
+                if 'TRAVIS' in os.environ:
+                    author, avatar = self.get_user()
+                else:
+                    print('Not on Travis CI.\nSetting "author" and "avatar" to defaults:')
+                    author = 'Unknown'
+                    avatar = ''
                 duplicate_nodes = ''
                 forbidden_chars = ''
                 num_texts = 0
@@ -602,6 +643,7 @@ class Test(object):
                 passing = self.create_manifest()
                 with open('{}/manifest.txt'.format(self.path), mode="w") as f:
                     f.write('\n'.join(passing))
+                print('Author: {}, Avatar_URL: {}'.format(author, avatar))
             else:
                 print(
                 ">>> End of the test !\n" \
