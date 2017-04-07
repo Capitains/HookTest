@@ -358,6 +358,8 @@ class Test(object):
                 username = status['author']['login']
                 avatar = status['author']['avatar_url']
         except Exception as E:
+            print(type(E))
+            print(str(E))
             raise E
         return username, avatar
 
