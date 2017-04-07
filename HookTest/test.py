@@ -136,6 +136,7 @@ class Test(object):
          repository=None, branch=None, uuid=None, workers=1, scheme="tei",
          verbose=False, ping=None, secret="", triggering_size=None, console=False, travis=False,
          finder=DefaultFinder, finderoptions=None, countwords=False, allowfailure=False,
+         from_travis_to_hook=False,
         **kwargs
     ):
         """ Create a Test object
@@ -168,7 +169,10 @@ class Test(object):
         self.uuid = uuid
         self.workers = workers
         self.ping = ping
-        self.secret = bytes(secret, "utf-8")
+        if os.environ.get("HOOK_SECRET"):
+            self.secret = os.environ.get("HOOK_SECRET").encode()
+        else:
+            self.secret = bytes(secret, "utf-8")
         self.scheme = scheme
         self.verbose = verbose
         self.countwords = countwords
@@ -199,6 +203,8 @@ class Test(object):
             self.finder = self.finder(**finderoptions)
         else:
             self.finder = self.finder()
+
+        self.from_travis_to_hook = from_travis_to_hook
 
     @property
     def successes(self):
@@ -297,17 +303,19 @@ class Test(object):
         return len(self.text_files) + len(self.cts_files)
 
     def flush(self, stack):
-        """ Flush the remaining logs to the endpoint """
+        """ Flush the remaining logs to the endpoint
+
+        """
         if len(stack) > 0:
             for needle in stack:
                 needle.sent = True
             self.send({"units": [needle.dict for needle in stack]})
 
     def send(self, data):
-        """
+        """ Send data to self.ping URL
 
-        :param data:
-        :return:
+        :param data: Data to send
+        :return: Result of request
         """
         if isinstance(data, dict):
             data = Test.dump(data)
@@ -316,7 +324,7 @@ class Test(object):
 
         data = bytes(data, "utf-8")
         hashed = hmac.new(self.secret, data, hashlib.sha1).hexdigest()
-        requests.post(
+        return requests.post(
             self.ping,
             data=data,
             headers={"HookTest-Secure-X": hashed, "HookTest-UUID": self.uuid}
@@ -456,16 +464,20 @@ class Test(object):
             })
 
     def download(self):
+        """ Information to send or print during download
+
+        """
         if self.console:
             print("\n".join([f for f in self.progress.json if f]), flush=True)
 
     def middle(self):
-        """
-        to print out the results for the metadata files that failed the tests
+        """ to print out the results for the metadata files that failed the tests
+
         :return:
         :rtype:
         """
         self.m_files = self.m_passing = len(self.results.values())
+
         if self.travis and self.verbose:
             print('', flush=True)
             if False not in [unit.status for unit in self.results.values()]:
@@ -597,8 +609,14 @@ class Test(object):
                     for l, words in language_words.items():
                         results_table.add_row(["Words in {}".format(l.upper()), "{:,}".format(words)])
                 print(results_table, flush=True)
-                #print(black('#*# texts={texts} texts_passing={t_pass} metadata={meta} metadata_passing={m_pass} coverage_units={cov} total_nodes={nodes} words={words}'.format(
-                #    texts=num_texts, t_pass=t_pass, meta=self.m_files, m_pass=self.m_passing, cov=cov, nodes="{:,}".format(total_units), words="{:,}".format(total_words))))
+
+                # Pushing to HOOK !
+                if isinstance(self.from_travis_to_hook, str):
+                    args = [num_texts, t_pass, self.m_files, self.m_passing, cov, total_units]
+                    if self.countwords is True:
+                        args.append(language_words)
+                    print(self.send_to_hook_from_travis(*args).text)
+
                 #Manifest of passing files
                 passing = self.create_manifest()
                 with open('{}/manifest.txt'.format(self.path), mode="w") as f:
@@ -615,6 +633,58 @@ class Test(object):
             report = self.report
             report["units"] = [unit.dict for unit in self.stack]
             self.send(report)
+
+    def send_to_hook_from_travis(
+            self, texts_total, texts_passing,
+            metadata_total, metadata_passing,
+            coverage, nodes_count,
+            words_dict=None
+    ):
+        """ Send data to travis
+
+        :return: Request output
+        """
+        data = dict(
+            # Event
+            event_type=os.environ.get("TRAVIS_EVENT_TYPE"),
+
+            build_uri="https://travis-ci.org/{slug}/builds/{bid}".format(
+                bid=os.environ.get("TRAVIS_BUILD_ID"),
+                slug=os.environ.get("TRAVIS_REPO_SLUG")
+            ),
+            build_id=os.environ.get("TRAVIS_BUILD_NUMBER"),
+            commit_sha=os.environ.get("TRAVIS_COMMIT"),
+
+            # Information about the test
+            texts_total=texts_total,
+            texts_passing=texts_passing,
+            metadata_total=metadata_total,
+            metadata_passing=metadata_passing,
+            coverage=coverage,
+            nodes_count=nodes_count,
+            units={
+                unit_name: log.status for unit_name, log in self.results.items()
+            },
+        )
+        if data["event_type"] == "pull_request":
+            data["source"] = os.environ.get("TRAVIS_PULL_REQUEST")
+        else:
+            data["source"] = os.environ.get("TRAVIS_BRANCH")
+
+        if words_dict is not None:
+            data["words_count"] = words_dict
+
+        data = Test.dump(data)
+        data = bytes(data, "utf-8")
+        hashed = hmac.new(self.secret, data, hashlib.sha1).hexdigest()
+        return requests.post(
+            self.from_travis_to_hook,
+            data=data,
+            headers={
+                "HookTest-Secure-X": hashed,
+                "Content-Type": "application/json"
+            }
+        )
 
     def create_manifest(self):
         """ Creates a manifest.txt file in the source directory that contains an ordered list of passing files

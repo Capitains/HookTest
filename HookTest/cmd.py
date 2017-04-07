@@ -47,6 +47,11 @@ def parse_args(args):
     parser.add_argument("--allowfailure",
                         help="Returns a passing test result as long as at least one text passes.",
                         action="store_true", default=False)
+    parser.add_argument(
+        "--from_travis_to_hook",
+        help="Send results to a Hook UI endpoint",
+        default=False
+    )
 
     args = parser.parse_args(args)
     if args.finder:
