@@ -535,7 +535,8 @@ class Test(object):
                             for x in unit.additional['citations']:
                                 total_units += x[1]
                             total_words += unit.additional['words']
-                            language_words[unit.additional['language']] += unit.additional['words']
+                            if unit.additional['words'] > 0:
+                                language_words[unit.additional['language']] += unit.additional['words']
                 else:
                     display_table = PT(["Identifier", "Nodes", "Failed Tests"])
                     display_table.align['Identifier', 'Nodes', "Failed Tests"] = "c"
