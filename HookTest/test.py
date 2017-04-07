@@ -356,7 +356,7 @@ class Test(object):
                 username = status[0]['author']['login']
                 avatar = status[0]['author']['avatar_url']
         except Exception as E:
-            print(E)
+            raise E
         return username, avatar
 
     def unit(self, filepath):
