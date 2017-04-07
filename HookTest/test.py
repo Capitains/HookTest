@@ -349,7 +349,7 @@ class Test(object):
                 avatar = status[0]['user']['avatar_url']
             elif event_type == 'push':
                 status = requests.get(
-                    "repos/{slug}/commits({id}".format(slug=slug, id=os.environ['TRAVIS_COMMIT'])
+                    "repos/{slug}/commits/{id}".format(slug=slug, id=os.environ['TRAVIS_COMMIT'])
                 )
                 username = status[0]['author']['login']
                 avatar = status[0]['author']['avatar_url']
