@@ -355,8 +355,10 @@ class Test(object):
                     "https://api.github.com/repos/{slug}/commits/{_id}".format(slug=slug,
                                                                                _id=os.environ['TRAVIS_COMMIT'])
                 ).json()
-                username = status['author']['login']
-                avatar = status['author']['avatar_url']
+                print(status, "https://api.github.com/repos/{slug}/commits/{_id}".format(slug=slug,
+                                                                               _id=os.environ['TRAVIS_COMMIT']))
+                #username = status['author']['login']
+                #avatar = status['author']['avatar_url']
         except Exception as E:
             print(type(E))
             print(str(E))
