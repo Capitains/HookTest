@@ -1061,6 +1061,62 @@ class TestTest(unittest.TestCase):
         # We run the method we want to verify
         self.assertEqual(process.create_manifest(), ['test/__cts__.xml', 'test/test/__cts__.xml', 'test/test/test'])
 
+    @mock.patch('HookTest.test.requests.post', create=True)
+    def test_travis_to_hook_push(self, post):
+        """ Test printing function """
+        test = HookTest.test.Test(
+            path="weDoNotCare",
+            from_travis_to_hook="https://ci.perseids.org"
+        )
+        test.results = unitlog_dict()
+        os.environ.setdefault("TRAVIS_EVENT_TYPE", "push")
+        os.environ.setdefault("TRAVIS_BUILD_ID", "asdfgh")
+        os.environ.setdefault("TRAVIS_REPO_SLUG", "ponteineptique/canonical-latinLit")
+        os.environ.setdefault("TRAVIS_BUILD_NUMBER", "27")
+        os.environ.setdefault("TRAVIS_COMMIT", "qwertyu")
+        os.environ.setdefault("TRAVIS_BRANCH", "issue-151")
+
+        test.send_to_hook_from_travis(
+            texts_total=577, texts_passing=544,
+            metadata_total=800, metadata_passing=678,
+            coverage=90.45, nodes_count=789456,
+            words_dict={
+                "eng": 745321,
+                "lat": 123456
+            }
+        )
+        name, args, kwargs = post.mock_calls[0]
+        self.assertEqual(
+            args, ("https://ci.perseids.org", ),
+            "URI should be the one set up"
+        )
+        self.assertEqual(
+            kwargs["headers"],
+            {
+                'Content-Type': 'application/json',
+                'HookTest-Secure-X': '988bbbf8f3ac4e89298e858451f8512eb049ac39'
+            },
+            "Headers should say json and have a good secure"
+        )
+        self.assertEqual(
+            json.loads(kwargs["data"].decode()),
+            {"build_id": "27", "build_uri": "https://travis-ci.org/ponteineptique/canonical-latinLit/builds/asdfgh", "commit_sha": "qwertyu",
+             "coverage": 90.45, "event_type": "push", "metadata_passing": 678, "metadata_total": 800,
+             "nodes_count": 789456, "source": "issue-151", "texts_passing": 544, "texts_total": 577,
+             "units": {"001": True, "002": False}, "words_count": {"eng": 745321, "lat": 123456}},
+            "Ddata should cover everything"
+        )
+        """
+        (
+            "https://ci.perseids.org",
+            data=b'{"build_id":null,"build_uri":"https://travis-ci.org/None/builds/None","commit_sha":null,"coverage":90.45,"event_type":null,"metadata_passing":678,"metadata_total":800,"nodes_count":789456,"source":null,"texts_passing":544,"texts_total":577,"units":{"001":true,"002":false},"words_count":{"eng":745321,"lat":123456}}',
+            headers={
+                'Content-Type': 'application/json',
+                'HookTest-Secure-X': '52524d1b6cd5927e86735d19663f1bd9fadd1cc1'
+            }
+        )
+        """
+
 class TestProgress(unittest.TestCase):
     """ Test Github.Progress own implementation """
 
