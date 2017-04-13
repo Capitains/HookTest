@@ -1070,21 +1070,16 @@ class TestTest(unittest.TestCase):
         )
         test.results = unitlog_dict()
 
-        def get_environ(key, default=None):
-            if key == "TRAVIS_EVENT_TYPE":
-                return "push"
-            if key == "TRAVIS_BUILD_ID":
-                return "asdfgh"
-            if key == "TRAVIS_REPO_SLUG":
-                return "ponteineptique/canonical-latinLit"
-            if key == "TRAVIS_BUILD_NUMBER":
-                return "27"
-            if key == "TRAVIS_COMMIT":
-                return "qwertyu"
-            if key == "TRAVIS_BRANCH":
-                return "issue-151"
-
-        with mock.patch('HookTest.test.os.environ.get', get_environ):
+        with mock.patch.dict(
+                'HookTest.test.os.environ',
+                {
+                    "TRAVIS_EVENT_TYPE": "push",
+                    "TRAVIS_BUILD_ID": "asdfgh",
+                    "TRAVIS_REPO_SLUG": "ponteineptique/canonical-latinLit",
+                    "TRAVIS_BUILD_NUMBER": "27",
+                    "TRAVIS_COMMIT": "qwertyu",
+                    "TRAVIS_BRANCH": "issue-151"
+                }):
             test.send_to_hook_from_travis(
                 texts_total=577, texts_passing=544,
                 metadata_total=800, metadata_passing=678,
@@ -1132,22 +1127,16 @@ class TestTest(unittest.TestCase):
             from_travis_to_hook="https://ci.perseids.org"
         )
         test.results = unitlog_dict()
-
-        def get_environ(key, default=None):
-            if key == "TRAVIS_EVENT_TYPE":
-                return "pull_request"
-            if key == "TRAVIS_BUILD_ID":
-                return "asdfgh"
-            if key == "TRAVIS_REPO_SLUG":
-                return "ponteineptique/canonical-latinLit"
-            if key == "TRAVIS_BUILD_NUMBER":
-                return "27"
-            if key == "TRAVIS_COMMIT":
-                return "qwertyu"
-            if key == "TRAVIS_PULL_REQUEST":
-                return "151"
-
-        with mock.patch('HookTest.test.os.environ.get', get_environ):
+        with mock.patch.dict(
+                'HookTest.test.os.environ',
+                {
+                    "TRAVIS_EVENT_TYPE": "pull_request",
+                    "TRAVIS_BUILD_ID": "asdfgh",
+                    "TRAVIS_REPO_SLUG": "ponteineptique/canonical-latinLit",
+                    "TRAVIS_BUILD_NUMBER": "27",
+                    "TRAVIS_COMMIT": "qwertyu",
+                    "TRAVIS_PULL_REQUEST": "151"
+                }):
             test.send_to_hook_from_travis(
                 texts_total=577, texts_passing=544,
                 metadata_total=800, metadata_passing=678,
@@ -1157,6 +1146,7 @@ class TestTest(unittest.TestCase):
                     "lat": 123456
                 }
             )
+
         name, args, kwargs = post.mock_calls[0]
         self.assertEqual(
             args, ("https://ci.perseids.org", ),
@@ -1177,14 +1167,6 @@ class TestTest(unittest.TestCase):
                 'HookTest-Secure-X': 'fabd496ac0c316032487b67079d6fc9731e8f7f7'
             },
             "Headers should say json and have a good secure"
-        )
-        self.assertEqual(
-            json.loads(kwargs["data"].decode()),
-            {"build_id": "27", "build_uri": "https://travis-ci.org/ponteineptique/canonical-latinLit/builds/asdfgh", "commit_sha": "qwertyu",
-             "coverage": 90.45, "event_type": "push", "metadata_passing": 678, "metadata_total": 800,
-             "nodes_count": 789456, "source": "issue-151", "texts_passing": 544, "texts_total": 577,
-             "units": {"001": True, "002": False}, "words_count": {"eng": 745321, "lat": 123456}},
-            "Data should cover everything"
         )
 
 class TestProgress(unittest.TestCase):
