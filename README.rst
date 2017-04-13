@@ -18,6 +18,8 @@
 .. image:: https://readthedocs.org/projects/docs/badge/?version=latest
     :alt: Documentation
     :target: https://capitains-hooktest.readthedocs.io/en/latest/
+.. image:: https://zenodo.org/badge/40954877.svg
+   :target: https://zenodo.org/badge/latestdoi/40954877
     
 
 ----------
