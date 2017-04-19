@@ -497,3 +497,18 @@ class TestProcess(TestCase):
             ">>> [success] 0 out of 3 files did not pass the tests\n", logs,
             "Test conclusion should be printed"
         )
+
+    def test_run_local_greek_count_word_raise(self):
+        """ Test a run cloning a known working repository (PerseusDL/canonical-farsiLit)"""
+        status, logs = self.hooktest([
+            "./tests/test_count_words_not_break", "--console", "--verbose", "--scheme", "epidoc",
+            "--verbose", "--travis", "--countword", "--allowfailure"
+        ])
+        self.assertNotIn(
+            "MyCapytain.errors.RefsDeclError", logs,
+            "There should be no errors "
+        )
+        self.assertIn(
+            "Word Counting", logs,
+            "Word Counting should not be there"
+        )

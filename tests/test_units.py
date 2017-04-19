@@ -108,7 +108,7 @@ class TestText(unittest.TestCase):
     def setUp(self):
         self.TEI = HookTest.units.CTSUnit("/false/path")
         self.TEI.scheme = "tei"
-
+        self.backup = [x for x in HookTest.units.CTSUnit.tests]
         self.Epidoc = HookTest.units.CTSUnit("/false/path")
         self.Epidoc.scheme = "epidoc"
         self.frame = """<TEI xmlns="http://www.tei-c.org/ns/1.0">
@@ -141,6 +141,9 @@ class TestText(unittest.TestCase):
 </text>
 </TEI>
 """
+
+    def tearDown(self):
+        HookTest.units.CTSUnit.tests = list(self.backup)
 
     def testUrn(self):
         """ Test the urn Test """
@@ -296,8 +299,10 @@ class TestText(unittest.TestCase):
         """ Test collision of passages
         """
         unit = HookTest.units.CTSUnit("tests/passages/test_passage_success.xml")
-        parsed = [a for a in unit.parsable()]
-        urn = [a for a in unit.has_urn()]
+        HookTest.units.CTSUnit.tests = [
+            "parsable", "has_urn", "passages"
+        ]
+        x = list(unit.test("epidoc"))
         unit.flush()
         a = list(unit.count_words())
         self.assertEqual(
@@ -312,8 +317,10 @@ class TestText(unittest.TestCase):
         """ Test collision of passages
         """
         unit = HookTest.units.CTSUnit("tests/repo2/data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml")
-        parsed = [a for a in unit.parsable()]
-        urn = [a for a in unit.has_urn()]
+        HookTest.units.CTSUnit.tests = [
+            "parsable", "has_urn", "passages"
+        ]
+        x = list(unit.test("epidoc"))
         unit.flush()
         a = list(unit.count_words())
         self.assertEqual(

@@ -622,9 +622,7 @@ class CTSUnit(TESTUnit):
         """ Count words in a file
         """
         status = False
-        self.log(self.Text)
-        if self.Text and self.Text.citation.refsDecl:
-            self.log(self.Text)
+        if self.test_status["passages"]:
             self.Text.parse()
             passages = self.Text.text(exclude=["tei:note"])
             self.count = len(type(self).splitter.findall(passages))
