@@ -67,13 +67,6 @@ class TestProcess(TestCase):
             "--scheme", "epidoc", "--verbose",
             "--json", "cloning_dir/repo2.json"
         ])))
-        """
-        status, logs = self.hooktest([
-            "./tests/repo2", "--console",
-            "--scheme", "epidoc", "--verbose",
-            "--json", "cloning_dir/repo2.json"
-        ])
-        """
         parsed = self.read_logs("cloning_dir/repo2.json")
         ####
         #
@@ -185,7 +178,7 @@ class TestProcess(TestCase):
 
     def test_run_local_console(self):
         """ Test a run on the local tests passages with console print """
-        status, logs = self.hooktest(["./tests/repo1", "--console"])
+        status, logs = self.hooktest(["./tests/repo1", "--console", "inline"])
         self.assertIn(
             "[failed] 3 out of 5 files did not pass the tests\n", logs,
             "Test conclusion should be printed"
@@ -213,7 +206,7 @@ class TestProcess(TestCase):
 
     def test_run_local_console_verbose(self):
         """ Test a run on the local tests passages with console print and verbose """
-        status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose"])
+        status, logs = self.hooktest(["./tests/repo1", "--console", "inline", "--verbose"])
         self.assertIn(
             "[failed] 3 out of 5 files did not pass the tests\n", logs,
             "Test conclusion should be printed"
@@ -258,7 +251,7 @@ class TestProcess(TestCase):
 
     def test_run_local_console_verbose_epidoc(self):
         """ Test a run on the local tests passages with console print as Epidoc """
-        status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose", "--scheme", "epidoc"])
+        status, logs = self.hooktest(["./tests/repo1", "--console", "inline", "--verbose", "--scheme", "epidoc"])
         self.assertIn(
             ">>> [success] 0 out of 5 files did not pass the tests\n", logs,
             "Test conclusion should be printed"
@@ -303,7 +296,7 @@ class TestProcess(TestCase):
 
     def test_run_clone_empty(self):
         """ Test a clone on dummy empty repo """
-        status, logs = self.hooktest(["./cloning_dir", "--repository", "Capitains/DH2016", "--console"])
+        status, logs = self.hooktest(["./cloning_dir", "--repository", "Capitains/DH2016", "--console", "inline"])
         self.assertIn(
             ">>> [error] 0 out of 0 files did not pass the tests", logs,
             "No file should result in an [error] and no file tested"
@@ -318,7 +311,7 @@ class TestProcess(TestCase):
             "./tests/repoFilters",
             "--scheme", "epidoc", "--verbose",
             "--json", "cloning_dir/repofilter.json",
-            "--finder", "stoa0255.stoa004"
+            "--filter", "stoa0255.stoa004"
         ])))
         parsed = self.read_logs("cloning_dir/repofilter.json")
         self.assertEqual(len(parsed["units"]), 4, "There should be 4 tests : two texts, two metadata")
@@ -332,7 +325,7 @@ class TestProcess(TestCase):
             "./tests/repoFilters",
             "--scheme", "epidoc", "--verbose",
             "--json", "cloning_dir/repocount.json",
-            "--finder", "stoa0255.stoa004",
+            "--filter", "stoa0255.stoa004",
             "--countwords"
         ])))
         parsed = self.read_logs("cloning_dir/repocount.json")
@@ -354,13 +347,8 @@ class TestProcess(TestCase):
          This unit test should be used to check edge cases. Repo tei is built for that
         """
         # Can be replace by HookTest.test.cmd(**vars(HookTest.cmd.parse_args()) for debug
-        status = HookTest.test.cmd(**vars(HookTest.cmd.parse_args([
-            "./tests/repotei",
-            "--scheme", "tei", "--verbose",
-            "--json", "cloning_dir/repotei.json"
-        ])))
         status, logs = self.hooktest([
-            "./tests/repotei", "--console",
+            "./tests/repotei", "--console", "inline",
             "--scheme", "tei", "--verbose",
             "--json", "cloning_dir/repotei.json"
         ])
@@ -424,7 +412,7 @@ class TestProcess(TestCase):
         status, logs = self.hooktest([
             "./cloning_dir",
             "--repository", "Capitains/HookTest-TestRepo", "--branch", "master",
-            "--console", "--verbose", "--scheme", "epidoc"
+            "--console", "inline", "--verbose", "--scheme", "epidoc"
         ])
         setlogs = set(logs.split("\n"))
 
@@ -451,7 +439,7 @@ class TestProcess(TestCase):
         """ Test a run cloning a known working repository (PerseusDL/canonical-farsiLit)"""
         status, logs = self.hooktest([
             "./cloning_dir", "--repository", "PerseusDL/canonical-farsiLit",
-            "--console", "--verbose", "--scheme", "epidoc"
+            "--console", "inline", "--verbose", "--scheme", "epidoc"
         ])
         self.assertIn(
             ">>> [success] 0 out of 5 files did not pass the tests\n", logs,
@@ -491,7 +479,7 @@ class TestProcess(TestCase):
     def test_run_local_greek(self):
         """ Test a run cloning a known working repository (PerseusDL/canonical-farsiLit)"""
         status, logs = self.hooktest([
-            "./tests/greek", "--console", "--verbose", "--scheme", "epidoc"
+            "./tests/greek", "--console", "inline", "--verbose", "--scheme", "epidoc"
         ])
         self.assertIn(
             ">>> [success] 0 out of 3 files did not pass the tests\n", logs,
@@ -501,8 +489,8 @@ class TestProcess(TestCase):
     def test_run_local_greek_count_word_raise(self):
         """ Test a run cloning a known working repository (PerseusDL/canonical-farsiLit)"""
         status, logs = self.hooktest([
-            "./tests/test_count_words_not_break", "--console", "--verbose", "--scheme", "epidoc",
-            "--verbose", "--travis", "--countword", "--allowfailure"
+            "./tests/test_count_words_not_break", "--console", "inline", "--verbose", "--scheme", "epidoc",
+            "--verbose", "--manifest", "--countword", "--allowfailure"
         ])
         self.assertNotIn(
             "MyCapytain.errors.RefsDeclError", logs,

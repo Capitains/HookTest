@@ -2,7 +2,7 @@
 
 import os
 import glob
-import statistics#
+import statistics
 import sys
 import traceback
 import re
@@ -19,6 +19,7 @@ import time
 from prettytable import PrettyTable as PT
 from prettytable import ALL as pt_all
 
+import HookTest.capitains_units.cts
 import HookTest.units
 from colors import white, magenta, black
 from operator import attrgetter
@@ -110,7 +111,7 @@ class Test(object):
     :param scheme: Name of the scheme
     :type scheme: str
     :param verbose: Log also rng and unit logs details
-    :type verbose: bool
+    :type verbose: int
     :param ping: URI to ping with data
     :type ping: str
     :param console: If set to true, print logs to the console
@@ -129,15 +130,18 @@ class Test(object):
     PENDING = "pending"
     SCHEMES = {
         "tei": "tei.rng",
-        "epidoc": "epidoc.rng"
+        "epidoc": "epidoc.rng",
+        "tei-ignore": "tei.rng",
+        "epidoc-ignore": "epidoc.rng"
     }
 
-    def __init__(self, path,
-         repository=None, branch=None, uuid=None, workers=1, scheme="tei",
-         verbose=False, ping=None, secret="", triggering_size=None, console=False, travis=False,
-         finder=DefaultFinder, finderoptions=None, countwords=False, allowfailure=False,
-         from_travis_to_hook=False,
-        **kwargs
+    def __init__(
+            self, path,
+            repository=None, branch=None, uuid=None, workers=1, scheme="tei",
+            verbose=0, ping=None, secret="", triggering_size=None, console=False, build_manifest=False,
+            finder=DefaultFinder, finderoptions=None, countwords=False, allowfailure=False,
+            from_travis_to_hook=False, timeout=30,
+            **kwargs
     ):
         """ Create a Test object
 
@@ -154,15 +158,19 @@ class Test(object):
         :param scheme: Name of the scheme
         :type scheme: str
         :param verbose: Log also rng and unit logs details
-        :type verbose: bool
+        :type verbose: int
         :param ping: URI to ping with data
         :type ping: str
         :param console: If set to true, print logs to the console
         :type console: bool
+        :param countwords: Count the number of words for passing texts
+        :type countwords: bool
+        :param build_manifest: Build a manifest at the end of the test
+        :type build_manifest: bool
         """
         self.depth = 10
         self.console = console
-        self.travis = travis
+        self.build_manifest = build_manifest
         self.path = path
         self.repository = repository
         self.branch = branch
@@ -178,6 +186,7 @@ class Test(object):
         self.countwords = countwords
         self.allowfailure = allowfailure
         self.__triggering_size = None
+        self.timeout = timeout
         if isinstance(triggering_size, int):
             self.__triggering_size = triggering_size
 
@@ -342,7 +351,7 @@ class Test(object):
         results = {}
         additional = []
         if filepath.endswith("__cts__.xml"):
-            unit = HookTest.units.INVUnit(filepath)
+            unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit(filepath)
             texttype = "CTSMetadata"
             logs.append(">>>> Testing " + filepath)
             for name, status, unitlogs in unit.test():
@@ -354,14 +363,14 @@ class Test(object):
 
                 logs.append(">>>>> " + name + status_str)
 
-                if self.verbose and len(unitlogs) > 0:
+                if self.verbose > 0 and len(unitlogs) > 0:
                     logs += [log for log in unitlogs if log]
 
                 results[name] = status
             additional += unit.urns
 
         else:
-            unit = HookTest.units.CTSUnit(filepath, countwords=self.countwords)
+            unit = HookTest.capitains_units.cts.CTSText_TestUnit(filepath, countwords=self.countwords, timeout=self.timeout)
             texttype = "CTSText"
             logs.append(">>>> Testing " + filepath.split("data")[-1])
             for name, status, unitlogs in unit.test(self.scheme, self.inventory):
@@ -373,7 +382,7 @@ class Test(object):
 
                 logs.append(">>>>> " + name + status_str)
 
-                if self.verbose and len(unitlogs) > 0:
+                if self.verbose > 0 and len(unitlogs) > 0:
                     logs += [log for log in unitlogs if log]
 
                 results[name] = status
@@ -409,7 +418,7 @@ class Test(object):
             # Required for coverage
             executor.close()
             executor.join()
-            self.middle() #to print the results from the metadata file tests
+            self.middle()  # To print the results from the metadata file tests
 
         # We load a thread pool which has 5 maximum workers
         with Pool(processes=self.workers) as executor:
@@ -433,7 +442,7 @@ class Test(object):
         :type log: UnitLog
         :return: None
         """
-        if self.travis is True:
+        if self.console == "table":
             if isinstance(log, UnitLog):
                 if log.status is True:
                     sys.stdout.write('.')
@@ -441,7 +450,7 @@ class Test(object):
                 else:
                     sys.stdout.write('X')
                     sys.stdout.flush()
-        elif self.console:
+        elif self.console == "inline":
             print(str(log), flush=True)
         elif self.ping and len(self.stack) >= self.triggering_size:
             self.flush(self.stack)
@@ -450,7 +459,7 @@ class Test(object):
         """ Deal with the start of the process
 
         """
-        if self.console or self.travis:
+        if self.console is not False:
             print(">>> Starting tests !", flush=True)
             print(">>> Files to test : "+str(self.count_files), flush=True)
         elif self.ping:
@@ -467,7 +476,7 @@ class Test(object):
         """ Information to send or print during download
 
         """
-        if self.console:
+        if self.console is not False and self.verbose == 10:
             print("\n".join([f for f in self.progress.json if f]), flush=True)
 
     def middle(self):
@@ -478,7 +487,7 @@ class Test(object):
         """
         self.m_files = self.m_passing = len(self.results.values())
 
-        if self.travis and self.verbose:
+        if self.console == "table" and self.verbose > 0:
             print('', flush=True)
             if False not in [unit.status for unit in self.results.values()]:
                 print('All Metadata Files Passed', flush=True)
@@ -498,100 +507,89 @@ class Test(object):
         total_units = 0
         total_words = 0
         language_words = defaultdict(int)
-        show = list(HookTest.units.CTSUnit.readable.values())
-        if not self.verbose:
+        show = list(HookTest.capitains_units.cts.CTSText_TestUnit.readable.values())
+        if self.verbose == 0:
             show.remove("Duplicate passages")
             show.remove("Forbidden characters")
-        if self.console or self.travis:
-            if self.travis:
+        if self.console is not False:
+            if self.console == "table":
                 duplicate_nodes = ''
                 forbidden_chars = ''
                 num_texts = 0
                 num_failed = 0
                 print('', flush=True)
+
                 if self.countwords is True:
                     display_table = PT(["Identifier", "Words", "Nodes", "Failed Tests"])
-                    display_table.align['Identifier', 'Words', 'Nodes', "Failed Tests"] = "c"
-                    display_table.hrules = pt_all
-                    #try using self.results and then the UnitLog attributes instead of self.report
-                    #also use operator.attrgetter('name') instead of lambda x in the for statement
-                    for unit in sorted(self.results.values(), key=attrgetter('name')):
-                        if not unit.name.endswith('__cts__.xml'):
-                            num_texts += 1
-                            if unit.units["Passage level parsing"] is False:
-                                try:
-                                    show.remove("Duplicate passages")
-                                    show.remove("Forbidden characters")
-                                except:
-                                    pass
-                            if unit.coverage != 100.0:
-                                num_failed += 1
-                                text_color = magenta
+                    display_table.align["Identifier", "Words", "Nodes", "Failed Tests"] = "c"
+                else:
+                    display_table = PT(["Identifier", "Nodes", "Failed Tests"])
+                    display_table.align["Identifier", "Nodes", "Failed Tests"] = "c"
+
+                display_table.hrules = pt_all
+                # try using self.results and then the UnitLog attributes instead of self.report
+                # also use operator.attrgetter('name') instead of lambda x in the for statement
+                for unit in sorted(self.results.values(), key=attrgetter('name')):
+                    if not unit.name.endswith('__cts__.xml'):
+                        num_texts += 1
+                        if unit.units["Passage level parsing"] is False:
+                            try:
+                                show.remove("Duplicate passages")
+                                show.remove("Forbidden characters")
+                            except:
+                                pass
+                        if unit.coverage != 100.0:
+                            num_failed += 1
+                            text_color = magenta
+                        else:
+                            text_color = white
+
+                        if unit.coverage == 0.0:
+                            failed_tests = 'All'
+                        else:
+                            failed_tests = '\n'.join([x for x in unit.units if unit.units[x] is False and x in show])
+
+                        if unit.additional['duplicates']:
+                            duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                          nodes=', '.join(unit.additional['duplicates']))
+                        if unit.additional['forbiddens']:
+                            forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                          nodes=', '.join(unit.additional['forbiddens']))
+
+                        if self.verbose >= 7 or unit.status is False:
+                            if self.countwords:
+                                row = [
+                                    "{}".format(text_color(os.path.basename(unit.name))),
+                                     "{:,}".format(unit.additional['words']),
+                                     ';'.join([str(x[1]) for x in unit.additional['citations']]),
+                                     failed_tests
+                                ]
                             else:
-                                text_color = white
-                            if unit.coverage == 0.0:
-                                failed_tests = 'All'
-                            else:
-                                failed_tests = '\n'.join([x for x in unit.units if unit.units[x] is False and x in show])
-                            if unit.additional['duplicates']:
-                                duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                              nodes=', '.join(unit.additional['duplicates']))
-                            if unit.additional['forbiddens']:
-                                forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                              nodes=', '.join(unit.additional['forbiddens']))
-                            display_table.add_row(
-                                ["{}".format(text_color(os.path.basename(unit.name))),
-                                 "{:,}".format(unit.additional['words']),
-                                 ';'.join([str(x[1]) for x in unit.additional['citations']]),
-                                 failed_tests])
-                            for x in unit.additional['citations']:
-                                total_units += x[1]
+                                row = [
+                                    "{}".format(text_color(os.path.basename(unit.name))),
+                                     ';'.join([str(x[1]) for x in unit.additional['citations']]),
+                                     failed_tests
+                                ]
+                            display_table.add_row(row)
+
+                        for x in unit.additional['citations']:
+                            total_units += x[1]
+
+                        if self.countwords:
                             total_words += unit.additional['words']
                             if unit.additional['words'] > 0:
                                 language_words[unit.additional['language']] += unit.additional['words']
-                else:
-                    display_table = PT(["Identifier", "Nodes", "Failed Tests"])
-                    display_table.align['Identifier', 'Nodes', "Failed Tests"] = "c"
-                    display_table.hrules = pt_all
-                    for unit in sorted(self.results.values(), key=attrgetter('name')):
-                        if not unit.name.endswith('__cts__.xml'):
-                            num_texts += 1
-                            if unit.units["Passage level parsing"] is False:
-                                try:
-                                    show.remove("Duplicate passages")
-                                    show.remove("Forbidden characters")
-                                except:
-                                    pass
-                            if unit.coverage != 100.0:
-                                num_failed += 1
-                                text_color = magenta
-                            else:
-                                text_color = white
-                            if unit.coverage == 0.0:
-                                failed_tests = 'All'
-                            else:
-                                failed_tests = '\n'.join([x for x in unit.units if unit.units[x] is False and x in show])
-                            if unit.additional['duplicates']:
-                                duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                              nodes=', '.join(unit.additional['duplicates']))
-                            if unit.additional['forbiddens']:
-                                forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                              nodes=', '.join(unit.additional['forbiddens']))
-                            display_table.add_row(
-                                ["{}".format(text_color(os.path.basename(unit.name))),
-                                 ';'.join([str(x[1]) for x in unit.additional['citations']]),
-                                 failed_tests])
-                            for x in unit.additional['citations']:
-                                total_units += x[1]
+
                 print(display_table, flush=True)
                 print('', flush=True)
-                if self.verbose:
+                if self.verbose >= 5:
                     if duplicate_nodes:
                         duplicate_nodes = magenta('Duplicate nodes found:\n') + duplicate_nodes + '\n'
                     if forbidden_chars:
                         forbidden_chars = magenta('Forbidden characters found:\n') + forbidden_chars + '\n'
                 else:
                     duplicate_nodes = forbidden_chars = ''
+
                 print("{dupes}{forbs}>>> End of the test !\n".format(dupes=duplicate_nodes, forbs=forbidden_chars))
                 t_pass = num_texts - num_failed
                 cov = round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
@@ -618,16 +616,17 @@ class Test(object):
                     print(self.send_to_hook_from_travis(*args).text)
 
                 #Manifest of passing files
-                passing = self.create_manifest()
-                with open('{}/manifest.txt'.format(self.path), mode="w") as f:
-                    f.write('\n'.join(passing))
+                if self.build_manifest:
+                    passing = self.create_manifest()
+                    with open('{}/manifest.txt'.format(self.path), mode="w") as f:
+                        f.write('\n'.join(passing))
             else:
                 print(
-                ">>> End of the test !\n" \
-                ">>> [{2}] {0} out of {1} files did not pass the tests".format(
-                    len(self.passing) - self.successes, len(self.passing), self.status
-                ),
-                flush=True
+                    ">>> End of the test !\n" \
+                    ">>> [{2}] {0} out of {1} files did not pass the tests".format(
+                        len(self.passing) - self.successes, len(self.passing), self.status
+                    ),
+                    flush=True
             )
         elif self.ping:
             report = self.report
@@ -813,7 +812,7 @@ def cmd(console=False, **kwargs):
             tb = "".join(traceback.format_exception(type_, value_, traceback_))
             if test.ping:
                 test.send({"status": Test.ERROR, "message": tb})
-            elif console is True:
+            elif console:
                 print(tb, flush=True)
             test.clean()
             raise(E)
@@ -830,7 +829,7 @@ def cmd(console=False, **kwargs):
         tb = "".join(traceback.format_exception(type_, value_, traceback_))
         if test.ping:
             test.send({"status": Test.ERROR, "message": tb})
-        elif console is True:
+        elif console:
             print(tb, flush=True)
 
     if "repository" in kwargs and kwargs["repository"]:

@@ -1,6 +1,8 @@
 import unittest
+
+import HookTest.capitains_units.cts
 import HookTest.units
-from MyCapytain.resources.texts.local import Text
+from MyCapytain.resources.texts.local.capitains.cts import CapitainsCtsText
 from lxml import etree
 
 
@@ -40,7 +42,7 @@ class TestCTS(unittest.TestCase):
         <description xml:lang="eng">as</description>
     </translation>
 </work>"""
-        unit = HookTest.units.INVUnit("/a/b")
+        unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit("/a/b")
         unit.xml = etree.ElementTree(etree.fromstring(success))
         [a for a in unit.capitain()]  # We ingest
 
@@ -73,28 +75,27 @@ class TestCTS(unittest.TestCase):
         <description xml:lang="eng">as</description>
     </translation>
 </work>"""
-        unit = HookTest.units.INVUnit("/a/b")
+        unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit("/a/b")
         unit.xml = etree.ElementTree(etree.fromstring(fail))
         self.assertEqual(
             list(unit.capitain()), [False],
             "Parsing should fail but not raise"
         )
-        print(unit.logs)
 
     def test_capitains_parse(self):
-        unit = HookTest.units.INVUnit("./tests/repo2/data/wrongmetadata/__cts__.xml")
+        unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit("./tests/repo2/data/wrongmetadata/__cts__.xml")
         self.assertEqual(
             list(unit.parsable()) + list(unit.capitain()), [True, True],
             "Parsing should work"
         )
 
     def test_capitains_metadatatextgroup(self):
-        unit = HookTest.units.INVUnit("./tests/repo2/data/wrongmetadata/__cts__.xml")
+        unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit("./tests/repo2/data/wrongmetadata/__cts__.xml")
         self.assertEqual(
             list(unit.parsable()) + list(unit.capitain()) + list(unit.metadata()), [True, True, False],
             "No lang in groupname should fail"
         )
-        unit = HookTest.units.INVUnit("./tests/repo2/data/tlg2255/__cts__.xml")
+        unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit("./tests/repo2/data/tlg2255/__cts__.xml")
         self.assertEqual(
             list(unit.parsable()) + list(unit.capitain()) + list(unit.metadata()), [True, True, True],
             "Lang in groupname should fail"
@@ -106,10 +107,10 @@ class TestText(unittest.TestCase):
     """
 
     def setUp(self):
-        self.TEI = HookTest.units.CTSUnit("/false/path")
+        self.TEI = HookTest.capitains_units.cts.CTSText_TestUnit("/false/path")
         self.TEI.scheme = "tei"
-        self.backup = [x for x in HookTest.units.CTSUnit.tests]
-        self.Epidoc = HookTest.units.CTSUnit("/false/path")
+        self.backup = [x for x in HookTest.capitains_units.cts.CTSText_TestUnit.tests]
+        self.Epidoc = HookTest.capitains_units.cts.CTSText_TestUnit("/false/path")
         self.Epidoc.scheme = "epidoc"
         self.frame = """<TEI xmlns="http://www.tei-c.org/ns/1.0">
 <teiHeader>
@@ -143,7 +144,7 @@ class TestText(unittest.TestCase):
 """
 
     def tearDown(self):
-        HookTest.units.CTSUnit.tests = list(self.backup)
+        HookTest.capitains_units.cts.CTSText_TestUnit.tests = list(self.backup)
 
     def testUrn(self):
         """ Test the urn Test """
@@ -204,7 +205,7 @@ class TestText(unittest.TestCase):
     def test_passage_collision(self):
         """ Test collision of passages
         """
-        unit = HookTest.units.CTSUnit("tests/passages/test_passage_success.xml")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/passages/test_passage_success.xml")
         parsed = [a for a in unit.parsable()]
         unit.flush()
         results = [result for result in unit.passages()]
@@ -212,7 +213,7 @@ class TestText(unittest.TestCase):
         passages = list(unit.duplicate())
         self.assertEqual(passages, [True], "No collision should result in success")
 
-        unit = HookTest.units.CTSUnit("tests/passages/test_passage_fail_1.xml")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/passages/test_passage_fail_1.xml")
         parsed = [a for a in unit.parsable()]
         unit.flush()
         results = [result for result in unit.passages()]
@@ -223,7 +224,7 @@ class TestText(unittest.TestCase):
     def test_passage_wrong_refsDecl_middle(self):
         """ Test collision of passages
         """
-        unit = HookTest.units.CTSUnit("tests/passages/test_passage_fail_second_level.xml")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/passages/test_passage_fail_second_level.xml")
         parsed = [a for a in unit.parsable()]
         unit.flush()
         results = [result for result in unit.passages()]
@@ -238,13 +239,13 @@ class TestText(unittest.TestCase):
         """ Test unique_passage
         """
 
-        unit = HookTest.units.CTSUnit("/a/b")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("/a/b")
         unit.xml = etree.ElementTree(etree.fromstring(self.frame.format(
             "/tei:TEI/tei:text/tei:body//tei:div[@n='$1']",
             "/tei:TEI/tei:text/tei:body/tei:div[@n='$1']//tei:div[@n='$2']",
             1, 1, 2, 3, 1, 1, 2
         ))).getroot()
-        unit.Text = Text(resource=unit.xml)
+        unit.Text = CapitainsCtsText(resource=unit.xml)
         unit.flush()
 
         results = [result for result in unit.unique_passage()]
@@ -255,7 +256,7 @@ class TestText(unittest.TestCase):
             "/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2']",
             1, 1, 2, 3, 1, 1, 2
         ))).getroot()
-        unit.Text = Text(resource=unit.xml)
+        unit.Text = CapitainsCtsText(resource=unit.xml)
         unit.flush()
         results = [result for result in unit.unique_passage()]
         self.assertEqual(results, [True], "Right citation with node collision should success")
@@ -263,13 +264,13 @@ class TestText(unittest.TestCase):
     def test_illegal_characters_fail(self):
         """ Test that illegal characters are detected"""
 
-        unit = HookTest.units.CTSUnit("/a/b")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("/a/b")
         unit.xml = etree.ElementTree(etree.fromstring(self.frame.format(
             "/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']",
             "/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2']",
             "0 1", "a.b", "d-d", "@", "7", "1", "2"
         ))).getroot()
-        unit.Text = Text(resource=unit.xml)
+        unit.Text = CapitainsCtsText(resource=unit.xml)
         unit.flush()
         results = [result for result in unit.passages()]
         self.assertEqual(results, [True, True], "Passages are found")
@@ -280,13 +281,13 @@ class TestText(unittest.TestCase):
 
     def test_illegal_characters_pass(self):
         """ Test that forbidden passes when there are no illegal characters"""
-        unit = HookTest.units.CTSUnit("/a/b")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("/a/b")
         unit.xml = etree.ElementTree(etree.fromstring(self.frame.format(
             "/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']",
             "/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2']",
             0, 1, "q", "b", "105v", "1", "2"
         ))).getroot()
-        unit.Text = Text(resource=unit.xml)
+        unit.Text = CapitainsCtsText(resource=unit.xml)
         unit.flush()
         results = [result for result in unit.passages()]
         self.assertEqual(results, [True, True], "Passages are found")
@@ -298,8 +299,8 @@ class TestText(unittest.TestCase):
     def test_count_words(self):
         """ Test collision of passages
         """
-        unit = HookTest.units.CTSUnit("tests/passages/test_passage_success.xml")
-        HookTest.units.CTSUnit.tests = [
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/passages/test_passage_success.xml")
+        HookTest.capitains_units.cts.CTSText_TestUnit.tests = [
             "parsable", "has_urn", "passages"
         ]
         x = list(unit.test("epidoc"))
@@ -316,8 +317,8 @@ class TestText(unittest.TestCase):
     def test_count_words_fails(self):
         """ Test collision of passages
         """
-        unit = HookTest.units.CTSUnit("tests/repo2/data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml")
-        HookTest.units.CTSUnit.tests = [
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/repo2/data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml")
+        HookTest.capitains_units.cts.CTSText_TestUnit.tests = [
             "parsable", "has_urn", "passages"
         ]
         x = list(unit.test("epidoc"))
@@ -333,7 +334,7 @@ class TestText(unittest.TestCase):
     def test_correct_xml_lang_epidoc_edition(self):
         """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
         """
-        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_passing_epidoc.xml")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/lang_tests/xml_lang_passing_epidoc.xml")
         unit.xml = etree.parse("tests/lang_tests/xml_lang_passing_epidoc.xml", HookTest.units.TESTUnit.PARSER)
         unit.scheme = "epidoc"
         unit.flush()
@@ -344,7 +345,7 @@ class TestText(unittest.TestCase):
     def test_incorrect_xml_lang_epidoc_edition(self):
         """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
         """
-        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_failing_epidoc.xml")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/lang_tests/xml_lang_failing_epidoc.xml")
         unit.xml = etree.parse("tests/lang_tests/xml_lang_failing_epidoc.xml", HookTest.units.TESTUnit.PARSER)
         unit.scheme = "epidoc"
         unit.flush()
@@ -355,7 +356,7 @@ class TestText(unittest.TestCase):
     def test_correct_xml_lang_tei_edition(self):
         """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
         """
-        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_passing_tei.xml")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/lang_tests/xml_lang_passing_tei.xml")
         unit.xml = etree.parse("tests/lang_tests/xml_lang_passing_tei.xml", HookTest.units.TESTUnit.PARSER)
         unit.scheme = "tei"
         unit.flush()
@@ -366,7 +367,7 @@ class TestText(unittest.TestCase):
     def test_incorrect_xml_lang_tei_edition(self):
         """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
         """
-        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_failing_tei.xml")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/lang_tests/xml_lang_failing_tei.xml")
         unit.xml = etree.parse("tests/lang_tests/xml_lang_failing_tei.xml", HookTest.units.TESTUnit.PARSER)
         unit.scheme = "tei"
         unit.flush()
@@ -377,7 +378,7 @@ class TestText(unittest.TestCase):
     def test_correct_xml_lang_epidoc_translation(self):
         """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
         """
-        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_passing_translation.xml")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/lang_tests/xml_lang_passing_translation.xml")
         unit.xml = etree.parse("tests/lang_tests/xml_lang_passing_translation.xml", HookTest.units.TESTUnit.PARSER)
         unit.scheme = "epidoc"
         unit.flush()
@@ -388,7 +389,7 @@ class TestText(unittest.TestCase):
     def test_incorrect_xml_lang_epidoc_translation(self):
         """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
         """
-        unit = HookTest.units.CTSUnit("tests/lang_tests/xml_lang_failing_translation.xml")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/lang_tests/xml_lang_failing_translation.xml")
         unit.xml = etree.parse("tests/lang_tests/xml_lang_failing_translation.xml", HookTest.units.TESTUnit.PARSER)
         unit.scheme = "epidoc"
         unit.flush()

@@ -52,8 +52,8 @@ Test units
 .. autoclass:: HookTest.units.TESTUnit
     :members:
 
-.. autoclass:: HookTest.units.INVUnit
+.. autoclass:: HookTest.capitains_units.cts.CTSMetadata_TestUnit
     :members:
 
-.. autoclass:: HookTest.units.CTSUnit
+.. autoclass:: HookTest.capitains_units.cts.CTSText_TestUnit
     :members:

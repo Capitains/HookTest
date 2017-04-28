@@ -112,9 +112,20 @@ class TestTest(unittest.TestCase):
         self.assertEqual(len(mocked.mock_calls), 0)
 
         # Test when print
-        self.test_print.console = True
+        self.test_print.console = "inline"
         self.test_print.log("This is a log")
         mocked.assert_called_with("This is a log", flush=True)
+
+        with mock.patch('HookTest.test.sys', create=True) as sysout:
+            # Test when print Unit Log
+            logs = unitlog_dict()
+            self.test_print.console = "table"
+            self.test_print.log(logs["001"])
+            sysout.stdout.write.assert_called_with(".")
+            sysout.stdout.flush.assert_called_with()
+            self.test_print.log(logs["002"])
+            sysout.stdout.write.assert_called_with("X")
+            sysout.stdout.flush.assert_called_with()
 
         logs = unitlog_dict()
         a = HookTest.test.Test("", ping="Http", triggering_size=2)
@@ -134,6 +145,7 @@ class TestTest(unittest.TestCase):
         """
         # With HTTP
         send = mock.MagicMock()
+        print(self.test.console)
         self.test.send = send
         self.test.text_files, self.test.cts_files = ["a text"]*5, ["a cts metadata file"]*2
         self.test.start()
@@ -151,7 +163,7 @@ class TestTest(unittest.TestCase):
         self.assertEqual(len(printed.mock_calls), 0, msg="Default of start is not to print")
 
         # With print
-        self.test_print.console = True
+        self.test_print.console = "inline"
         self.test_print.text_files, self.test_print.cts_files = ["a text"]*5, ["a cts metadata file"]*2
         self.test_print.start()
         self.assertEqual(len(printed.mock_calls), 2, msg="Start should print twice")
@@ -183,7 +195,7 @@ class TestTest(unittest.TestCase):
         self.assertEqual(len(printed.mock_calls), 0, msg="Default of start is not to print")
 
         # With print
-        self.test_print.console = True
+        self.test_print.console = "inline"
         self.test_print.text_files, self.test_print.cts_files = ["a text"]*5, ["a cts metadata file"]*2
         self.test_print.passing = {
             1: True,
@@ -208,7 +220,8 @@ class TestTest(unittest.TestCase):
         self.test.download()
         self.assertEqual(len(printed.mock_calls), 0, msg="When print is not set, nothing is shown [Neither with Ping]")
 
-        self.test_print.console = True
+        self.test_print.console = "inline"
+        self.test_print.verbose = 10
         self.test_print.progress = HookTest.test.Progress()
         self.test_print.progress.download = "55 kb/s"
         self.test_print.download()
@@ -374,7 +387,7 @@ class TestTest(unittest.TestCase):
             return_value=INVObject
         )
         self.test.verbose = True
-        with mock.patch("HookTest.test.HookTest.units.INVUnit", invunit):
+        with mock.patch("HookTest.test.HookTest.capitains_units.cts.CTSMetadata_TestUnit", invunit):
             logs, filepath, additional = self.test.unit("__cts__.xml")
             self.assertIn(">>>> Testing __cts__.xml", logs.logs)
             self.assertIn(">>>>> MyCapytain passed", logs.logs)
@@ -417,7 +430,7 @@ class TestTest(unittest.TestCase):
         invunit = mock.Mock(
             return_value=INVObject
         )
-        with mock.patch("HookTest.test.HookTest.units.INVUnit", invunit):
+        with mock.patch("HookTest.test.HookTest.capitains_units.cts.CTSMetadata_TestUnit", invunit):
             logs, filepath, additional = self.test.unit("/phi1294/phi002/__cts__.xml")
             self.assertIn(">>>> Testing /phi1294/phi002/__cts__.xml", logs.logs)
             self.assertIn(">>>>> MyCapytain passed", logs.logs)
@@ -456,13 +469,13 @@ class TestTest(unittest.TestCase):
         UnitInstance = mock.Mock(
             test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation'], lang="grc"
         )
-        # ctsunit is a mock of the class CTSUnit and will return the instance UnitInstance
+        # ctsunit is a mock of the class CTSText_TestUnit and will return the instance UnitInstance
         ctsunit = mock.Mock(
             return_value=UnitInstance
         )
-        with mock.patch("HookTest.test.HookTest.units.CTSUnit", ctsunit):
+        with mock.patch("HookTest.test.HookTest.capitains_units.cts.CTSText_TestUnit", ctsunit):
             logs, filepath, additional = self.test.unit("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml")
-            ctsunit.assert_called_with("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml", countwords=False)
+            ctsunit.assert_called_with("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml", countwords=False, timeout=30)
             self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs.logs)
             self.assertIn(">>>>> MyCapytain passed", logs.logs)
             self.assertIn(">>>>> Folder Name passed", logs.logs)
@@ -504,9 +517,9 @@ class TestTest(unittest.TestCase):
         ctsunit = mock.Mock(
             return_value=INVObject
         )
-        with mock.patch("HookTest.test.HookTest.units.CTSUnit", ctsunit):
+        with mock.patch("HookTest.test.HookTest.capitains_units.cts.CTSText_TestUnit", ctsunit):
             logs, filepath, additional = self.test.unit("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml")
-            ctsunit.assert_called_with("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml", countwords=False)
+            ctsunit.assert_called_with("/phi1294/phi002/phi1294.phi002.perseus-lat2.xml", countwords=False, timeout=30)
             self.assertIn(">>>> Testing /phi1294/phi002/phi1294.phi002.perseus-lat2.xml", logs.logs)
             self.assertIn(">>>>> MyCapytain passed", logs.logs)
             self.assertIn(">>>>> Folder Name failed", logs.logs)
@@ -665,7 +678,7 @@ class TestTest(unittest.TestCase):
     @mock.patch('HookTest.test.sys.stdout', create=True)
     def test_log_travis_pass(self, sysmocked):
         """ Testing a unit that passes prints . in stdout and then flush it """
-        process = HookTest.test.Test("./tests/repo1", travis=True)
+        process = HookTest.test.Test("./tests/repo1", console="table")
         logs_dict = unitlog_dict()
 
         process.log(logs_dict["001"])
@@ -675,7 +688,7 @@ class TestTest(unittest.TestCase):
     @mock.patch('HookTest.test.sys.stdout', create=True)
     def test_log_travis_fail(self, sysmocked):
         """ Testing a unit that fails prints X in stdout and then flush it """
-        process = HookTest.test.Test("./tests/repo1", travis=True)
+        process = HookTest.test.Test("./tests/repo1", console="table")
         logs_dict = unitlog_dict()
 
         process.log(logs_dict["002"])
@@ -712,7 +725,7 @@ class TestTest(unittest.TestCase):
         PTMock.return_value = InstanceMock
 
         # We create a process of Test and feed weird results
-        process = HookTest.test.Test("./tests/repo1", travis=True, verbose=True)
+        process = HookTest.test.Test("./tests/repo1", console="table", verbose=True)
         process.results = unitlog_dict()
         process.results["001"].units = {
             "Metadata": True,
@@ -744,7 +757,7 @@ class TestTest(unittest.TestCase):
     def test_middle_travis_pass(self, printMock):
         """ Ensure PrettyTable are created when travis is True and verbose as well """
         # We create a process of Test and feed weird results
-        process = HookTest.test.Test("./tests/repo1", travis=True, verbose=True)
+        process = HookTest.test.Test("./tests/repo1", console="table", verbose=True)
         process.results = unitlog_dict()
         process.results["001"].units = {
             "Metadata": True,
@@ -779,7 +792,7 @@ class TestTest(unittest.TestCase):
         PTMock.return_value = InstanceMock
 
         # We create a process of Test and feed weird results
-        process = HookTest.test.Test(self.TESTDIR, travis=True, verbose=True)
+        process = HookTest.test.Test(self.TESTDIR, console="table", verbose=10)
         process.results = unitlog_dict()
         process.results["001"].units = {
             "Metadata": True,
@@ -857,7 +870,7 @@ class TestTest(unittest.TestCase):
         PTMock.return_value = InstanceMock
 
         # We create a process of Test and feed weird results
-        process = HookTest.test.Test(self.TESTDIR, travis=True, verbose=True, countwords=True)
+        process = HookTest.test.Test(self.TESTDIR, console="table", verbose=10, countwords=True)
         process.results = unitlog_dict()
         process.results["001"].units = {
             "Metadata": True,
@@ -941,7 +954,7 @@ class TestTest(unittest.TestCase):
         PTMock.return_value = InstanceMock
 
         # We create a process of Test and feed weird results
-        process = HookTest.test.Test(self.TESTDIR, travis=True, verbose=False)
+        process = HookTest.test.Test(self.TESTDIR, console="table", verbose=0)
         process.results = unitlog_dict()
         process.results["001"].units = {
             "Metadata": True,
@@ -981,11 +994,11 @@ class TestTest(unittest.TestCase):
 
         # We run the method we want to verify
         process.end()
-
+        
         # We check each call that should be done
         PTMock.assert_has_calls([mock.call(['Identifier', 'Nodes', 'Failed Tests']),
                                  mock.call().align.__setitem__(('Identifier', 'Nodes', 'Failed Tests'), 'c'),
-                                 mock.call().add_row(['\x1b[37m001\x1b[0m', '2;3;4', '']),
+                                 #mock.call().add_row(['\x1b[37m001\x1b[0m', '2;3;4', '']),
                                  mock.call().add_row(['\x1b[35m002\x1b[0m', '', 'Passage level parsing']),
                                  mock.call().add_row(['\x1b[35m003\x1b[0m', '', 'All']),
                                  mock.call(['HookTestResults', '']),
@@ -1013,7 +1026,7 @@ class TestTest(unittest.TestCase):
 
         self.createTestDir('./tests/repo1')
 
-        process = HookTest.test.Test(self.TESTDIR, travis=True, verbose=True, countwords=True)
+        process = HookTest.test.Test(self.TESTDIR, console="table", verbose=10, countwords=True, build_manifest=True)
         process.results = unitlog_dict()
         process.results['001'].name = 'test/test/test'
         process.results["002"].name = 'test/test/__cts__.xml'

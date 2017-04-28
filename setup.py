@@ -10,7 +10,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='HookTest',
-    version="0.2.2",
+    version="1.0.0",
     description='Hook Test Script for GitHub/CapiTainS repositories',
     long_description=long_description,
     url='http://github.com/Capitains/HookTest',
@@ -27,7 +27,7 @@ setup(
         "License :: OSI Approved :: MIT License"
     ],
     install_requires=[
-        "MyCapytain==1.0.4",
+        "MyCapytain>=2.0.0",
         "jingtrang==0.1.1",
         "GitPython==2.1.0",
         "requests>=2.7.0",

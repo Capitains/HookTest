@@ -1,3 +1,12 @@
+## 1.0.0 - 2017-04-21
+
+- Moved to MyCapytain 2.0.0b20
+- Simplified some code for logs
+- Reworked CLI (Console, travis, verbose, from_travis_to_hook were reworked into console, manifest, verbose, hookui)
+- Moved CTS units to HookTest.capitains_units.cts and renamed them for clarity
+- When some tests breaks, it stops others in HookTest.capitains_units.cts.CTSText_TestUnit.run
+- Added a timeout parameter to allow for breaking out of network issues with RelaxNG Scheme checking
+
 ## 0.2.2 - 2017-04-19
 
 Fixed a bug where count_words would fail silently and stops the test process.

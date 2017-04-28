@@ -68,34 +68,43 @@ The command is run with :code:`hooktest [-h] [-i UUID] [-r REPOSITORY] [-b BRANC
 +========================================+======================================================================+
 | -h, --help                             | show this help message and exit                                      |
 +----------------------------------------+----------------------------------------------------------------------+
+| -w WORKERS, --workers WORKERS          | Number of workers to be used                                         |
++----------------------------------------+----------------------------------------------------------------------+
+| -s SCHEME, --scheme SCHEME             | 'tei' or 'epidoc' scheme to be used                                  |
++----------------------------------------+----------------------------------------------------------------------+
+| -v, --verbose [{0,5,7,10}]             | Verbose Level                                                        |
+|                                        | - 0 (Default) Only show necessary Information                        |
+|                                        | - 5 Show duplicate or forbidden characters                           |
+|                                        | - 7 All of before + show failing units                               |
+|                                        | - 10 All available details                                           |
++----------------------------------------+----------------------------------------------------------------------+
+| -j JSON, --json JSON                   | Save to specified json file the results                              |
++----------------------------------------+----------------------------------------------------------------------+
+| -c, --console  [{table,inline}]        | Print to console    [Default : table]                                |
++----------------------------------------+----------------------------------------------------------------------+
+| -f FILTER, --filter FILTER             | Filter using the last part of the URN (eg. tlg0001.tlg001, tlg0001,  |
+|                                        | tlg0001.tlg001.p-grc1 for urn:cts:greekLit:tlg0001.tlg001.p-grc1     |
++----------------------------------------+----------------------------------------------------------------------+
+| --countword                            | Count words in texts passing the tests                               |
++----------------------------------------+----------------------------------------------------------------------+
+| --manifest                             | Produce a Manifest                                                   |
++----------------------------------------+----------------------------------------------------------------------+
+| --allowfailure                         | Returns a passing test result as long as at least one text passes    |
++----------------------------------------+----------------------------------------------------------------------+
+
+How to use with remote GIT ?
+############################
+
+HookTests offers a download/clowning facility that will get the version you ask for the repository you want and will perform test upon it. All other methods for local applies.
+
++----------------------------------------+----------------------------------------------------------------------+
+| Parameter in console                   | Detail about the Parameter                                           |
++========================================+======================================================================+
 | -i UUID, --uuid UUID                   | Identifier for a test. This will be used as a temporary folder name  |
 +----------------------------------------+----------------------------------------------------------------------+
 | -r REPOSITORY, --repository REPOSITORY | Name of the git repository                                           |
 +----------------------------------------+----------------------------------------------------------------------+
 | -b BRANCH, --branch BRANCH             | Reference for the branch                                             |
-+----------------------------------------+----------------------------------------------------------------------+
-| -w WORKERS, --workers WORKERS          | Number of workers to be used                                         |
-+----------------------------------------+----------------------------------------------------------------------+
-| -s SCHEME, --scheme SCHEME             | 'tei' or 'epidoc' scheme to be used                                  |
-+----------------------------------------+----------------------------------------------------------------------+
-| -v, --verbose                          | Show RNG's errors and other details                                  |
-+----------------------------------------+----------------------------------------------------------------------+
-| -j JSON, --json JSON                   | Save to specified json file the results                              |
-+----------------------------------------+----------------------------------------------------------------------+
-| -c, --console                          | Print to console                                                     |
-+----------------------------------------+----------------------------------------------------------------------+
-| --travis                               | Produce Travis output                                                |
-+----------------------------------------+----------------------------------------------------------------------+
-| -p PING, --ping PING                   | Send results to a server                                             |
-+----------------------------------------+----------------------------------------------------------------------+
-| -f FINDER, --finder Finder             | Filter using the last part of the URN (eg. tlg0001.tlg001, tlg0001,  |
-|                                        | tlg0001.tlg001.p-grc1 for urn:cts:greekLit:tlg0001.tlg001.p-grc1     |
-+----------------------------------------+----------------------------------------------------------------------+
-| --countword                            | Count words in texts passing the tests                               |
-+----------------------------------------+----------------------------------------------------------------------+
-| --travis                               | Produce Travis-friendly console output                               |
-+----------------------------------------+----------------------------------------------------------------------+
-| --allowfailure                         | Returns a passing test result as long as at least one text passes    |
 +----------------------------------------+----------------------------------------------------------------------+
 
 Running HookTest on Travis CI
@@ -112,7 +121,7 @@ Once you have done this, you will need to add a `.travis.yml` file to root folde
     - '3.5'
     install:
     - pip3 install HookTest
-    script: hooktest --scheme epidoc --workers 3 --verbose --travis --countword --allowfailure ./
+    script: hooktest --scheme epidoc --workers 3 --verbose --manifest --console --countword --allowfailure ./
     before_deploy:
     - hooktest-build --travis ./
     - results=$(cat manifest.txt)
@@ -147,14 +156,14 @@ To help you set up this file for your own repository, a line-by-line explanation
     python:
     - '3.5'
     install:
-    - pip3 install HookTest
+    - pip3 install HookTest>=1.0.0
 
 
 These first 5 lines are for the basic setup of HookTest on Travis. Do not change them.
 
 .. code-block:: yml
 
-    script: hooktest --scheme epidoc --workers 3 --verbose --travis --countword --allowfailure ./
+    script: hooktest --scheme epidoc --workers 3 --verbose --manifest --console --countword --allowfailure ./
 
 
 This line runs HookTest. The parameters are those described in the parameter table above. If you do not want to make a new release of your corpus unless it is 100% CapiTainS-compliant, then remove the `--allowfailure` parameter. Without this parameter, the build will fail if the corpus is not 100% compliant causing Travis to skip the build and release steps. Because of the way Travis is set up, we recommend not setting `--workers` higher than 3.
