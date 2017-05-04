@@ -1,3 +1,7 @@
+## 1.0.2 - 2017-05-04
+
+Enabled the URNs for the "commentary" type to be found in the metadata files and, thus, to show up in the inventory
+
 ## 1.0.1 - 2017-05-04
 
 Added the new "commentary" type to the tests for language and URNs

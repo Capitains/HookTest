@@ -27,6 +27,18 @@ class TestCTS(unittest.TestCase):
         <description xml:lang="eng">as</description>
     </translation>
 </work>"""
+        success_com = """<work xmlns="http://chs.harvard.edu/xmlns/cts" xml:lang="far" urn="urn:cts:farsiLit:hafez.divan">
+    <title xml:lang="eng">Div&#257;n</title>
+    <edition urn="urn:cts:farsiLit:hafez.divan.perseus-far1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+        </edition>
+    <commentary  xml:lang="ger" urn="urn:cts:farsiLit:hafez.divan.perseus-ger1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+        <about urn="urn:cts:farsiLit:hafez.divan.perseus-far1"/>
+    </commentary>
+</work>"""
         fail = """<work xmlns="http://chs.harvard.edu/xmlns/cts" urn="urn:cts:farsiLit:hafez.divan">
     <title xml:lang="eng">Div&#257;n</title>
     <edition urn="urn:cts:farsiLit:hafez.divan.perseus-far1" workUrn="urn:cts:farsiLit:hafez.divan">
@@ -42,6 +54,19 @@ class TestCTS(unittest.TestCase):
         <description xml:lang="eng">as</description>
     </translation>
 </work>"""
+        fail_com = """<work xmlns="http://chs.harvard.edu/xmlns/cts" urn="urn:cts:farsiLit:hafez.divan">
+    <title xml:lang="eng">Div&#257;n</title>
+    <edition urn="urn:cts:farsiLit:hafez.divan.perseus-far1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+    </edition>
+    <commentary urn="urn:cts:farsiLit:hafez.divan.perseus-ger1" workUrn="urn:cts:farsiLit:hafez.divan">
+        <label xml:lang="eng">Divan</label>
+        <description xml:lang="eng">as</description>
+        <about urn="urn:cts:farsiLit:hafez.divan.perseus-far1"/>
+    </commentary>
+</work>"""
+        # test passing translation
         unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit("/a/b")
         unit.xml = etree.ElementTree(etree.fromstring(success))
         [a for a in unit.capitain()]  # We ingest
@@ -50,12 +75,162 @@ class TestCTS(unittest.TestCase):
         self.assertEqual(unit.metadata().__next__(), True, "When lang, description and edition are there, metadata should work")
         self.assertNotIn(">>>>>> Translation(s) are missing lang attribute", unit.logs)
 
+        # test passing commentary
+        unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit("/a/b")
+        unit.xml = etree.ElementTree(etree.fromstring(success_com))
+        [a for a in unit.capitain()]  # We ingest
+
+        unit.flush()
+        self.assertEqual(unit.metadata().__next__(), True,
+                         "When lang, description and edition are there, metadata should work")
+        self.assertNotIn(">>>>>> Some Commentaries are missing lang attribute", unit.logs)
+
+        # test failing translation
         unit.xml = etree.ElementTree(etree.fromstring(fail))
         ingest = [a for a in unit.capitain()]
         unit.capitain()  # We ingest
         unit.flush()
         self.assertEqual(unit.metadata().__next__(), False, "When lang fails, test should fail")
         self.assertIn(">>>>>> Translation(s) are missing lang attribute", unit.logs)
+
+        # test failing commentary
+        unit.xml = etree.ElementTree(etree.fromstring(fail_com))
+        ingest = [a for a in unit.capitain()]
+        unit.capitain()  # We ingest
+        unit.flush()
+        self.assertEqual(unit.metadata().__next__(), False, "When lang fails, test should fail")
+        self.assertIn(">>>>>> Some Commentaries are missing lang attribute", unit.logs)
+
+    def test_urn(self):
+            """ Test URN in translation and commentary check
+            """
+            success = """<work xmlns="http://chs.harvard.edu/xmlns/cts" groupUrn="urn:cts:greekLit:tlg2703" xml:lang="grc" urn="urn:cts:greekLit:tlg2703.tlg001">
+  <title xml:lang="lat">Alexias</title>
+  <edition urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc2" xml:lang="grc" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="lat">Alexias</label>
+    <description xml:lang="mul">Anna Comnena, Alexias, Scopenus, Weber, 1839</description>
+  </edition>
+  <translation urn="urn:cts:greekLit:tlg2703.tlg001.opp-lat1" xml:lang="lat" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="eng">Alexias</label>
+    <description xml:lang="eng">Anna Comnena, Alexias, Scopenus, Weber, 1839</description>
+  </translation>
+  <edition urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc1" xml:lang="grc" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="lat">Alexias</label>
+    <description xml:lang="mul">Anna Comnena, Alexias, Reiferscheid, Teubner, 1884</description>
+  </edition>
+</work>"""
+            success_com = """<work xmlns="http://chs.harvard.edu/xmlns/cts" groupUrn="urn:cts:greekLit:tlg2703" xml:lang="grc" urn="urn:cts:greekLit:tlg2703.tlg001">
+  <title xml:lang="lat">Alexias</title>
+  <edition urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc2" xml:lang="grc" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="lat">Alexias</label>
+    <description xml:lang="mul">Anna Comnena, Alexias, Scopenus, Weber, 1839</description>
+  </edition>
+  <edition urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc1" xml:lang="grc" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="lat">Alexias</label>
+    <description xml:lang="mul">Anna Comnena, Alexias, Reiferscheid, Teubner, 1884</description>
+  </edition>
+  <commentary urn="urn:cts:greekLit:tlg2703.tlg001.1st1K-lat1" xml:lang="lat" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="eng">Preface to Alexias</label>
+    <description xml:lang="mul">Preface to Anna Comnena, Alexias, Reiferscheid, Teubner, 1884</description>
+    <about urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc1"/>
+  </commentary>
+  <commentary urn="urn:cts:greekLit:tlg2703.tlg001.1st1K-lat2" xml:lang="lat" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="mul">Index Nominum et Rerum to Alexias</label>
+    <description xml:lang="mul">Index Nominum et Rerum to Anna Comnena, Alexias, Reiferscheid, Teubner, 1884</description>
+    <about urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc1"/>
+  </commentary>
+</work>"""
+            fail = """<work xmlns="http://chs.harvard.edu/xmlns/cts" groupUrn="urn:cts:greekLit:tlg2703" xml:lang="grc" urn="urn:cts:greekLit:tlg2703.tlg001">
+  <title xml:lang="lat">Alexias</title>
+  <edition urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc2" xml:lang="grc" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="lat">Alexias</label>
+    <description xml:lang="mul">Anna Comnena, Alexias, Scopenus, Weber, 1839</description>
+  </edition>
+  <translation xml:lang="lat" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="eng">Alexias</label>
+    <description xml:lang="eng">Anna Comnena, Alexias, Scopenus, Weber, 1839</description>
+  </translation>
+  <edition urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc1" xml:lang="grc" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="lat">Alexias</label>
+    <description xml:lang="mul">Anna Comnena, Alexias, Reiferscheid, Teubner, 1884</description>
+  </edition>
+  <commentary urn="urn:cts:greekLit:tlg2703.tlg001.1st1K-lat1" xml:lang="lat" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="eng">Preface to Alexias</label>
+    <description xml:lang="mul">Preface to Anna Comnena, Alexias, Reiferscheid, Teubner, 1884</description>
+    <about urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc1"/>
+  </commentary>
+  <commentary urn="urn:cts:greekLit:tlg2703.tlg001.1st1K-lat2" xml:lang="lat" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="mul">Index Nominum et Rerum to Alexias</label>
+    <description xml:lang="mul">Index Nominum et Rerum to Anna Comnena, Alexias, Reiferscheid, Teubner, 1884</description>
+    <about urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc1"/>
+  </commentary>
+</work>"""
+            fail_com = """<work xmlns="http://chs.harvard.edu/xmlns/cts" groupUrn="urn:cts:greekLit:tlg2703" xml:lang="grc" urn="urn:cts:greekLit:tlg2703.tlg001">
+  <title xml:lang="lat">Alexias</title>
+  <edition urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc2" xml:lang="grc" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="lat">Alexias</label>
+    <description xml:lang="mul">Anna Comnena, Alexias, Scopenus, Weber, 1839</description>
+  </edition><translation urn="urn:cts:greekLit:tlg2703.tlg001.opp-lat1" xml:lang="lat" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="eng">Alexias</label>
+    <description xml:lang="eng">Anna Comnena, Alexias, Scopenus, Weber, 1839</description>
+  </translation>
+  <edition urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc1" xml:lang="grc" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="lat">Alexias</label>
+    <description xml:lang="mul">Anna Comnena, Alexias, Reiferscheid, Teubner, 1884</description>
+  </edition>
+  <commentary urn="urn:cts:greekLit:tlg2703.tlg001.1st1K-lat1" xml:lang="lat" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="eng">Preface to Alexias</label>
+    <description xml:lang="mul">Preface to Anna Comnena, Alexias, Reiferscheid, Teubner, 1884</description>
+    <about urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc1"/>
+  </commentary>
+  <commentary xml:lang="lat" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+    <label xml:lang="mul">Index Nominum et Rerum to Alexias</label>
+    <description xml:lang="mul">Index Nominum et Rerum to Anna Comnena, Alexias, Reiferscheid, Teubner, 1884</description>
+    <about urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc1"/>
+  </commentary>
+</work>"""
+            # test passing translation
+            unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit("/a/b")
+            unit.xml = etree.ElementTree(etree.fromstring(success))
+            [a for a in unit.capitain()]  # We ingest
+
+            unit.flush()
+            self.assertEqual(unit.check_urns().__next__(), True,
+                             "When all URNs are present, check_urn should work")
+            self.assertCountEqual(['urn:cts:greekLit:tlg2703.tlg001.opp-grc2',
+                                   'urn:cts:greekLit:tlg2703.tlg001.opp-lat1',
+                                   'urn:cts:greekLit:tlg2703.tlg001.opp-grc1'],
+                                  unit.urns)
+
+            # test passing commentary
+            unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit("/a/b")
+            unit.xml = etree.ElementTree(etree.fromstring(success_com))
+            [a for a in unit.capitain()]  # We ingest
+
+            unit.flush()
+            self.assertEqual(unit.check_urns().__next__(), True,
+                             "When all URNs are present, check_urn should work")
+            self.assertCountEqual(['urn:cts:greekLit:tlg2703.tlg001.opp-grc2',
+                                   'urn:cts:greekLit:tlg2703.tlg001.opp-grc1',
+                                   'urn:cts:greekLit:tlg2703.tlg001.1st1K-lat1',
+                                   'urn:cts:greekLit:tlg2703.tlg001.1st1K-lat2'],
+                                  unit.urns)
+
+            # test failing translation
+            unit.xml = etree.ElementTree(etree.fromstring(fail))
+            ingest = [a for a in unit.capitain()]
+            unit.capitain()  # We ingest
+            unit.flush()
+            self.assertEqual(unit.check_urns().__next__(), False, "When lang fails, test should fail")
+            self.assertNotIn("urn:cts:greekLit:tlg2703.tlg001.opp-lat1", unit.logs, "Missing URN should not be in logs")
+
+            # test failing commentary
+            unit.xml = etree.ElementTree(etree.fromstring(fail_com))
+            ingest = [a for a in unit.capitain()]
+            unit.capitain()  # We ingest
+            unit.flush()
+            self.assertEqual(unit.check_urns().__next__(), False, "When lang fails, test should fail")
+            self.assertNotIn("urn:cts:greekLit:tlg2703.tlg001.1st1K-lat2", unit.logs, "Missing URN should not be in logs")
 
     def test_miss_urn_parse(self):
         """ Test lang in translation check
