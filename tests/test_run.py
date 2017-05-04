@@ -240,7 +240,7 @@ class TestProcess(TestCase):
                 # Metadata information found
                 ">>>>>> Group urn : urn:cts:farsiLit:hafez",
                 ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan",
-                ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
+                ">>>>>> Edition, translation, and commentary urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
                 "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
 
             },
@@ -285,7 +285,7 @@ class TestProcess(TestCase):
                 # Metadata information found
                 ">>>>>> Group urn : urn:cts:farsiLit:hafez",
                 ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan",
-                ">>>>>> Editions and translations urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
+                ">>>>>> Edition, translation, and commentary urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
                 "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
 
             },
