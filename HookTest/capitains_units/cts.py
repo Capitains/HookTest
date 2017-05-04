@@ -112,6 +112,11 @@ class CTSMetadata_TestUnit(TESTUnit):
                     status = False
                     self.log("Translation(s) are missing lang attribute")
 
+                com_langs = self.xml.xpath("//ti:commentary/@xml:lang", namespaces=TESTUnit.NS)
+                if len(langs) != len(self.xml.xpath("//ti:commentary", namespaces=TESTUnit.NS)):
+                    status = False
+                    self.log("Some Commentaries are missing lang attribute")
+
                 titles = len(self.Text.get_cts_property("title"))
                 self.log("{0} titles found".format(titles))
                 status = status and titles > 0
@@ -187,7 +192,7 @@ class CTSMetadata_TestUnit(TESTUnit):
                 self.log("Group urn : " + "".join(groupUrns))
                 self.log("Work urn : " + "".join(worksUrns))
 
-                texts = self.xml.xpath("//ti:edition|//ti:translation", namespaces=TESTUnit.NS)
+                texts = self.xml.xpath("//ti:edition|//ti:translation|//ti:commentary", namespaces=TESTUnit.NS)
 
                 for text in texts:
                     t_urn = text.get("urn")
@@ -212,7 +217,7 @@ class CTSMetadata_TestUnit(TESTUnit):
 
                 self.urns = [str(urn) for urn in self.urns if urn and len(urn) == 5]
 
-                self.log("Editions and translations urns : " + " ".join(self.urns))
+                self.log("Edition, translation, and commentary urns : " + " ".join(self.urns))
 
                 status = allMembers and\
                          matches and onlyOneWork and self.urn and \
