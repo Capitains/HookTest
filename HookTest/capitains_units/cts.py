@@ -528,6 +528,10 @@ class CTSText_TestUnit(TESTUnit):
                     "//tei:body/tei:div[@type='translation' and starts-with(@n, 'urn:cts:')]",
                     namespaces=TESTUnit.NS
                 )
+                urns += self.xml.xpath(
+                    "//tei:body/tei:div[@type='commentary' and starts-with(@n, 'urn:cts:')]",
+                    namespaces=TESTUnit.NS
+                )
             status = len(urns) > 0
             if status:
                 logs = urns[0].get("n")
@@ -585,7 +589,7 @@ class CTSText_TestUnit(TESTUnit):
         """
         if self.scheme == "epidoc":
             try:
-                self.lang = self.xml.xpath('/tei:TEI/tei:text/tei:body/tei:div[@type="edition" or @type="translation"]',
+                self.lang = self.xml.xpath('/tei:TEI/tei:text/tei:body/tei:div[@type="edition" or @type="translation" or @type="commentary"]',
                                            namespaces=TESTUnit.NS)[0].get('{http://www.w3.org/XML/1998/namespace}lang')
             except:
                 self.lang = ''

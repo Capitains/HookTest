@@ -152,6 +152,8 @@ class TestText(unittest.TestCase):
         edition = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><body><div type="edition" n="{}" /></body></TEI>"""
         # When translation
         translation = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><body><div type="translation" n="{}" /></body></TEI>"""
+        # When commentary
+        commentary = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><body><div type="commentary" n="{}" /></body></TEI>"""
         # When wrong because not in main div
         part = """<TEI xmlns="http://www.tei-c.org/ns/1.0"><body><div type="edition"><div n="{}"/></div></body></TEI>"""
         # When wrong because in wrong div
@@ -182,6 +184,8 @@ class TestText(unittest.TestCase):
         self.Epidoc.xml = etree.fromstring(edition.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
         self.assertEqual(self.Epidoc.has_urn().__next__(), True, "div[type='edition'] should work with urn")
         self.Epidoc.xml = etree.fromstring(translation.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
+        self.assertEqual(self.Epidoc.has_urn().__next__(), True, "Epidoc should work with translation and edition")
+        self.Epidoc.xml = etree.fromstring(commentary.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
         self.assertEqual(self.Epidoc.has_urn().__next__(), True, "Epidoc should work with translation and edition")
         # Wrong epidoc should be wrong
         self.Epidoc.xml = etree.fromstring(part.format("urn:cts:latinLit:phi1294.phi002.perseus-lat2"))
@@ -388,6 +392,28 @@ class TestText(unittest.TestCase):
 
     def test_incorrect_xml_lang_epidoc_translation(self):
         """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
+        """
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/lang_tests/xml_lang_failing_translation.xml")
+        unit.xml = etree.parse("tests/lang_tests/xml_lang_failing_translation.xml", HookTest.units.TESTUnit.PARSER)
+        unit.scheme = "epidoc"
+        unit.flush()
+        results = [result for result in unit.language()]
+        self.assertEqual(results, [False], "Non-existent xml:lang attribute should return False")
+        self.assertEqual(unit.lang, "UNK", "Non-existing xml:lang attribute should result in unit.lang being set to 'UNK'")
+
+    def test_correct_xml_lang_epidoc_commentary(self):
+        """ Tests to make sure that an epidoc commentary text with an xml:lang attribute on the div[@type="edition"] passes
+        """
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/lang_tests/xml_lang_passing_commentary.xml")
+        unit.xml = etree.parse("tests/lang_tests/xml_lang_passing_commentary.xml", HookTest.units.TESTUnit.PARSER)
+        unit.scheme = "epidoc"
+        unit.flush()
+        results = [result for result in unit.language()]
+        self.assertEqual(results, [True], "Existing xml:lang attribute should return True")
+        self.assertEqual(unit.lang, "lat", "unit.lang should be set to the correct language code")
+
+    def test_incorrect_xml_lang_epidoc_commentary(self):
+        """ Tests to make sure that an epidoc commentary text with an xml:lang attribute on the div[@type="edition"] passes
         """
         unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/lang_tests/xml_lang_failing_translation.xml")
         unit.xml = etree.parse("tests/lang_tests/xml_lang_failing_translation.xml", HookTest.units.TESTUnit.PARSER)
