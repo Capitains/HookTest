@@ -113,7 +113,7 @@ class CTSMetadata_TestUnit(TESTUnit):
                     self.log("Translation(s) are missing lang attribute")
 
                 com_langs = self.xml.xpath("//ti:commentary/@xml:lang", namespaces=TESTUnit.NS)
-                if len(langs) != len(self.xml.xpath("//ti:commentary", namespaces=TESTUnit.NS)):
+                if len(com_langs) != len(self.xml.xpath("//ti:commentary", namespaces=TESTUnit.NS)):
                     status = False
                     self.log("Some Commentaries are missing lang attribute")
 
