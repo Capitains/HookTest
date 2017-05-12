@@ -212,9 +212,16 @@ class TestTravis(unittest.TestCase):
     def test_tar_contents(self):
         """ Compares the contents of the release.tar.gz file produced to the expected contents"""
         self.createTestDir('tests/100PercentRepo')
-        HookTest.build.Travis(path=self.TESTDIR, dest=self.TESTDIR).run()
+        HookTest.build.Travis(path=self.TESTDIR, dest=self.TESTDIR, tar=True).run()
+        self.assertTrue(os.path.isfile(self.TESTDIR + 'release.tar.gz'))
         with tarfile.open(self.TESTDIR + 'release.tar.gz', mode='r:gz') as f:
             self.assertCountEqual(f.getnames(), self.tar_contents)
+
+    def test_no_tar(self):
+        """ Tests to make sure no tar file for the repo is created if tar is False"""
+        self.createTestDir('tests/100PercentRepo')
+        HookTest.build.Travis(path=self.TESTDIR, dest=self.TESTDIR, tar=False).run()
+        self.assertFalse(os.path.isfile(self.TESTDIR + 'release.tar.gz'))
 
     def test_base_class(self):
         """ Tests to make sure a build run on the base class returns and error"""

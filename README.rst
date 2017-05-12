@@ -121,7 +121,7 @@ Once you have done this, you will need to add a `.travis.yml` file to root folde
     - '3.5'
     install:
     - pip3 install HookTest
-    script: hooktest --scheme epidoc --workers 3 --verbose --manifest --console --countword --allowfailure ./
+    script:  hooktest ./ --console table --scheme epidoc --workers 3 --verbose 5 --manifest --countword --allowfailure ./
     before_deploy:
     - hooktest-build --travis ./
     - results=$(cat manifest.txt)
@@ -129,15 +129,15 @@ Once you have done this, you will need to add a `.travis.yml` file to root folde
     - git config --global user.email "builds@travis-ci.com"
     - git config --global user.name "Travis CI"
     - export GIT_TAG=$major_version.$minor_version.$TRAVIS_BUILD_NUMBER
+    - git add -A
+    - git rm --cached =*
     - git tag $GIT_TAG -a -m "$DATE" -m "PASSING FILES" -m "$results"
     - git push -q https://$GITPERM@github.com/YOUR_REPOSITORY_NAME --tags
     - ls -R
 
     deploy:
       provider: releases
-      api_key:
-	secure: YOUR_SECURE_GITHUB_OATH_TOKEN
-      file: release.tar.gz
+      api_key: $GITPERM
       skip_cleanup: true
       on:
 	repo: YOUR_REPOSITORY_NAME
@@ -177,6 +177,8 @@ This line runs HookTest. The parameters are those described in the parameter tab
     - git config --global user.email "builds@travis-ci.com"
     - git config --global user.name "Travis CI"
     - export GIT_TAG=$major_version.$minor_version.$TRAVIS_BUILD_NUMBER
+    - git add -A
+    - git rm --cached =*
     - git tag $GIT_TAG -a -m "$DATE" -m "PASSING FILES" -m "$results"
     - git push -q https://$GITPERM@github.com/YOUR_REPOSITORY_NAME --tags
     - ls -R
@@ -189,9 +191,7 @@ The second important change to this line is to replace the string "YOUR_REPOSITO
 
     deploy:
       provider: releases
-      api_key:
-	secure: YOUR_SECURE_GITHUB_OATH_TOKEN
-      file: release.tar.gz
+      api_key: $GITPERM
       skip_cleanup: true
       on:
 	repo: YOUR_REPOSITORY_NAME
@@ -202,7 +202,7 @@ The second important change to this line is to replace the string "YOUR_REPOSITO
 	major_version: 0
 	minor_version: 0
 
-These lines define the deployment and release of your repository to Github. They will zip all of the passing files into the `release.tar.gz` file and then create a release on Github that has as its lable the major_version.minor_version.$TRAVIS_BUILD_NUMBER. You should set the major_version and minor_version environment variables to match the release status of your repository. Besides the major_version and minor_version environment variables, there are two other changes that you should make to these lines for each individual repository. The first is to replace the string "YOUR_SECURE_GITHUB_OATH_TOKEN" with an encrypted Github OAuth token that is produced by Travis for precisely this purpose. See the documentation at https://docs.travis-ci.com/user/deployment/releases/#Authenticating-with-an-Oauth-token to find out how to produce such an encrypted OAuth token. We suggest that you first remove the `deploy` section from your `.travis.yml` file, then use the `travis setup releases` command to produce a `deploy` section that is tailored to your repository, and then add the missing lines from the `deploy` code block above to finish the file off.
+These lines define the deployment and release of your repository to Github. They will create a release on Github that has as its lable the major_version.minor_version.$TRAVIS_BUILD_NUMBER. You should set the major_version and minor_version environment variables to match the release status of your repository. 
 
 Once you have created and tailored this `.travis.yml` file to your repository, you should then push it to your Github corpus repository. If you have set up Travis to test with repository, as described above, then Travis should read this `.travis.yml` file and automatically run HookTest and, if appropriate, build your first automatic release for the repository.
 
