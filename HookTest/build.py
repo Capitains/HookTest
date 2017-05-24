@@ -4,6 +4,8 @@ import sys
 import tarfile
 import shutil
 import os
+from MyCapytain.resolvers.cts.local import CtsCapitainsLocalResolver
+from MyCapytain.common.constants import Mimetypes
 
 
 class Build(object):
@@ -63,6 +65,22 @@ class Build(object):
                         os.makedirs(os.path.dirname(file.replace(self.path, self.dest)))
                         shutil.copy2(file, file.replace(self.path, self.dest))
 
+    def plain_text(self):
+        """ Extracts the text from the citation nodes of all passing texts in the repository and saves them
+            in the ./text directory under their text identifier (e.g., tlg001.tlg001.1st1K-grc1.txt)
+        """
+        os.mkdir('{}text'.format(self.dest))
+        Repository = CtsCapitainsLocalResolver([self.dest])
+        for text in Repository.texts:
+            try:
+                interactive_text = Repository.getTextualNode(text.id)
+                plaintext = interactive_text.export(Mimetypes.PLAINTEXT, exclude=["tei:note", "tei:teiHeader"])
+                with open('{}text/{}.txt'.format(self.dest, text.id.split(':')[-1]), mode='w') as f:
+                    f.write(plaintext)
+            except Exception as E:
+                print(E)
+                continue
+
     def run(self):
         """ creates a new corpus directory containing only the passing text files and their metadata files
         """
@@ -86,10 +104,12 @@ class Travis(Build):
         if len(passing) == 0:
             return False, 'The manifest file is empty.\nStopping build.'
         self.remove_failing(self.repo_file_list(), passing)
+        self.plain_text()
         to_zip = [x for x in glob('{}*'.format(self.dest))]
         with tarfile.open("{}release.tar.gz".format(self.dest), mode="w:gz") as f:
             for file in sorted(to_zip):
                 f.add(file)
+
         return True, 'Build successful.'
 
 

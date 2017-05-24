@@ -35,7 +35,11 @@ class TestTravis(unittest.TestCase):
                                                  'currentTest/data/stoa0040a',
                                                  'currentTest/data/stoa0040a/stoa003',
                                                  'currentTest/data/stoa0040a/stoa002',
-                                                 'currentTest/manifest.txt']
+                                                 'currentTest/manifest.txt',
+                                                 'currentTest/text',
+                                                 'currentTest/text/stoa0007.stoa002.opp-lat1.txt',
+                                                 'currentTest/text/stoa0040a.stoa002.opp-lat1.txt',
+                                                 'currentTest/text/stoa0040a.stoa003.opp-lat1.txt']
 
     def tearDown(self):
         if os.path.isdir(self.TESTDIR):
@@ -230,3 +234,39 @@ class TestTravis(unittest.TestCase):
                                                                                    '--travis'])))
         self.assertFalse(status)
         self.assertEqual(message, 'There is no manifest.txt file to load.\nStopping build.')
+
+    def test_plain_text_all(self):
+        """ Tests whether all passing and no failing files are extracted to plain text"""
+        self.createTestDir('tests/100PercentRepo')
+        passing_files = [x.replace(self.TESTDIR, '') for x in self.perfect_repo]
+        test_pipe = HookTest.build.Travis(path=self.TESTDIR, dest=self.TESTDIR + 'build')
+        test_pipe.remove_failing(self.perfect_repo, passing_files)
+        passing_texts = [x.split('/')[-1].replace('.xml', '.txt') for x in passing_files if '__cts__' not in x]
+        test_pipe.plain_text()
+        real = glob(self.TESTDIR + 'build/text/*')
+        real = [x.replace(self.TESTDIR + 'build/text/', '') for x in real]
+        self.assertCountEqual(real, passing_texts, "The files copied for the build do not match the expected value.")
+
+    def test_plain_text_some(self):
+        """ Tests whether all passing and no failing files are extracted to plain text"""
+        self.createTestDir('tests/50PercentRepo')
+        passing_files = [x.replace(self.TESTDIR, '') for x in self.perfect_repo]
+        test_pipe = HookTest.build.Travis(path=self.TESTDIR, dest=self.TESTDIR + 'build')
+        test_pipe.remove_failing(self.perfect_repo, passing_files)
+        passing_texts = [x.split('/')[-1].replace('.xml', '.txt') for x in passing_files if '__cts__' not in x]
+        test_pipe.plain_text()
+        real = glob(self.TESTDIR + 'build/text/*')
+        real = [x.replace(self.TESTDIR + 'build/text/', '') for x in real]
+        self.assertCountEqual(real, passing_texts, "The files copied for the build do not match the expected value.")
+
+    def test_plain_text_none(self):
+        """ Tests whether all passing and no failing files are extracted to plain text"""
+        self.createTestDir('tests/0PercentRepo')
+        passing_files = [x.replace(self.TESTDIR, '') for x in self.perfect_repo]
+        test_pipe = HookTest.build.Travis(path=self.TESTDIR, dest=self.TESTDIR + 'build')
+        test_pipe.remove_failing(self.perfect_repo, passing_files)
+        passing_texts = [x.split('/')[-1].replace('.xml', '.txt') for x in passing_files if '__cts__' not in x]
+        test_pipe.plain_text()
+        real = glob(self.TESTDIR + 'build/text/*')
+        real = [x.replace(self.TESTDIR + 'build/text/', '') for x in real]
+        self.assertCountEqual(real, passing_texts, "The files copied for the build do not match the expected value.")
