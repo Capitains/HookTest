@@ -17,7 +17,7 @@ class Build(object):
     :type dest: str
     """
 
-    def __init__(self, path, dest):
+    def __init__(self, path, dest, tar=False):
 
         if path.endswith('/'):
             self.path = path
@@ -27,6 +27,7 @@ class Build(object):
             self.dest = dest
         else:
             self.dest = dest + '/'
+        self.tar = tar
 
     def repo_file_list(self):
         """ Build the list of XML files for the source repo represented by self.path
@@ -105,11 +106,11 @@ class Travis(Build):
             return False, 'The manifest file is empty.\nStopping build.'
         self.remove_failing(self.repo_file_list(), passing)
         self.plain_text()
-        to_zip = [x for x in glob('{}*'.format(self.dest))]
-        with tarfile.open("{}release.tar.gz".format(self.dest), mode="w:gz") as f:
-            for file in sorted(to_zip):
-                f.add(file)
-
+        if self.tar is True:
+            to_zip = [x for x in glob('{}*'.format(self.dest))]
+            with tarfile.open("{}release.tar.gz".format(self.dest), mode="w:gz") as f:
+                for file in sorted(to_zip):
+                    f.add(file)
         return True, 'Build successful.'
 
 
@@ -122,7 +123,7 @@ def cmd(**kwargs):
     :rtype:
     """
     if kwargs['travis'] is True:
-        status, message = Travis(path=kwargs['path'], dest=kwargs['dest']).run()
+        status, message = Travis(path=kwargs['path'], dest=kwargs['dest'], tar=kwargs['tar']).run()
         return status, message
     else:
         return False, 'You cannot run build on the base class'

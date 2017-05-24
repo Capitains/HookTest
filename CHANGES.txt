@@ -1,3 +1,7 @@
+## 1.0.3 - 2017-05-12
+
+Made the creation of the tar archive on build an option with the --tar flag.
+
 ## 1.0.2 - 2017-05-04
 
 Enabled the URNs for the "commentary" type to be found in the metadata files and, thus, to show up in the inventory
