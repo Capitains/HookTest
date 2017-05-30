@@ -285,7 +285,7 @@ class TestTravis(unittest.TestCase):
 
     def test_plain_text_contents_with_cite(self):
         """ Tests to be sure that the contents of the plain text file produced is correct with citations"""
-        with open('/home/matt/HookTest/tests/txt_files/with_cite/stoa0007.stoa002.opp-lat1.txt') as f:
+        with open('tests/txt_files/with_cite/stoa0007.stoa002.opp-lat1.txt') as f:
             true_text = f.read()
         self.createTestDir('tests/100PercentRepo')
         passing_files = [x.replace(self.TESTDIR, '') for x in self.perfect_repo]
@@ -298,7 +298,7 @@ class TestTravis(unittest.TestCase):
 
     def test_plain_text_contents_no_cite(self):
         """ Tests to be sure that the contents of the plain text file produced is correct with citations"""
-        with open('/home/matt/HookTest/tests/txt_files/no_cite/stoa0007.stoa002.opp-lat1.txt') as f:
+        with open('tests/txt_files/no_cite/stoa0007.stoa002.opp-lat1.txt') as f:
             true_text = f.read()
         self.createTestDir('tests/100PercentRepo')
         passing_files = [x.replace(self.TESTDIR, '') for x in self.perfect_repo]
