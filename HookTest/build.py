@@ -76,19 +76,15 @@ class Build(object):
         os.mkdir('{}text'.format(self.dest))
         passing_texts = [x for x in glob('{}data/*/*/*.xml'.format(self.dest)) if '__cts__' not in x]
         for text in passing_texts:
-            try:
-                interactive_text = CapitainsCtsText(resource=etree.parse(text).getroot())
-                reffs = interactive_text.getReffs(level=len(interactive_text.citation))
-                passages = [interactive_text.getTextualNode(passage) for passage in reffs]
-                plaintext = [r.export(Mimetypes.PLAINTEXT, exclude=["tei:note"]).strip() for r in passages]
-                if self.cites is True:
-                    for i, t in enumerate(plaintext):
-                        plaintext[i] = '#' + reffs[i] + '#\n' + t
-                with open('{}text/{}.txt'.format(self.dest, text.split('/')[-1].replace('.xml', '')), mode='w') as f:
-                    f.write('\n\n'.join(plaintext))
-            except Exception as E:
-                print(E)
-                continue
+            interactive_text = CapitainsCtsText(resource=etree.parse(text).getroot())
+            reffs = interactive_text.getReffs(level=len(interactive_text.citation))
+            passages = [interactive_text.getTextualNode(passage) for passage in reffs]
+            plaintext = [r.export(Mimetypes.PLAINTEXT, exclude=["tei:note"]).strip() for r in passages]
+            if self.cites is True:
+                for i, t in enumerate(plaintext):
+                    plaintext[i] = '#' + reffs[i] + '#\n' + t
+            with open('{}text/{}.txt'.format(self.dest, text.split('/')[-1].replace('.xml', '')), mode='w') as f:
+                f.write('\n\n'.join(plaintext))
 
     def run(self):
         """ creates a new corpus directory containing only the passing text files and their metadata files
