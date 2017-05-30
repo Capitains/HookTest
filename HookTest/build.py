@@ -4,8 +4,9 @@ import sys
 import tarfile
 import shutil
 import os
-from MyCapytain.resolvers.cts.local import CtsCapitainsLocalResolver
+from MyCapytain.resources.texts.local.capitains.cts import CapitainsCtsText
 from MyCapytain.common.constants import Mimetypes
+from lxml import etree
 
 
 class Build(object):
@@ -17,7 +18,7 @@ class Build(object):
     :type dest: str
     """
 
-    def __init__(self, path, dest, tar=False):
+    def __init__(self, path, dest, tar=False, txt=False, cites=False):
 
         if path.endswith('/'):
             self.path = path
@@ -28,6 +29,8 @@ class Build(object):
         else:
             self.dest = dest + '/'
         self.tar = tar
+        self.txt = txt
+        self.cites = cites
 
     def repo_file_list(self):
         """ Build the list of XML files for the source repo represented by self.path
@@ -71,13 +74,18 @@ class Build(object):
             in the ./text directory under their text identifier (e.g., tlg001.tlg001.1st1K-grc1.txt)
         """
         os.mkdir('{}text'.format(self.dest))
-        Repository = CtsCapitainsLocalResolver([self.dest])
-        for text in Repository.texts:
+        passing_texts = [x for x in glob('{}data/*/*/*.xml'.format(self.dest)) if '__cts__' not in x]
+        for text in passing_texts:
             try:
-                interactive_text = Repository.getTextualNode(text.id)
-                plaintext = interactive_text.export(Mimetypes.PLAINTEXT, exclude=["tei:note", "tei:teiHeader"])
-                with open('{}text/{}.txt'.format(self.dest, text.id.split(':')[-1]), mode='w') as f:
-                    f.write(plaintext)
+                interactive_text = CapitainsCtsText(resource=etree.parse(text).getroot())
+                reffs = interactive_text.getReffs(level=len(interactive_text.citation))
+                passages = [interactive_text.getTextualNode(passage) for passage in reffs]
+                plaintext = [r.export(Mimetypes.PLAINTEXT, exclude=["tei:note"]).strip() for r in passages]
+                if self.cites is True:
+                    for i, t in enumerate(plaintext):
+                        plaintext[i] = '#' + reffs[i] + '#\n' + t
+                with open('{}text/{}.txt'.format(self.dest, text.split('/')[-1].replace('.xml', '')), mode='w') as f:
+                    f.write('\n\n'.join(plaintext))
             except Exception as E:
                 print(E)
                 continue
@@ -105,7 +113,8 @@ class Travis(Build):
         if len(passing) == 0:
             return False, 'The manifest file is empty.\nStopping build.'
         self.remove_failing(self.repo_file_list(), passing)
-        self.plain_text()
+        if self.txt is True:
+            self.plain_text()
         if self.tar is True:
             to_zip = [x for x in glob('{}*'.format(self.dest))]
             with tarfile.open("{}release.tar.gz".format(self.dest), mode="w:gz") as f:
