@@ -128,7 +128,8 @@ def cmd(**kwargs):
     :rtype:
     """
     if kwargs['travis'] is True:
-        status, message = Travis(path=kwargs['path'], dest=kwargs['dest'], tar=kwargs['tar']).run()
+        status, message = Travis(path=kwargs['path'], dest=kwargs['dest'], tar=kwargs['tar'],
+                                 txt=kwargs['txt'], cites=kwargs['cites']).run()
         return status, message
     else:
         return False, 'You cannot run build on the base class'
