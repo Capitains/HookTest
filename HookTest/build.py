@@ -4,6 +4,9 @@ import sys
 import tarfile
 import shutil
 import os
+from MyCapytain.resources.texts.local.capitains.cts import CapitainsCtsText
+from MyCapytain.common.constants import Mimetypes
+from lxml import etree
 
 
 class Build(object):
@@ -13,9 +16,28 @@ class Build(object):
     :type path: str
     :param dest: the folder in which to save the cleaned corpus
     :type dest: str
+    :param tar: whether to zip the contents of the build into an extra tar.gz file
+    :type tar: bool
+    :param txt: whether to create plain text files for all of the passing XML text files
+    :type txt: bool
+    :param cites: whether to include the citation string for each of the lowest level citation elements
+    :type cites: bool
     """
 
-    def __init__(self, path, dest, tar=False):
+    def __init__(self, path, dest, tar=False, txt=False, cites=False):
+        """
+
+        :param path: the path to the directory that contains the corpus's data directory
+        :type path: str
+        :param dest: the folder in which to save the cleaned corpus
+        :type dest: str
+        :param tar: whether to zip the contents of the build into an extra tar.gz file
+        :type tar: bool
+        :param txt: whether to create plain text files for all of the passing XML text files
+        :type txt: bool
+        :param cites: whether to include the citation string for each of the lowest level citation elements
+        :type cites: bool
+        """
 
         if path.endswith('/'):
             self.path = path
@@ -26,6 +48,8 @@ class Build(object):
         else:
             self.dest = dest + '/'
         self.tar = tar
+        self.txt = txt
+        self.cites = cites
 
     def repo_file_list(self):
         """ Build the list of XML files for the source repo represented by self.path
@@ -64,6 +88,31 @@ class Build(object):
                         os.makedirs(os.path.dirname(file.replace(self.path, self.dest)))
                         shutil.copy2(file, file.replace(self.path, self.dest))
 
+    def plain_text(self):
+        """ Extracts the text from the citation nodes of all passing texts in the repository and saves them
+            in the ./text directory under their text identifier (e.g., tlg001.tlg001.1st1K-grc1.txt)
+            Each of the lowest-level citation units in these files is separated by \n\n.
+            If self.cites == True, then each of these citation units will be introduced with #CITATION_STRING#, e.g.:
+                \n
+                #1.1.1#\n
+                Lorum ipsum...
+                \n
+                #1.1.2#\n
+                Lorum ipsum...
+        """
+        os.mkdir('{}text'.format(self.dest))
+        passing_texts = [x for x in glob('{}data/*/*/*.xml'.format(self.dest)) if '__cts__' not in x]
+        for text in passing_texts:
+            interactive_text = CapitainsCtsText(resource=etree.parse(text).getroot())
+            reffs = interactive_text.getReffs(level=len(interactive_text.citation))
+            passages = [interactive_text.getTextualNode(passage) for passage in reffs]
+            plaintext = [r.export(Mimetypes.PLAINTEXT, exclude=["tei:note"]).strip() for r in passages]
+            if self.cites is True:
+                for i, t in enumerate(plaintext):
+                    plaintext[i] = '#' + reffs[i] + '#\n' + t
+            with open('{}text/{}.txt'.format(self.dest, text.split('/')[-1].replace('.xml', '')), mode='w') as f:
+                f.write('\n\n'.join(plaintext))
+
     def run(self):
         """ creates a new corpus directory containing only the passing text files and their metadata files
         """
@@ -87,6 +136,8 @@ class Travis(Build):
         if len(passing) == 0:
             return False, 'The manifest file is empty.\nStopping build.'
         self.remove_failing(self.repo_file_list(), passing)
+        if self.txt is True:
+            self.plain_text()
         if self.tar is True:
             to_zip = [x for x in glob('{}*'.format(self.dest))]
             with tarfile.open("{}release.tar.gz".format(self.dest), mode="w:gz") as f:
@@ -104,7 +155,8 @@ def cmd(**kwargs):
     :rtype:
     """
     if kwargs['travis'] is True:
-        status, message = Travis(path=kwargs['path'], dest=kwargs['dest'], tar=kwargs['tar']).run()
+        status, message = Travis(path=kwargs['path'], dest=kwargs['dest'], tar=kwargs['tar'],
+                                 txt=kwargs['txt'], cites=kwargs['cites']).run()
         return status, message
     else:
         return False, 'You cannot run build on the base class'

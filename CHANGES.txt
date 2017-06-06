@@ -1,3 +1,10 @@
+## 1.1.0 - 2017-06-06
+
+Added the --txt parameter to the build class to allow all passing XML files to be converted to plain text and included
+in the build.
+In addition, added the --cites parameter (also to the build class). When this parameter is true, the citation unit of
+each textual node in the plain text file will be introduced with a string representing the citation unit, e.g., 1.1.1
+
 ## 1.0.3 - 2017-05-12
 
 Made the creation of the tar archive on build an option with the --tar flag.

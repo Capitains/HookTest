@@ -113,8 +113,12 @@ def parse_args_build(args):
         help="The folder in which the corpus without the failing files should be saved",
         default='./'
     )
-    parser.add_argument("--travis", help="Run build on Travis or similar CI environment", action="store_true", default=False)
+    parser.add_argument("--travis", help="Run build on Travis or similar CI environment", action="store_true",
+                        default=False)
     parser.add_argument("--tar", help="Build a tar archive of the passing files", action="store_true", default=False)
+    parser.add_argument("--txt", help="Extract plain text files from the XML files", action="store_true", default=False)
+    parser.add_argument("--cites", help="Include citation for each passage in the plain text files",
+                        action="store_true", default=False)
 
     args = parser.parse_args(args)
     return args
