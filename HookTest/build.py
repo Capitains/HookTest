@@ -16,9 +16,28 @@ class Build(object):
     :type path: str
     :param dest: the folder in which to save the cleaned corpus
     :type dest: str
+    :param tar: whether to zip the contents of the build into an extra tar.gz file
+    :type tar: bool
+    :param txt: whether to create plain text files for all of the passing XML text files
+    :type txt: bool
+    :param cites: whether to include the citation string for each of the lowest level citation elements
+    :type cites: bool
     """
 
     def __init__(self, path, dest, tar=False, txt=False, cites=False):
+        """
+
+        :param path: the path to the directory that contains the corpus's data directory
+        :type path: str
+        :param dest: the folder in which to save the cleaned corpus
+        :type dest: str
+        :param tar: whether to zip the contents of the build into an extra tar.gz file
+        :type tar: bool
+        :param txt: whether to create plain text files for all of the passing XML text files
+        :type txt: bool
+        :param cites: whether to include the citation string for each of the lowest level citation elements
+        :type cites: bool
+        """
 
         if path.endswith('/'):
             self.path = path
@@ -72,6 +91,14 @@ class Build(object):
     def plain_text(self):
         """ Extracts the text from the citation nodes of all passing texts in the repository and saves them
             in the ./text directory under their text identifier (e.g., tlg001.tlg001.1st1K-grc1.txt)
+            Each of the lowest-level citation units in these files is separated by \n\n.
+            If self.cites == True, then each of these citation units will be introduced with #CITATION_STRING#, e.g.:
+                \n
+                #1.1.1#\n
+                Lorum ipsum...
+                \n
+                #1.1.2#\n
+                Lorum ipsum...
         """
         os.mkdir('{}text'.format(self.dest))
         passing_texts = [x for x in glob('{}data/*/*/*.xml'.format(self.dest)) if '__cts__' not in x]
