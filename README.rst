@@ -123,14 +123,13 @@ Once you have done this, you will need to add a `.travis.yml` file to root folde
     - pip3 install HookTest
     script:  hooktest ./ --console table --scheme epidoc --workers 3 --verbose 5 --manifest --countword --allowfailure ./
     before_deploy:
-    - hooktest-build --travis ./
+    - hooktest-build --travis --txt ./
     - results=$(cat manifest.txt)
     - DATE=`date +%Y-%m-%d`
     - git config --global user.email "builds@travis-ci.com"
     - git config --global user.name "Travis CI"
     - export GIT_TAG=$major_version.$minor_version.$TRAVIS_BUILD_NUMBER
     - git add -A
-    - git rm --cached =*
     - git tag $GIT_TAG -a -m "$DATE" -m "PASSING FILES" -m "$results"
     - git push -q https://$GITPERM@github.com/YOUR_REPOSITORY_NAME --tags
     - ls -R
@@ -171,19 +170,26 @@ This line runs HookTest. The parameters are those described in the parameter tab
 .. code-block:: yml
 
     before_deploy:
-    - hooktest-build --travis ./
+    - hooktest-build --travis --txt ./
     - results=$(cat manifest.txt)
     - DATE=`date +%Y-%m-%d`
     - git config --global user.email "builds@travis-ci.com"
     - git config --global user.name "Travis CI"
     - export GIT_TAG=$major_version.$minor_version.$TRAVIS_BUILD_NUMBER
     - git add -A
-    - git rm --cached =*
     - git tag $GIT_TAG -a -m "$DATE" -m "PASSING FILES" -m "$results"
     - git push -q https://$GITPERM@github.com/YOUR_REPOSITORY_NAME --tags
     - ls -R
 
-Once HookTest has run on Travis, if the repository is 100% CapiTainS-compliant or if the `--allowfailure` parameter was set and at least one text, along with all of its metadata files, passed, then Travis carries out the build step. Of special note here are two things that you will need to set up yourself. The first is the environment variable `$GITPERM`. This variable should contain the value of a Github OAuth token that you have set up for your Github account. To find out how to set up such a token, see the Github documentation at https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/. Your OAuth token should have the `repo` scope (https://developer.github.com/v3/oauth/#scopes). Once you have created this token, you should define this as the `GITPERM` environment variable for this repository in Travis. To do this, see the documentation here: https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings. Make sure that the switch for "Display value in build log" is set to off, otherwise anyone looking at your build log will be able to see your private OAuth token.
+Once HookTest has run on Travis, if the repository is 100% CapiTainS-compliant or if the `--allowfailure` parameter was set and at least one text, along with all of its metadata files, passed, then Travis carries out the build step. Of special note here is the `hooktest-build --travis --txt ./` line. The `hooktest-build` class is designed to build the passing files in a repository into a release. To this point, it has been implemented only for Travis CI. This script basically removes all failing files from the repository. The `--txt` parameter then converts each of the passing XML text files to plain text, with each citation unit separated by two carriage returns, e.g.,::
+
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit...
+    
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit...
+    
+Simply remove the --txt parameter from the `.travis.yml` file if you would prefer not to release plain text versions of your texts.
+
+Of special note here are two things that you will need to set up yourself. The first is the environment variable `$GITPERM`. This variable should contain the value of a Github OAuth token that you have set up for your Github account. To find out how to set up such a token, see the Github documentation at https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/. Your OAuth token should have the `repo` scope (https://developer.github.com/v3/oauth/#scopes). Once you have created this token, you should define this as the `GITPERM` environment variable for this repository in Travis. To do this, see the documentation here: https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings. Make sure that the switch for "Display value in build log" is set to off, otherwise anyone looking at your build log will be able to see your private OAuth token.
 
 The second important change to this line is to replace the string "YOUR_REPOSITORY_NAME" with the Github user name or organization name and the repository name, e.g., "OpenGreekAndLatin/First1KGreek". If any of these pre-deployment steps fail, then the repository will not build and release.
 
