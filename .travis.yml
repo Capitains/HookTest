@@ -12,3 +12,9 @@ script:
 after_success:
     - coverage combine
     - coveralls
+deploy:
+  provider: pypi
+  user: sonofmun
+  password: $PYPASS
+  on:
+    tags: true
