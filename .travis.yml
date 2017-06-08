@@ -18,3 +18,4 @@ deploy:
   password: $PYPASS
   on:
     tags: true
+    python: "3.5"
