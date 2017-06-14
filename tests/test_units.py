@@ -257,6 +257,61 @@ class TestCTS(unittest.TestCase):
             "Parsing should fail but not raise"
         )
 
+    def test_misformatted_work_urn(self):
+        """ test to make sure that a misformatted work URN does not cause a crash and that it returns the correct error
+        """
+        fail_long = """<work xmlns="http://chs.harvard.edu/xmlns/cts" groupUrn="urn:cts:greekLit:tlg2703" xml:lang="grc" urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc2">
+          <title xml:lang="lat">Alexias</title>
+          <edition urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc2" xml:lang="grc" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+            <label xml:lang="lat">Alexias</label>
+            <description xml:lang="mul">Anna Comnena, Alexias, Scopenus, Weber, 1839</description>
+          </edition>
+        </work>"""
+        fail_short = """<work xmlns="http://chs.harvard.edu/xmlns/cts" groupUrn="urn:cts:greekLit:tlg2703" xml:lang="grc" urn="urn:cts:greekLit:tlg2703">
+                  <title xml:lang="lat">Alexias</title>
+                  <edition urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc2" xml:lang="grc" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+                    <label xml:lang="lat">Alexias</label>
+                    <description xml:lang="mul">Anna Comnena, Alexias, Scopenus, Weber, 1839</description>
+                  </edition>
+                </work>"""
+        fail_missing = """<work xmlns="http://chs.harvard.edu/xmlns/cts" groupUrn="urn:cts:greekLit:tlg2703" xml:lang="grc" urn="">
+                          <title xml:lang="lat">Alexias</title>
+                          <edition urn="urn:cts:greekLit:tlg2703.tlg001.opp-grc2" xml:lang="grc" workUrn="urn:cts:greekLit:tlg2703.tlg001">
+                            <label xml:lang="lat">Alexias</label>
+                            <description xml:lang="mul">Anna Comnena, Alexias, Scopenus, Weber, 1839</description>
+                          </edition>
+                        </work>"""
+        unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit("/a/b")
+        # test work URN that is too long
+        unit.xml = etree.ElementTree(etree.fromstring(fail_long))
+        ingest = [a for a in unit.capitain()]
+        unit.capitain()  # We ingest
+        unit.flush()
+        self.assertEqual(unit.check_urns().__next__(), False,
+                         "Incorrectly formatted work URN should cause test should fail")
+        self.assertIn(">>>>>> The Work URN on the <ti:work> element is incorrectly formatted or missing.", unit.logs,
+                      "A URN that is too long should add the correct message to the unit.logs.")
+
+        # test work URN that is too short
+        unit.xml = etree.ElementTree(etree.fromstring(fail_short))
+        ingest = [a for a in unit.capitain()]
+        unit.capitain()  # We ingest
+        unit.flush()
+        self.assertEqual(unit.check_urns().__next__(), False,
+                         "Incorrectly formatted work URN should cause test should fail")
+        self.assertIn(">>>>>> The Work URN on the <ti:work> element is incorrectly formatted or missing.", unit.logs,
+                      "A URN that is too long should add the correct message to the unit.logs.")
+
+        # test work URN that is missing
+        unit.xml = etree.ElementTree(etree.fromstring(fail_missing))
+        ingest = [a for a in unit.capitain()]
+        unit.capitain()  # We ingest
+        unit.flush()
+        self.assertEqual(unit.check_urns().__next__(), False,
+                         "Incorrectly formatted work URN should cause test should fail")
+        self.assertIn(">>>>>> The Work URN on the <ti:work> element is incorrectly formatted or missing.", unit.logs,
+                      "A URN that is too long should add the correct message to the unit.logs.")
+
     def test_capitains_parse(self):
         unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit("./tests/repo2/data/wrongmetadata/__cts__.xml")
         self.assertEqual(

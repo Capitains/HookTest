@@ -1226,3 +1226,48 @@ class TestUnitLogs(unittest.TestCase):
 
     def test_dict(self):
         pass
+
+    def test_directory_replacer(self):
+        """ Test to make sure the correct value is returned by directory_replacer function
+        """
+        #test in current directory
+        log = HookTest.test.UnitLog(
+            directory=".",
+            name='tlg0000.tlg000.tlg00.xml',
+            units={},
+            coverage=100.0,
+            status=False
+        )
+        self.assertEqual(log.name, 'tlg0000.tlg000.tlg00.xml')
+
+        #test in different directory
+        log = HookTest.test.UnitLog(
+            directory="test/",
+            name='test/tlg0000.tlg000.tlg00.xml',
+            units={},
+            coverage=100.0,
+            status=False
+        )
+        self.assertEqual(log.name, 'tlg0000.tlg000.tlg00.xml')
+
+        # test with repository
+        log = HookTest.test.UnitLog(
+            directory="test/First1K",
+            repository="First1K",
+            name='test/First1K/tlg0000.tlg000.tlg00.xml',
+            units={},
+            coverage=100.0,
+            status=False
+        )
+        self.assertEqual(log.name, 'First1K/tlg0000.tlg000.tlg00.xml')
+
+        # test with repository and current directory
+        log = HookTest.test.UnitLog(
+            directory="./First1K",
+            repository="First1K",
+            name='./First1K/tlg0000.tlg000.tlg00.xml',
+            units={},
+            coverage=100.0,
+            status=False
+        )
+        self.assertEqual(log.name, 'First1K/tlg0000.tlg000.tlg00.xml')

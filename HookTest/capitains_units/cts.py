@@ -175,6 +175,7 @@ class CTSMetadata_TestUnit(TESTUnit):
                         if urn and len(MyCapytain.common.reference.URN(urn)) == 3
                     ]
                 self.urn = None
+                urn = None
                 if len(worksUrns) == 1:
                     self.urn = worksUrns[0]
                     urn = MyCapytain.common.reference.URN(self.urn)
@@ -189,6 +190,8 @@ class CTSMetadata_TestUnit(TESTUnit):
                         elif groupUrns[0] != urn.upTo(MyCapytain.common.reference.URN.TEXTGROUP):
                             matches = False
                             self.log("The Work URN is not a child of the Textgroup URN")
+                elif len(worksUrns) == 0:
+                    self.log("The Work URN on the <ti:work> element is incorrectly formatted or missing.")
                 self.log("Group urn : " + "".join(groupUrns))
                 self.log("Work urn : " + "".join(worksUrns))
 

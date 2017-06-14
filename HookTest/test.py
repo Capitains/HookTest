@@ -936,8 +936,10 @@ class UnitLog(object):
     def directory_replacer(self, data):
         if self.repository:
             return data.replace(self.directory, self.repository)
-        else:
+        elif self.directory != ".":
             return data.replace(self.directory, "")
+        else:
+            return data
 
     @property
     def dict(self):
