@@ -1,3 +1,7 @@
+## 1.1.2 - 2017-06-23
+
+Added '.' output during extracting txt files during build to keep Travis from timing out.
+
 ## 1.1.1 - 2017-06-14
 
 - Corrected bug where a work level URN on the ti:work node in the metadata files would cause hooktest to crash (Issue #98)

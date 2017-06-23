@@ -102,7 +102,11 @@ class Build(object):
         """
         os.mkdir('{}text'.format(self.dest))
         passing_texts = [x for x in glob('{}data/*/*/*.xml'.format(self.dest)) if '__cts__' not in x]
+        sys.stdout.write('Extracting Text.\n')
+        sys.stdout.flush()
         for text in passing_texts:
+            sys.stdout.write('.')
+            sys.stdout.flush()
             interactive_text = CapitainsCtsText(resource=etree.parse(text).getroot())
             reffs = interactive_text.getReffs(level=len(interactive_text.citation))
             passages = [interactive_text.getTextualNode(passage) for passage in reffs]

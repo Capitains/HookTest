@@ -263,13 +263,22 @@ class TestTravis(unittest.TestCase):
         """ Tests whether all passing and no failing files are extracted to plain text"""
         self.createTestDir('tests/100PercentRepo')
         passing_files = [x.replace(self.TESTDIR, '') for x in self.perfect_repo]
+        old_stdout = sys.stdout
+        # This variable will store everything that is sent to the standard output
+        result = StringIO()
+        sys.stdout = result
+        # Here we can call anything we like, like external modules, and everything
+        # that they will send to standard output will be stored on "result"
         test_pipe = HookTest.build.Travis(path=self.TESTDIR, dest=self.TESTDIR + 'build', txt=True)
         test_pipe.remove_failing(self.perfect_repo, passing_files)
         passing_texts = [x.split('/')[-1].replace('.xml', '.txt') for x in passing_files if '__cts__' not in x]
         test_pipe.plain_text()
         real = glob(self.TESTDIR + 'build/text/*')
         real = [x.replace(self.TESTDIR + 'build/text/', '') for x in real]
+        # Redirect again the std output to screen
+        sys.stdout = old_stdout
         self.assertCountEqual(real, passing_texts, "The files copied for the build do not match the expected value.")
+        self.assertEqual(result.getvalue(), 'Extracting Text.\n{}'.format('.' * len(real)))
 
     def test_plain_text_some(self):
         """ Tests whether all passing and no failing files are extracted to plain text"""
