@@ -121,7 +121,7 @@ Once you have done this, you will need to add a `.travis.yml` file to root folde
     - '3.5'
     install:
     - pip3 install HookTest
-    script:  hooktest ./ --console table --scheme epidoc --workers 3 --verbose 5 --manifest --countword --allowfailure ./
+    script:  hooktest --console table --scheme epidoc --workers 3 --verbose 5 --manifest --countword --allowfailure ./
     before_deploy:
     - hooktest-build --travis --txt ./
     - results=$(cat manifest.txt)
