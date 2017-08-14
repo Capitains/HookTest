@@ -390,6 +390,7 @@ class Test(object):
             additional["citations"] = unit.citation
             additional["duplicates"] = unit.duplicates
             additional["forbiddens"] = unit.forbiddens
+            additional["dtd_errors"] = unit.dtd_errors
             additional['language'] = unit.lang
             if self.countwords:
                 additional["words"] = unit.count
@@ -515,6 +516,7 @@ class Test(object):
             if self.console == "table":
                 duplicate_nodes = ''
                 forbidden_chars = ''
+                dtd_errors = ''
                 num_texts = 0
                 num_failed = 0
                 print('', flush=True)
@@ -555,6 +557,9 @@ class Test(object):
                         if unit.additional['forbiddens']:
                             forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
                                                                           nodes=', '.join(unit.additional['forbiddens']))
+                        if unit.additional["dtd_errors"] and self.verbose >= 6:
+                            dtd_errors += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                       nodes=', '.join(unit.additional["dtd_errors"]))
 
                         if self.verbose >= 7 or unit.status is False:
                             if self.countwords:
@@ -587,10 +592,14 @@ class Test(object):
                         duplicate_nodes = magenta('Duplicate nodes found:\n') + duplicate_nodes + '\n'
                     if forbidden_chars:
                         forbidden_chars = magenta('Forbidden characters found:\n') + forbidden_chars + '\n'
+                    if dtd_errors:
+                        dtd_errors = magenta('DTD errors found:\n') + dtd_errors + '\n'
                 else:
-                    duplicate_nodes = forbidden_chars = ''
+                    duplicate_nodes = forbidden_chars = dtd_errors = ''
 
-                print("{dupes}{forbs}>>> End of the test !\n".format(dupes=duplicate_nodes, forbs=forbidden_chars))
+                print("{dupes}{forbs}{dtds}>>> End of the test !\n".format(dupes=duplicate_nodes,
+                                                                          forbs=forbidden_chars,
+                                                                          dtds=dtd_errors))
                 t_pass = num_texts - num_failed
                 cov = round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
                 results_table = PT(["HookTestResults", ""])

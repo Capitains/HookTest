@@ -339,6 +339,7 @@ class CTSText_TestUnit(TESTUnit):
         self.forbiddens = list()
         self.test_status = defaultdict(bool)
         self.lang = ''
+        self.dtd_errors = list()
         super(CTSText_TestUnit, self).__init__(path, *args, **kwargs)
 
     def parsable(self):
@@ -398,6 +399,7 @@ class CTSText_TestUnit(TESTUnit):
         if len(out) > 0:
             for error in TESTUnit.rng_logs(out):
                 self.log(error)
+                self.dtd_errors.append(error)
         yield len(out) == 0 and len(error) == 0
 
     def tei(self):
@@ -431,6 +433,7 @@ class CTSText_TestUnit(TESTUnit):
         if len(out) > 0:
             for error in TESTUnit.rng_logs(out):
                 self.log(error)
+                self.dtd_errors.append(error)
         yield len(out) == 0 and len(error) == 0
 
     def passages(self):

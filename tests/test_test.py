@@ -467,7 +467,8 @@ class TestTest(unittest.TestCase):
         ]
         # UnitInstance is a mock which has a test method is a mock
         UnitInstance = mock.Mock(
-            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation'], lang="grc"
+            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation'], lang="grc",
+            dtd_errors=['dtd_errors']
         )
         # ctsunit is a mock of the class CTSText_TestUnit and will return the instance UnitInstance
         ctsunit = mock.Mock(
@@ -489,6 +490,7 @@ class TestTest(unittest.TestCase):
                 'citations': ['citation'],
                 'duplicates': ['duplicate'],
                 'forbiddens': ['forbid'],
+                'dtd_errors': ['dtd_errors'],
                 'units': {
                     'Folder Name': True,
                     'MyCapytain': True
@@ -512,7 +514,8 @@ class TestTest(unittest.TestCase):
             ("Folder Name", False, ["It should be in a subfolder"])
         ]
         INVObject = mock.Mock(
-            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation'], lang="grc"
+            test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation'], lang="grc",
+            dtd_errors=['dtd_errors']
         )
         ctsunit = mock.Mock(
             return_value=INVObject
@@ -534,6 +537,7 @@ class TestTest(unittest.TestCase):
                 'citations': ['citation'],
                 'duplicates': ['duplicate'],
                 'forbiddens': ['forbid'],
+                'dtd_errors': ['dtd_errors'],
                 'units': {
                     'Folder Name': False,
                     'MyCapytain': True
@@ -802,6 +806,7 @@ class TestTest(unittest.TestCase):
         process.results["001"].additional['citations'] = [(0, 2, 'Book'), (1, 3, 'Chapter'), (2, 4, 'Section')]
         process.results["001"].additional['duplicates'] = []
         process.results["001"].additional['forbiddens'] = []
+        process.results["001"].additional['dtd_errors'] = []
         process.results["002"].units = {
             "Metadata": True,
             "Filename": False,
@@ -810,6 +815,7 @@ class TestTest(unittest.TestCase):
         process.results["002"].additional['citations'] = []
         process.results["002"].additional['duplicates'] = ['1.1', '1.2']
         process.results["002"].additional['forbiddens'] = ['1$1', '1-1']
+        process.results["002"].additional['dtd_errors'] = ['error: value of attribute "cause" is invalid [In (L112 C52)]']
         # add a unit where all tests fail
         process.results['003'] = HookTest.test.UnitLog(
             directory=".",
@@ -827,6 +833,7 @@ class TestTest(unittest.TestCase):
         process.results["003"].additional['words'] = 0
         process.results["003"].additional['duplicates'] = []
         process.results["003"].additional['forbiddens'] = []
+        process.results["003"].additional['dtd_errors'] = []
         process.m_passing = 3
         process.m_files = 3
 
@@ -850,10 +857,13 @@ class TestTest(unittest.TestCase):
 
         duplicate_nodes = '\x1b[35mDuplicate nodes found:\n\x1b[0m\t\x1b[35m002\x1b[0m\t1.1, 1.2\n\n'
         forbidden_chars = '\x1b[35mForbidden characters found:\n\x1b[0m\t\x1b[35m002\x1b[0m\t1$1, 1-1\n\n'
+        dtd_errors = '\x1b[35mDTD errors found:\n\x1b[0m\t\x1b[35m002\x1b[0m\terror: value of attribute "cause" is invalid [In (L112 C52)]\n\n'
         printMock.assert_has_calls([
             mock.call('', flush=True),
             mock.call(InstanceMock, flush=True),
-            mock.call("{dupes}{forbs}>>> End of the test !\n".format(dupes=duplicate_nodes, forbs=forbidden_chars))
+            mock.call("{dupes}{forbs}{dtds}>>> End of the test !\n".format(dupes=duplicate_nodes,
+                                                                           forbs=forbidden_chars,
+                                                                           dtds=dtd_errors))
         ], any_order=True)
 
     @mock.patch("HookTest.test.print", create=True)  # We patch and feed print to PrintMock
@@ -881,6 +891,7 @@ class TestTest(unittest.TestCase):
         process.results["001"].additional['words'] = 100
         process.results["001"].additional['duplicates'] = []
         process.results["001"].additional['forbiddens'] = []
+        process.results["001"].additional['dtd_errors'] = []
         process.results["001"].additional['language'] = 'UNK'
         process.results["002"].units = {
             "Metadata": True,
@@ -891,6 +902,7 @@ class TestTest(unittest.TestCase):
         process.results["002"].additional['words'] = 50
         process.results["002"].additional['duplicates'] = ['1.1', '1.2']
         process.results["002"].additional['forbiddens'] = ['1$1', '1-1']
+        process.results["002"].additional['dtd_errors'] = ['error: value of attribute "cause" is invalid [In (L112 C52)]']
         process.results["002"].additional['language'] = 'UNK'
         # add a unit where all tests fail
         process.results['003'] = HookTest.test.UnitLog(
@@ -909,6 +921,7 @@ class TestTest(unittest.TestCase):
         process.results["003"].additional['words'] = 0
         process.results["003"].additional['duplicates'] = []
         process.results["003"].additional['forbiddens'] = []
+        process.results["003"].additional['dtd_errors'] = []
         process.results["003"].additional['language'] = 'UNK'
         process.m_passing = 3
         process.m_files = 3
@@ -934,10 +947,13 @@ class TestTest(unittest.TestCase):
 
         duplicate_nodes = '\x1b[35mDuplicate nodes found:\n\x1b[0m\t\x1b[35m002\x1b[0m\t1.1, 1.2\n\n'
         forbidden_chars = '\x1b[35mForbidden characters found:\n\x1b[0m\t\x1b[35m002\x1b[0m\t1$1, 1-1\n\n'
+        dtd_errors = '\x1b[35mDTD errors found:\n\x1b[0m\t\x1b[35m002\x1b[0m\terror: value of attribute "cause" is invalid [In (L112 C52)]\n\n'
         printMock.assert_has_calls([
             mock.call('', flush=True),
             mock.call(InstanceMock, flush=True),
-            mock.call("{dupes}{forbs}>>> End of the test !\n".format(dupes=duplicate_nodes, forbs=forbidden_chars))
+            mock.call("{dupes}{forbs}{dtds}>>> End of the test !\n".format(dupes=duplicate_nodes,
+                                                                           forbs=forbidden_chars,
+                                                                           dtds=dtd_errors))
         ], any_order=True)
 
     @mock.patch("HookTest.test.print", create=True)  # We patch and feed print to PrintMock
@@ -964,6 +980,7 @@ class TestTest(unittest.TestCase):
         process.results["001"].additional['citations'] = [(0, 2, 'Book'), (1, 3, 'Chapter'), (2, 4, 'Section')]
         process.results["001"].additional['duplicates'] = []
         process.results["001"].additional['forbiddens'] = []
+        process.results["001"].additional['dtd_errors'] = []
         process.results["002"].units = {
             "Metadata": True,
             "Filename": False,
@@ -972,6 +989,7 @@ class TestTest(unittest.TestCase):
         process.results["002"].additional['citations'] = []
         process.results["002"].additional['duplicates'] = ['1.1', '1.2']
         process.results["002"].additional['forbiddens'] = ['1$1', '1-1']
+        process.results["002"].additional['dtd_errors'] = ['error: value of attribute "cause" is invalid [In (L112 C52)]']
         # add a unit where all tests fail
         process.results['003'] = HookTest.test.UnitLog(
             directory=".",
@@ -989,6 +1007,7 @@ class TestTest(unittest.TestCase):
         process.results["003"].additional['words'] = 0
         process.results["003"].additional['duplicates'] = []
         process.results["003"].additional['forbiddens'] = []
+        process.results["003"].additional['dtd_errors'] = []
         process.m_passing = 3
         process.m_files = 3
 
@@ -1012,10 +1031,13 @@ class TestTest(unittest.TestCase):
 
         duplicate_nodes = ''
         forbidden_chars = ''
+        dtd_errors = ''
         printMock.assert_has_calls([
             mock.call('', flush=True),
             mock.call(InstanceMock, flush=True),
-            mock.call("{dupes}{forbs}>>> End of the test !\n".format(dupes=duplicate_nodes, forbs=forbidden_chars))
+            mock.call("{dupes}{forbs}{dtds}>>> End of the test !\n".format(dupes=duplicate_nodes,
+                                                                           forbs=forbidden_chars,
+                                                                           dtds=dtd_errors))
         ], any_order=True)
 
     def test_manifest_build(self):

@@ -442,7 +442,7 @@ class TestProcess(TestCase):
             "--console", "inline", "--verbose", "--scheme", "epidoc"
         ])
         self.assertIn(
-            ">>> [success] 0 out of 5 files did not pass the tests\n", logs,
+            ">>> [failed] 3 out of 5 files did not pass the tests\n", logs,
             "Test conclusion should be printed"
         )
         self.assertSubset(
