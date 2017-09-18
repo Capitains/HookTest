@@ -380,6 +380,7 @@ class CTSText_TestUnit(TESTUnit):
         )
         out = []
         error = []
+        ignored = []
         timer = Timer(self.timeout, test.kill)
         try:
             timer.start()
@@ -395,6 +396,10 @@ class CTSText_TestUnit(TESTUnit):
                 timer.cancel()
                 pass
             timer.cancel()
+
+        # This is to deal with Travis printing a message about the _JAVA_OPTIONS when a java command is run
+        # Travis printing this command resulted in this test not passing
+        out = '\n'.join([x for x in out.decode().split('\n') if '_JAVA_OPTIONS' not in x]).encode()
 
         if len(out) > 0:
             for error in TESTUnit.rng_logs(out):
@@ -429,6 +434,10 @@ class CTSText_TestUnit(TESTUnit):
                 timer.cancel()
                 pass
             timer.cancel()
+
+        # This is to deal with Travis printing a message about the _JAVA_OPTIONS when a java command is run
+        # Travis printing this command resulted in this test not passing
+        out = '\n'.join([x for x in out.decode().split('\n') if '_JAVA_OPTIONS' not in x]).encode()
 
         if len(out) > 0:
             for error in TESTUnit.rng_logs(out):
