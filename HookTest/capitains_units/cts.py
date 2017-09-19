@@ -403,8 +403,6 @@ class CTSText_TestUnit(TESTUnit):
         out = '\n'.join([x for x in out.decode().split('\n') if '_JAVA_OPTIONS' not in x]).encode()
         error = '\n'.join([x for x in error.decode().split('\n') if '_JAVA_OPTIONS' not in x]).encode()
 
-        print(out, error)
-
         if len(out) > 0:
             for issue in TESTUnit.rng_logs(out):
                 self.log(issue)
