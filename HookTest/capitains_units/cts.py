@@ -369,18 +369,19 @@ class CTSText_TestUnit(TESTUnit):
         else:
             yield False
 
-    def epidoc(self):
-        """ Check the original file against Epidoc rng through a java pipe
+    def run_rng(self, rng_path):
+        """ Run the RNG through JingTrang
+
+        :param rng_path: Path to the RelaxNG file to run against the XML to test
         """
         test = subprocess.Popen(
-            ["java", "-jar", TESTUnit.JING, TESTUnit.EPIDOC, self.path],
+            ["java", "-jar", TESTUnit.JING, rng_path, self.path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False
         )
         out = []
         error = []
-        ignored = []
         timer = Timer(self.timeout, test.kill)
         try:
             timer.start()
@@ -390,7 +391,7 @@ class CTSText_TestUnit(TESTUnit):
             yield False
             pass
         finally:
-            if timer.isAlive() == False:
+            if not timer.isAlive():
                 self.log("Timeout on RelaxNG")
                 yield False
                 timer.cancel()
@@ -406,44 +407,19 @@ class CTSText_TestUnit(TESTUnit):
                 self.log(error)
                 self.dtd_errors.append(error)
         yield len(out) == 0 and len(error) == 0
+
+    def epidoc(self):
+        """ Check the original file against Epidoc rng through a java pipe
+        """
+        for status in self.run_rng(TESTUnit.EPIDOC):
+            yield status
 
     def tei(self):
         """ Check the original file against TEI rng through a java pipe
         """
-        test = subprocess.Popen(
-            ["java", "-jar", TESTUnit.JING, TESTUnit.TEI_ALL, self.path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=False,
-        )
 
-        out = []
-        error = []
-        timer = Timer(self.timeout, test.kill)
-        try:
-            timer.start()
-            out, error = test.communicate()
-        except Exception as E:
-            self.error(E)
-            yield False
-            pass
-        finally:
-            if timer.isAlive() == False:
-                self.log("Timeout on RelaxNG")
-                yield False
-                timer.cancel()
-                pass
-            timer.cancel()
-
-        # This is to deal with Travis printing a message about the _JAVA_OPTIONS when a java command is run
-        # Travis printing this command resulted in this test not passing
-        out = '\n'.join([x for x in out.decode().split('\n') if '_JAVA_OPTIONS' not in x]).encode()
-
-        if len(out) > 0:
-            for error in TESTUnit.rng_logs(out):
-                self.log(error)
-                self.dtd_errors.append(error)
-        yield len(out) == 0 and len(error) == 0
+        for status in self.run_rng(TESTUnit.TEI_ALL):
+            yield status
 
     def passages(self):
         """  Check that passages are available at each level. On top of that, it checks for forbidden characters \
