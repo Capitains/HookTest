@@ -587,6 +587,16 @@ class TestText(unittest.TestCase):
         self.assertEqual(results, [False], "Non-existent xml:lang attribute should return False")
         self.assertEqual(unit.lang, "UNK", "Non-existing xml:lang attribute should result in unit.lang being set to 'UNK'")
 
+    def test_run_relaxng(self):
+        """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
+        """
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/lang_tests/xml_lang_failing_epidoc.xml")
+        unit.xml = etree.parse("tests/lang_tests/xml_lang_failing_epidoc.xml", HookTest.units.TESTUnit.PARSER)
+        unit.scheme = "epidoc"
+        unit.flush()
+        results = [result for result in unit.epidoc()]
+        self.assertEqual(results, [True], "Epidoc RelaxNG should run correctly")
+
     def test_correct_xml_lang_tei_edition(self):
         """ Tests to make sure that an epidoc edition text with an xml:lang attribute on the div[@type="edition"] passes
         """

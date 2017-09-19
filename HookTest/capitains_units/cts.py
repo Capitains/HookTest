@@ -401,11 +401,14 @@ class CTSText_TestUnit(TESTUnit):
         # This is to deal with Travis printing a message about the _JAVA_OPTIONS when a java command is run
         # Travis printing this command resulted in this test not passing
         out = '\n'.join([x for x in out.decode().split('\n') if '_JAVA_OPTIONS' not in x]).encode()
+        error = '\n'.join([x for x in error.decode().split('\n') if '_JAVA_OPTIONS' not in x]).encode()
+
+        print(out, error)
 
         if len(out) > 0:
-            for error in TESTUnit.rng_logs(out):
-                self.log(error)
-                self.dtd_errors.append(error)
+            for issue in TESTUnit.rng_logs(out):
+                self.log(issue)
+                self.dtd_errors.append(issue)
         yield len(out) == 0 and len(error) == 0
 
     def epidoc(self):
