@@ -585,27 +585,25 @@ class CTSText_TestUnit(TESTUnit):
         """ Tests to make sure an xml:lang element is on the correct node
         """
         if self.scheme == "epidoc":
-            try:
-                self.lang = self.xml.xpath('/tei:TEI/tei:text/tei:body/tei:div[@type="edition" or @type="translation" or @type="commentary"]',
-                                           namespaces=TESTUnit.NS)[0].get('{http://www.w3.org/XML/1998/namespace}lang')
-            except:
-                self.lang = ''
-            if self.lang == '' or self.lang is None:
-                self.lang = 'UNK'
-                yield False
-            else:
-                yield True
+            urns_holding_node = self.xml.xpath(
+                "//tei:text/tei:body/tei:div"
+                "[@type='edition' or @type='translation' or @type='commentary']"
+                "[starts-with(@n, 'urn:cts:')]",
+                namespaces=TESTUnit.NS
+            )
         elif self.scheme == "tei":
-            try:
-                self.lang = self.xml.xpath('/tei:TEI/tei:text/tei:body',
-                                           namespaces=TESTUnit.NS)[0].get('{http://www.w3.org/XML/1998/namespace}lang')
-            except:
-                self.lang = ''
-            if self.lang == '' or self.lang is None:
-                self.lang = 'UNK'
-                yield False
-            else:
-                yield True
+            urns_holding_node = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS) + \
+                    self.xml.xpath("//tei:text[starts-with(@xml:base, 'urn:cts:')]", namespaces=TESTUnit.NS)
+
+        try:
+            self.lang = urns_holding_node[0].get('{http://www.w3.org/XML/1998/namespace}lang')
+        except:
+            self.lang = ''
+        if self.lang == '' or self.lang is None:
+            self.lang = 'UNK'
+            yield False
+        else:
+            yield True
 
     def test(self, scheme, inventory=None):
         """ Test a file with various checks
