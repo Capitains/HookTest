@@ -119,6 +119,11 @@ def parse_args_build(args):
     parser.add_argument("--txt", help="Extract plain text files from the XML files", action="store_true", default=False)
     parser.add_argument("--cites", help="Include citation for each passage in the plain text files",
                         action="store_true", default=False)
+    parser.add_argument(
+        "--workers",
+        help="The number of processes to use for extracting plain text.",
+        default=3
+    )
 
     args = parser.parse_args(args)
     return args
