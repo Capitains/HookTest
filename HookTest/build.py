@@ -7,6 +7,7 @@ import os
 from MyCapytain.resources.texts.local.capitains.cts import CapitainsCtsText
 from MyCapytain.common.constants import Mimetypes
 from lxml import etree
+from multiprocessing.pool import Pool
 
 
 class Build(object):
@@ -24,7 +25,7 @@ class Build(object):
     :type cites: bool
     """
 
-    def __init__(self, path, dest, tar=False, txt=False, cites=False):
+    def __init__(self, path, dest, tar=False, txt=False, cites=False, workers=3):
         """
 
         :param path: the path to the directory that contains the corpus's data directory
@@ -37,6 +38,8 @@ class Build(object):
         :type txt: bool
         :param cites: whether to include the citation string for each of the lowest level citation elements
         :type cites: bool
+        :param workers: the number of processes to use in building plain text
+        :type workers: int
         """
 
         if path.endswith('/'):
@@ -50,6 +53,7 @@ class Build(object):
         self.tar = tar
         self.txt = txt
         self.cites = cites
+        self.workers = workers
 
     def repo_file_list(self):
         """ Build the list of XML files for the source repo represented by self.path
@@ -104,18 +108,26 @@ class Build(object):
         passing_texts = [x for x in glob('{}data/*/*/*.xml'.format(self.dest)) if '__cts__' not in x]
         sys.stdout.write('Extracting Text.\n')
         sys.stdout.flush()
-        for text in passing_texts:
-            sys.stdout.write('.')
-            sys.stdout.flush()
-            interactive_text = CapitainsCtsText(resource=etree.parse(text).getroot())
-            reffs = interactive_text.getReffs(level=len(interactive_text.citation))
-            passages = [interactive_text.getTextualNode(passage) for passage in reffs]
-            plaintext = [r.export(Mimetypes.PLAINTEXT, exclude=["tei:note"]).strip() for r in passages]
-            if self.cites is True:
-                for i, t in enumerate(plaintext):
-                    plaintext[i] = '#' + reffs[i] + '#\n' + t
-            with open('{}text/{}.txt'.format(self.dest, text.split('/')[-1].replace('.xml', '')), mode='w') as f:
-                f.write('\n\n'.join(plaintext))
+        with Pool(processes=self.workers) as executor:
+            # Send the tasks in order to the pool
+            for _ in executor.imap_unordered(self.build_texts, [text for text in passing_texts]):
+                sys.stdout.write('.')
+                sys.stdout.flush()
+
+            # Required for coverage
+            executor.close()
+            executor.join()
+
+    def build_texts(self, text):
+        interactive_text = CapitainsCtsText(resource=etree.parse(text).getroot())
+        reffs = interactive_text.getReffs(level=len(interactive_text.citation))
+        passages = [interactive_text.getTextualNode(passage) for passage in reffs]
+        plaintext = [r.export(Mimetypes.PLAINTEXT, exclude=["tei:note"]).strip() for r in passages]
+        if self.cites is True:
+            for i, t in enumerate(plaintext):
+                plaintext[i] = '#' + reffs[i] + '#\n' + t
+        with open('{}text/{}.txt'.format(self.dest, text.split('/')[-1].replace('.xml', '')), mode='w') as f:
+            f.write('\n\n'.join(plaintext))
 
     def run(self):
         """ creates a new corpus directory containing only the passing text files and their metadata files
@@ -160,7 +172,7 @@ def cmd(**kwargs):
     """
     if kwargs['travis'] is True:
         status, message = Travis(path=kwargs['path'], dest=kwargs['dest'], tar=kwargs['tar'],
-                                 txt=kwargs['txt'], cites=kwargs['cites']).run()
+                                 txt=kwargs['txt'], cites=kwargs['cites'], workers=int(kwargs['workers'])).run()
         return status, message
     else:
         return False, 'You cannot run build on the base class'
