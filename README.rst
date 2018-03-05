@@ -20,6 +20,9 @@
     :target: https://capitains-hooktest.readthedocs.io/en/latest/
 .. image:: https://zenodo.org/badge/40954877.svg
    :target: https://zenodo.org/badge/latestdoi/40954877
+.. image:: https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg
+   :alt: License: MPL 2.0
+   :target: https://opensource.org/licenses/MPL-2.0
     
 
 ----------

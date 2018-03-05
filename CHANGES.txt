@@ -1,3 +1,8 @@
+## 1.1.6 - 20158-02-21
+
+- Added multiprocessing for conversion to plain text in hooktest-build
+- Fixed text_run_clone_farsiLit test since all files in canonical-farsiLit are now passing
+
 ## 1.1.5 - 2017-09-23
 
 - ( Added a fix for #111 ) Refactored language test unit to cover all cases of guidelines
