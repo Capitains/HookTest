@@ -24,7 +24,7 @@ setup(
         "Topic :: Software Development :: Version Control",
         "Topic :: Text Processing :: Markup :: XML",
         "Topic :: Text Processing :: General",
-        "License :: OSI Approved :: Mozilla Public License Version 2.0"
+        "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
     ],
     install_requires=[
         "MyCapytain>=2.0.0",
