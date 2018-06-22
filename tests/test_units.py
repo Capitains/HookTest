@@ -574,3 +574,22 @@ class TestText(unittest.TestCase):
         unit.flush()
         results = [result for result in unit.epidoc()]
         self.assertEqual(results, [True], "Epidoc RelaxNG should run correctly")
+
+    def test_empty_references(self):
+        """ Test whether a text has empty citation references
+        """
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/passages/test_passage_success.xml")
+        parsed = [a for a in unit.parsable()]
+        unit.flush()
+        results = [result for result in unit.passages()]
+        unit.test_status['passages'] = True
+        passages = list(unit.empty())
+        self.assertEqual(passages, [True], "No empty references should result in success")
+
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/passages/test_empty_ref_fail.xml")
+        parsed = [a for a in unit.parsable()]
+        unit.flush()
+        results = [result for result in unit.passages()]
+        passages = list(unit.empty())
+        self.assertEqual(passages, [False], "Empty references should result in fail")
+        self.assertIn(">>>>>> Empty references found : 1 empty reference(s) at citation level 1, 2 empty reference(s) at citation level 2, 2 empty reference(s) at citation level 3", unit.logs)

@@ -1,4 +1,8 @@
-## 1.1.6 - 20158-02-21
+## 1.1.7 - 2018-06-22
+
+- Implemented test for empty reference strings
+
+## 1.1.6 - 2018-02-21
 
 - Added multiprocessing for conversion to plain text in hooktest-build
 - Fixed text_run_clone_farsiLit test since all files in canonical-farsiLit are now passing

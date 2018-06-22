@@ -10,7 +10,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 setup(
     name='HookTest',
-    version="1.1.6",
+    version="1.1.7",
     description='Hook Test Script for GitHub/CapiTainS repositories',
     long_description=long_description,
     url='http://github.com/Capitains/HookTest',

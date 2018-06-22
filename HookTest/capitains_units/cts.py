@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import MyCapytain.common
 from MyCapytain.common.constants import Mimetypes
-from MyCapytain.errors import DuplicateReference
+from MyCapytain.errors import DuplicateReference, EmptyReference
 from MyCapytain.resources.collections.cts import XmlCtsTextgroupMetadata, XmlCtsWorkMetadata
 from MyCapytain.resources.texts.local.capitains.cts import CapitainsCtsText
 
@@ -302,7 +302,7 @@ class CTSText_TestUnit(TESTUnit):
         # Requires has_urn
         "inventory", "naming_convention",
         # Requires parsable
-        "refsDecl", "passages", "unique_passage", "duplicate", "forbidden"
+        "refsDecl", "passages", "unique_passage", "duplicate", "forbidden", "empty"
     ]
     breaks = [
         "parsable",
@@ -322,7 +322,8 @@ class CTSText_TestUnit(TESTUnit):
         "inventory": "Available in inventory",
         "unique_passage": "Unique nodes found by XPath",
         "count_words": "Word Counting",
-        "language": "Correct xml:lang attribute"
+        "language": "Correct xml:lang attribute",
+        "empty": "Empty References"
     }
     splitter = re.compile(r'\S+', re.MULTILINE)
 
@@ -337,6 +338,7 @@ class CTSText_TestUnit(TESTUnit):
         self.citation = list()
         self.duplicates = list()
         self.forbiddens = list()
+        self.empties = list()
         self.test_status = defaultdict(bool)
         self.lang = ''
         self.dtd_errors = list()
@@ -444,6 +446,8 @@ class CTSText_TestUnit(TESTUnit):
                         for record in warning_record:
                             if record.category == DuplicateReference:
                                 self.duplicates += sorted(str(record.message).split(", "))
+                            if record.category == EmptyReference:
+                                self.empties += [str(record.message)]
                         if space_in_passage and space_in_passage is not None:
                             self.forbiddens += ["'{}'".format(n)
                                                 for ref, n in zip(ids, passages)
@@ -478,6 +482,18 @@ class CTSText_TestUnit(TESTUnit):
         """
         if len(self.forbiddens) > 0:
             self.log("Reference with forbidden characters found: {0}".format(", ".join(self.forbiddens)))
+            yield False
+        elif self.test_status['passages'] is False:
+            yield False
+        else:
+            yield True
+
+    def empty(self):
+        """ Detects empty references
+
+        """
+        if len(self.empties) > 0:
+            self.log("Empty references found : {0}".format(", ".join(self.empties)))
             yield False
         elif self.test_status['passages'] is False:
             yield False
