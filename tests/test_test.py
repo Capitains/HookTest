@@ -7,6 +7,7 @@ from multiprocessing.pool import Pool
 from collections import OrderedDict
 import shutil
 import os
+import statistics
 
 
 def unitlog_dict():
@@ -111,11 +112,6 @@ class TestTest(unittest.TestCase):
         self.test_print.log("This is a log")
         self.assertEqual(len(mocked.mock_calls), 0)
 
-        # Test when print
-        self.test_print.console = "inline"
-        self.test_print.log("This is a log")
-        mocked.assert_called_with("This is a log", flush=True)
-
         with mock.patch('HookTest.test.sys', create=True) as sysout:
             # Test when print Unit Log
             logs = unitlog_dict()
@@ -127,17 +123,16 @@ class TestTest(unittest.TestCase):
             sysout.stdout.write.assert_called_with("X")
             sysout.stdout.flush.assert_called_with()
 
-        logs = unitlog_dict()
-        a = HookTest.test.Test("", ping="Http", triggering_size=2)
-        flush = mock.MagicMock()
-        a.flush = flush
-        a.log(logs["001"])
-        self.assertEqual(len(mocked.mock_calls), 1)
-        self.assertEqual(len(flush.mock_calls), 0)
-        a.results = logs
-        a.log(logs["002"])
-        self.assertEqual(len(mocked.mock_calls), 1)
-        flush.assert_called_with(list(logs.values()))
+        with mock.patch('HookTest.test.sys', create=True) as sysout:
+            logs = unitlog_dict()
+            a = HookTest.test.Test("", ping="Http", triggering_size=2)
+            flush = mock.MagicMock()
+            a.flush = flush
+            a.log(logs["001"])
+            self.assertEqual(len(flush.mock_calls), 0)
+            a.results = logs
+            a.log(logs["002"])
+            flush.assert_called_with(list(logs.values()))
 
     @mock.patch('HookTest.test.print', create=True)
     def test_start(self, printed):
@@ -145,7 +140,6 @@ class TestTest(unittest.TestCase):
         """
         # With HTTP
         send = mock.MagicMock()
-        print(self.test.console)
         self.test.send = send
         self.test.text_files, self.test.cts_files = ["a text"]*5, ["a cts metadata file"]*2
         self.test.start()
@@ -189,46 +183,6 @@ class TestTest(unittest.TestCase):
             "coverage": 75.00,
             "units": [r.dict for r in results.values()]
         })
-
-        # With not print
-        self.test_print.end()
-        self.assertEqual(len(printed.mock_calls), 0, msg="Default of start is not to print")
-
-        # With print
-        self.test_print.console = "inline"
-        self.test_print.text_files, self.test_print.cts_files = ["a text"]*5, ["a cts metadata file"]*2
-        self.test_print.passing = {
-            1: True,
-            2: True,
-            3: True,
-            4: True,
-            5: True,
-            6: False,
-            7: False
-        }
-        self.test_print.end()
-        self.assertEqual(len(printed.mock_calls), 1, msg="End should print once")
-        printed.assert_called_with(
-            ">>> End of the test !\n>>> [failed] 2 out of 7 files did not pass the tests", flush=True
-        )
-
-    @mock.patch('HookTest.test.print', create=True)
-    def test_download(self, printed):
-        self.test_print.download()
-        self.assertEqual(len(printed.mock_calls), 0, msg="When print is not set, nothing is shown")
-
-        self.test.download()
-        self.assertEqual(len(printed.mock_calls), 0, msg="When print is not set, nothing is shown [Neither with Ping]")
-
-        self.test_print.console = "inline"
-        self.test_print.verbose = 10
-        self.test_print.progress = HookTest.test.Progress()
-        self.test_print.progress.download = "55 kb/s"
-        self.test_print.download()
-        printed.assert_called_with(
-            "Cloning repository\nDownloaded 0/0 (55 kb/s)",
-            flush=True
-        )
 
     @mock.patch('HookTest.test.send', create=True)
     def test_flush(self, mocked):
@@ -289,8 +243,7 @@ class TestTest(unittest.TestCase):
             "http://services.perseids.org/Hook",
             data=bytes(data, "utf-8"),
             headers={
-                "HookTest-Secure-X": "587f69e2e316c5da00d3bdde1b9f6a66632b9ea2",
-                'HookTest-UUID': '1234'
+                "HookTest-Secure-X": "587f69e2e316c5da00d3bdde1b9f6a66632b9ea2"
             }
         )
 
@@ -300,8 +253,7 @@ class TestTest(unittest.TestCase):
             "http://services.perseids.org/Hook",
             data=bytes(data, "utf-8"),
             headers={
-                "HookTest-Secure-X": "46e8b5645de78bdcf3bad24e4f3ca5d7de95b01e",
-                'HookTest-UUID': '1234'
+                "HookTest-Secure-X": "46e8b5645de78bdcf3bad24e4f3ca5d7de95b01e"
             }
         )
 
@@ -365,11 +317,6 @@ class TestTest(unittest.TestCase):
         """
         self.test.repository = False
         self.assertEqual(self.test.directory, "./")
-        self.test.repository = "PerseusDL/canonical-farsiLit"
-        self.test.uuid = None
-        self.assertEqual(self.test.directory, "./canonical-farsiLit")
-        self.test.uuid = "1234"
-        self.assertEqual(self.test.directory, "./1234")
 
     @mock.patch("HookTest.test.time.strftime", return_value="Time")
     def test_unit_inv_verbose(self, time_mocked):
@@ -610,12 +557,6 @@ class TestTest(unittest.TestCase):
         remote_met.assert_called_with()
         pull.assert_called_with("refs/pull/5/head", progress=self.test.progress)
 
-    @mock.patch("HookTest.test.shutil.rmtree", create=True)
-    def test_clean(self, mocked):
-        """ Test remove is called """
-        self.test.clean()
-        mocked.assert_called_with("./1234", ignore_errors=True)
-
     def test_find(self):
         reading, metadata = (HookTest.test.Test("./tests/repo1")).find()
         self.assertEqual(len(metadata), 2, "It should find two __cts__ in repo1")
@@ -682,7 +623,7 @@ class TestTest(unittest.TestCase):
     @mock.patch('HookTest.test.sys.stdout', create=True)
     def test_log_travis_pass(self, sysmocked):
         """ Testing a unit that passes prints . in stdout and then flush it """
-        process = HookTest.test.Test("./tests/repo1", console="table")
+        process = HookTest.test.Test("./tests/repo1", console=True)
         logs_dict = unitlog_dict()
 
         process.log(logs_dict["001"])
@@ -692,7 +633,7 @@ class TestTest(unittest.TestCase):
     @mock.patch('HookTest.test.sys.stdout', create=True)
     def test_log_travis_fail(self, sysmocked):
         """ Testing a unit that fails prints X in stdout and then flush it """
-        process = HookTest.test.Test("./tests/repo1", console="table")
+        process = HookTest.test.Test("./tests/repo1", console=True)
         logs_dict = unitlog_dict()
 
         process.log(logs_dict["002"])
@@ -729,7 +670,7 @@ class TestTest(unittest.TestCase):
         PTMock.return_value = InstanceMock
 
         # We create a process of Test and feed weird results
-        process = HookTest.test.Test("./tests/repo1", console="table", verbose=True)
+        process = HookTest.test.Test("./tests/repo1", console=True, verbose=True)
         process.results = unitlog_dict()
         process.results["001"].units = {
             "Metadata": True,
@@ -761,7 +702,7 @@ class TestTest(unittest.TestCase):
     def test_middle_travis_pass(self, printMock):
         """ Ensure PrettyTable are created when travis is True and verbose as well """
         # We create a process of Test and feed weird results
-        process = HookTest.test.Test("./tests/repo1", console="table", verbose=True)
+        process = HookTest.test.Test("./tests/repo1", console=True, verbose=True)
         process.results = unitlog_dict()
         process.results["001"].units = {
             "Metadata": True,
@@ -796,7 +737,7 @@ class TestTest(unittest.TestCase):
         PTMock.return_value = InstanceMock
 
         # We create a process of Test and feed weird results
-        process = HookTest.test.Test(self.TESTDIR, console="table", verbose=10)
+        process = HookTest.test.Test(self.TESTDIR, console=True, verbose=10)
         process.results = unitlog_dict()
         process.results["001"].units = {
             "Metadata": True,
@@ -880,7 +821,7 @@ class TestTest(unittest.TestCase):
         PTMock.return_value = InstanceMock
 
         # We create a process of Test and feed weird results
-        process = HookTest.test.Test(self.TESTDIR, console="table", verbose=10, countwords=True)
+        process = HookTest.test.Test(self.TESTDIR, console=True, verbose=10, countwords=True)
         process.results = unitlog_dict()
         process.results["001"].units = {
             "Metadata": True,
@@ -970,7 +911,7 @@ class TestTest(unittest.TestCase):
         PTMock.return_value = InstanceMock
 
         # We create a process of Test and feed weird results
-        process = HookTest.test.Test(self.TESTDIR, console="table", verbose=0)
+        process = HookTest.test.Test(self.TESTDIR, console=True, verbose=0)
         process.results = unitlog_dict()
         process.results["001"].units = {
             "Metadata": True,
@@ -1048,7 +989,7 @@ class TestTest(unittest.TestCase):
 
         self.createTestDir('./tests/repo1')
 
-        process = HookTest.test.Test(self.TESTDIR, console="table", verbose=10, countwords=True, build_manifest=True)
+        process = HookTest.test.Test(self.TESTDIR, console=True, verbose=10, countwords=True, build_manifest=True)
         process.results = unitlog_dict()
         process.results['001'].name = 'test/test/test'
         process.results["002"].name = 'test/test/__cts__.xml'
@@ -1204,43 +1145,6 @@ class TestTest(unittest.TestCase):
             "Headers should say json and have a good secure"
         )
 
-class TestProgress(unittest.TestCase):
-    """ Test Github.Progress own implementation """
-
-    def test_json(self):
-        """ Test Own Progress function """
-        P = HookTest.test.Progress()
-        self.assertEqual(len(P.json), 3)
-
-        P.start = ["This is a start", "AHAH"]
-        P.end = ["This is an end"]
-        P.current = 5
-        P.maximum = 10
-        P.download = 20
-
-        self.assertEqual(P.json, [
-            "This is a start\nAHAH",
-            "Downloaded 5/10 (20)",
-            "This is an end"
-        ])
-
-    def test_update(self):
-        P = HookTest.test.Progress()
-
-        # Testing first logs
-        P.update(1, 2, max_count=3, message="Starting Download")
-        self.assertEqual(P.start, ["Cloning repository", "Starting Download"])
-
-        # Testing when there is a speed
-        P.update(1, 2, max_count=3, message='55 kb/s')
-        self.assertEqual(P.progress, True)
-        self.assertEqual(P.download, '55 kb/s')
-
-        # Testing end logs
-        P.update(1, 2, max_count=3, message="Ending Download")
-        self.assertEqual(P.progress, False)
-        self.assertEqual(P.end, ["Ending Download"])
-
 
 class TestUnitLogs(unittest.TestCase):
     def test_init(self):
@@ -1271,25 +1175,3 @@ class TestUnitLogs(unittest.TestCase):
             status=False
         )
         self.assertEqual(log.name, 'tlg0000.tlg000.tlg00.xml')
-
-        # test with repository
-        log = HookTest.test.UnitLog(
-            directory="test/First1K",
-            repository="First1K",
-            name='test/First1K/tlg0000.tlg000.tlg00.xml',
-            units={},
-            coverage=100.0,
-            status=False
-        )
-        self.assertEqual(log.name, 'First1K/tlg0000.tlg000.tlg00.xml')
-
-        # test with repository and current directory
-        log = HookTest.test.UnitLog(
-            directory="./First1K",
-            repository="First1K",
-            name='./First1K/tlg0000.tlg000.tlg00.xml',
-            units={},
-            coverage=100.0,
-            status=False
-        )
-        self.assertEqual(log.name, 'First1K/tlg0000.tlg000.tlg00.xml')

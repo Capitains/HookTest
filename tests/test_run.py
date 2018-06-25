@@ -4,6 +4,14 @@ from unittest import TestCase
 from io import StringIO  # Python3
 import json
 import sys
+import os
+import shutil
+import re
+from colors import white, magenta
+
+def temp_dir_path(*args):
+    """ Generate the temp directory path for given file"""
+    return os.path.join(".", "cloning_dir", *args)
 
 
 class TestProcess(TestCase):
@@ -12,11 +20,46 @@ class TestProcess(TestCase):
 
     Thanks to http://stackoverflow.com/questions/18160078/how-do-you-write-tests-for-the-argparse-portion-of-a-python-module
     """
+    def setUp(self):
+        os.makedirs(temp_dir_path(), exist_ok=True)
+
+    def tearDown(self):
+        shutil.rmtree(temp_dir_path())
+
+    def assertLogResult(self, logs, left_column, right_column, message):
+        """ Check that left column in logs has right column value
+
+        :param logs: Logs to be checked
+        :param left_column: Left Column content
+        :param right_column: Right Column content
+        :param message: Message to show for failure
+        """
+        self.assertRegex(logs, "|\s+"+left_column+"\s+|\s+" + right_column + "\s+|", message)
+
+    def parse_subset(self, logs, file):
+        """
+
+        :param logs:
+        :param file:
+        :return:
+        """
+        regex = re.compile(
+            "(?:("+re.escape(white(file))+")|(" + re.escape(magenta(file)) + "))"  # Starts with the file name
+            "\s+\|\s+([0-9;]+)\s+\|\s+"  # Nodes Count
+            "([a-zA-Z0-9 \n\|\:\;]+)\+---"  # Colonnes
+        )
+        regex_tests = re.compile("(?:(?:\|\s+)+)?((?:[A-Za-z0-9:]+\s)+)")
+        for _, match, nodes, text in regex.findall(logs):
+            tests = [l.strip() for l in regex_tests.findall(text)]
+            return nodes, tests
 
     def assertSubset(self, member, container, message):
         self.assertTrue(
             set(member).issubset(set(container)), message
         )
+
+    def assertFailed(self, unit_logs, failed_test):
+        self.assertIn(failed_test, unit_logs)
 
     def read_logs(self, file):
         j = []
@@ -179,142 +222,101 @@ class TestProcess(TestCase):
 
     def test_run_local_console(self):
         """ Test a run on the local tests passages with console print """
-        status, logs = self.hooktest(["./tests/repo1", "--console", "inline"])
+        status, logs = self.hooktest(["./tests/repo1", "--console"])
         self.assertIn(
-            "[failed] 3 out of 5 files did not pass the tests\n", logs,
+            "..XXX\n", logs,
             "Test conclusion should be printed"
         )
-        self.assertIn(
-            ">>>>> Metadata availability passed", logs,
-            "Metadata file should be parsed"
+        self.assertLogResult(
+            logs, "Metadata Files", "2",
+            "2 metadata files should be described in logs"
         )
-        self.assertIn(
-            "Unique nodes found by XPath passed", logs,
-            "Normal file should be tested"
+        self.assertLogResult(
+            logs, "Total Texts", "3",
+            "3 texts should be described in logs"
         )
-        self.assertSubset(
-            [
-                ">>>> Testing /data/hafez/divan/__cts__.xml",
-                ">>>> Testing /data/hafez/__cts__.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-far1.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-eng1.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-ger1.xml"
-            ],
-            logs.split("\n"),
-            "All files should be tested"
+        self.assertRegex(
+            logs, "hafez\.divan\.perseus-far1\.xml",
+            "Far1 file should be named"
+        )
+        self.assertRegex(
+            logs, "hafez\.divan\.perseus-eng1\.xml",
+            "eng1 file should be named"
+        )
+        self.assertRegex(
+            logs, "hafez\.divan\.perseus-ger1\.xml",
+            "ger1 file should be named"
         )
         self.assertEqual(status, "failed", "Test should fail")
 
     def test_run_local_console_verbose(self):
         """ Test a run on the local tests passages with console print and verbose """
-        status, logs = self.hooktest(["./tests/repo1", "--console", "inline", "--verbose"])
-        self.assertIn(
-            "[failed] 3 out of 5 files did not pass the tests\n", logs,
-            "Test conclusion should be printed"
+        status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose"])
+        self.assertLogResult(
+            logs, "Metadata Files", "2",
+            "2 metadata files should be described in logs"
         )
-        self.assertIn(
-            "\n>>>>>> ", logs,
-            "Marker of verbose should be available"
+        self.assertLogResult(
+            logs, "Passing Metadata", "2",
+            "2 metadata files should be passing in logs"
         )
-        self.assertSubset(
-            {
-                # List of file tested
-                ">>>> Testing /data/hafez/divan/__cts__.xml",
-                ">>>> Testing /data/hafez/__cts__.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-far1.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-eng1.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-ger1.xml",
-
-                # Tests number of nodes showing
-                ">>>>>> 32 found",
-                ">>>>>> 498 found",
-                ">>>>>> 4243 found",
-                ">>>>>> 13613 found",
-
-                # RefsDecl verbosing should match
-                ">>>>> RefsDecl parsing passed",
-                ">>>>>> 4 citation's level found",
-
-                # URN Should fail because we are using TEI scheme by default
-                ">>>>> URN informations failed",
-
-                # Metadata information found
-                ">>>>>> Group urn : urn:cts:farsiLit:hafez",
-                ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan",
-                ">>>>>> Edition, translation, and commentary urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
-                "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
-
-            },
-            logs.split("\n"),
-            "All files should be tested and verbosed"
+        self.assertLogResult(
+            logs, "Total Texts", "3",
+            "3 texts should be described in logs"
         )
+        self.assertLogResult(
+            logs, "Passing Texts", "0",
+            "3 texts should not be passing in logs"
+        )
+
+        node_count, unit = self.parse_subset(logs, "hafez.divan.perseus-far1.xml")
+        self.assertEqual(
+            node_count, "32;495;4192;8384",
+            "Count of nodes should be displayed"
+        )
+        self.assertFailed(unit, "URN informations")
         self.assertEqual(status, "failed", "Test should fail")
 
     def test_run_local_console_verbose_epidoc(self):
         """ Test a run on the local tests passages with console print as Epidoc """
-        status, logs = self.hooktest(["./tests/repo1", "--console", "inline", "--verbose", "--scheme", "epidoc"])
-        self.assertIn(
-            ">>> [success] 0 out of 5 files did not pass the tests\n", logs,
-            "Test conclusion should be printed"
+        status, logs = self.hooktest([
+            "./tests/repo1", "--console", "--verbose", "--scheme", "epidoc"])
+        self.assertLogResult(
+            logs, "Metadata Files", "2",
+            "2 metadata files should be described in logs"
         )
-        self.assertIn(
-            "\n>>>>>> ", logs,
-            "Marker of verbose should be available"
+        self.assertLogResult(
+            logs, "Passing Metadata", "2",
+            "2 metadata files should be passing in logs"
         )
-        self.assertSubset(
-            {
-                # List of file tested
-                ">>>> Testing /data/hafez/divan/__cts__.xml",
-                ">>>> Testing /data/hafez/__cts__.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-far1.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-eng1.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-ger1.xml",
-
-                # Tests number of nodes showing
-                ">>>>>> 32 found",
-                ">>>>>> 498 found",
-                ">>>>>> 4243 found",
-                ">>>>>> 13613 found",
-
-                # RefsDecl verbosing should match
-                ">>>>> RefsDecl parsing passed",
-                ">>>>>> 4 citation's level found",
-
-                # URN Should fail because we are using Epidoc scheme here
-                ">>>>> URN informations passed",
-
-                # Metadata information found
-                ">>>>>> Group urn : urn:cts:farsiLit:hafez",
-                ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan",
-                ">>>>>> Edition, translation, and commentary urns : urn:cts:farsiLit:hafez.divan.perseus-far1 urn:cts:farsiLit:" + \
-                "hafez.divan.perseus-eng1 urn:cts:farsiLit:hafez.divan.perseus-ger1",
-
-            },
-            logs.split("\n"),
-            "All files should be tested and verbosed"
+        self.assertLogResult(
+            logs, "Total Texts", "3",
+            "3 texts should be described in logs"
         )
-        self.assertEqual(status, "success", "Test should fail")
-
-    def test_run_clone_empty(self):
-        """ Test a clone on dummy empty repo """
-        status, logs = self.hooktest(["./cloning_dir", "--repository", "Capitains/DH2016", "--console", "inline"])
-        self.assertIn(
-            ">>> [error] 0 out of 0 files did not pass the tests", logs,
-            "No file should result in an [error] and no file tested"
+        self.assertLogResult(
+            logs, "Passing Texts", "3",
+            "3 texts should not be passing in logs"
         )
+        node_count, unit = self.parse_subset(logs, "hafez.divan.perseus-far1.xml")
+        self.assertEqual(
+            node_count, "32;495;4192;8384",
+            "Count of nodes should be displayed"
+        )
+        self.assertEqual(status, "success", "Test should success")
 
     def test_run_filter(self):
         """ Test a run on the local testFilers Repo with json
 
         """
         # Can be replace by HookTest.test.cmd(**vars(HookTest.cmd.parse_args()) for debug
+        json_file = temp_dir_path("repofilter.json")
         status = HookTest.test.cmd(**vars(HookTest.cmd.parse_args([
             "./tests/repoFilters",
             "--scheme", "epidoc", "--verbose",
-            "--json", "cloning_dir/repofilter.json",
+            "--json", json_file,
             "--filter", "stoa0255.stoa004"
         ])))
-        parsed = self.read_logs("cloning_dir/repofilter.json")
+        parsed = self.read_logs(json_file)
         self.assertEqual(len(parsed["units"]), 4, "There should be 4 tests : two texts, two metadata")
 
     def test_run_countwords(self):
@@ -322,14 +324,15 @@ class TestProcess(TestCase):
 
         """
         # Can be replace by HookTest.test.cmd(**vars(HookTest.cmd.parse_args()) for debug
+        json_file = temp_dir_path("repocount.json")
         status = HookTest.test.cmd(**vars(HookTest.cmd.parse_args([
             "./tests/repoFilters",
             "--scheme", "epidoc", "--verbose",
-            "--json", "cloning_dir/repocount.json",
+            "--json", json_file,
             "--filter", "stoa0255.stoa004",
             "--countwords"
         ])))
-        parsed = self.read_logs("cloning_dir/repocount.json")
+        parsed = self.read_logs(json_file)
         self.assertEqual(
             sum([w["words"] for w in parsed["units"] if "words" in w]), 12830, "12830 Words should be found"
         )
@@ -347,14 +350,15 @@ class TestProcess(TestCase):
 
          This unit test should be used to check edge cases. Repo tei is built for that
         """
+        json_file = temp_dir_path("repotei.json")
         # Can be replace by HookTest.test.cmd(**vars(HookTest.cmd.parse_args()) for debug
         status, logs = self.hooktest([
-            "./tests/repotei", "--console", "inline",
+            "./tests/repotei", "--console",
             "--scheme", "tei", "--verbose",
-            "--json", "cloning_dir/repotei.json"
+            "--json", json_file
         ])
 
-        parsed = self.read_logs("cloning_dir/repotei.json")
+        parsed = self.read_logs(json_file)
         ####
         #
         #   Test on tei.tei.tei.xml
@@ -371,7 +375,7 @@ class TestProcess(TestCase):
         ####
         #
         #   Test on tei.tei.weirdurn.xml
-        #   Weird URN Exception should be catched
+        #   Weird URN Exception should be caught
         #
         ####
         text = self.filter(parsed, "/data/tei/tei/tei.tei.weirdurn.xml")
@@ -391,7 +395,7 @@ class TestProcess(TestCase):
         ####
         #
         #   Test on tei/tei/__cts__.xml
-        #   Weird URN Exception should be catched
+        #   Weird URN Exception should be caught
         #
         ####
         text = self.filter(parsed, "/data/tei/tei/__cts__.xml")
@@ -406,91 +410,34 @@ class TestProcess(TestCase):
             },
             text["logs"], "Details about failing URN should be provided"
         )
-        self.assertFalse(text["status"], "Misformated URNS or not descendants should not pass")
-
-    def test_run_clone_branch(self):
-        """ Test a clone on dummy empty repo with branch change"""
-        status, logs = self.hooktest([
-            "./cloning_dir",
-            "--repository", "Capitains/HookTest-TestRepo", "--branch", "master",
-            "--console", "inline", "--verbose", "--scheme", "epidoc"
-        ])
-        setlogs = set(logs.split("\n"))
-
-        self.assertTrue(
-            {
-                ">>>>> Epidoc DTD validation failed",
-                ">>>>>> error: element \"seg\" not allowed here [In (L43 C32)]",
-                ">>>>>> error: element \"table\" not allowed anywhere [In (L31 C51)]"
-            }.issubset(setlogs),
-            "Logs should fail on Epidoc wrong"
-        )
-        self.assertTrue(
-            {
-                ">>>>>> Duplicate references found : 1.1"
-            }.issubset(setlogs),
-            "Duplicate note should be explicit"
-        )
-        self.assertIn(
-            ">>>>> Passage level parsing passed\n>>>>>> 1 found\n>>>>>> 32 found", logs,
-            "Ger2 should success in passage number "
-        )
-
-    def test_run_clone_farsiLit(self):
-        """ Test a run cloning a known working repository (PerseusDL/canonical-farsiLit)"""
-        status, logs = self.hooktest([
-            "./cloning_dir", "--repository", "PerseusDL/canonical-farsiLit",
-            "--console", "inline", "--verbose", "--scheme", "epidoc"
-        ])
-        self.assertIn(
-            ">>> [success] 0 out of 5 files did not pass the tests\n", logs,
-            "Test conclusion should be printed"
-        )
-        self.assertSubset(
-            {
-                # List of file tested
-                ">>>> Testing PerseusDL/canonical-farsiLit/data/hafez/__cts__.xml",
-                ">>>> Testing PerseusDL/canonical-farsiLit/data/hafez/divan/__cts__.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-far1.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-eng1.xml",
-                ">>>> Testing /hafez/divan/hafez.divan.perseus-ger1.xml",
-
-                # Tests number of nodes showing
-                ">>>>>> 32 found",
-                ">>>>>> 498 found",
-                ">>>>>> 4243 found",
-                ">>>>>> 13613 found",
-
-                # RefsDecl verbosing should match
-                ">>>>> RefsDecl parsing passed",
-                ">>>>>> 4 citation's level found",
-
-                # URN Should fail because we are using Epidoc scheme here
-                ">>>>> URN informations passed",
-
-                # Metadata information found
-                ">>>>>> Group urn : urn:cts:farsiLit:hafez",
-                ">>>>>> Work urn : urn:cts:farsiLit:hafez.divan"
-
-            },
-            logs.split("\n"),
-            "All files should be tested and verbosed"
-        )
+        self.assertFalse(text["status"], "Wrongly formated URNS or not descendants should not pass")
 
     def test_run_local_greek(self):
         """ Test a run cloning a known working repository (PerseusDL/canonical-farsiLit)"""
         status, logs = self.hooktest([
-            "./tests/greek", "--console", "inline", "--verbose", "--scheme", "epidoc"
+            "./tests/greek", "--console", "--verbose", "--scheme", "epidoc"
         ])
-        self.assertIn(
-            ">>> [success] 0 out of 3 files did not pass the tests\n", logs,
-            "Test conclusion should be printed"
+        self.assertLogResult(
+            logs, "Metadata Files", "2",
+            "2 metadata files should be described in logs"
+        )
+        self.assertLogResult(
+            logs, "Passing Metadata", "2",
+            "2 metadata files should be passing in logs"
+        )
+        self.assertLogResult(
+            logs, "Total Texts", "1",
+            "3 texts should be described in logs"
+        )
+        self.assertLogResult(
+            logs, "Passing Texts", "1",
+            "3 texts should not be passing in logs"
         )
 
     def test_run_local_greek_count_word_raise(self):
         """ Test a run cloning a known working repository (PerseusDL/canonical-farsiLit)"""
         status, logs = self.hooktest([
-            "./tests/test_count_words_not_break", "--console", "inline", "--verbose", "--scheme", "epidoc",
+            "./tests/test_count_words_not_break", "--console", "--verbose", "--scheme", "epidoc",
             "--verbose", "--manifest", "--countword", "--allowfailure"
         ])
         self.assertNotIn(

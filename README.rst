@@ -64,7 +64,7 @@ From there, you will be able to call it in your python scripts with `import Hook
 How to use locally
 ##################
 
-The command is run with :code:`hooktest [-h] [-i UUID] [-r REPOSITORY] [-b BRANCH] [-w WORKERS] [-s SCHEME] [-v] [-j JSON] [-c] [-p PING] [-f FINDER] path` where Path is the path to the containing repository (in which there is a folder data/)
+The command is run with :code:`hooktest [-h] [-w WORKERS] [-s SCHEME] [-v] [-j JSON] [-c] [-p PING] [-f FINDER] path` where Path is the path to the containing repository (in which there is a folder data/)
 
 +----------------------------------------+----------------------------------------------------------------------+
 | Parameter in console                   | Detail about the Parameter                                           |
@@ -83,7 +83,7 @@ The command is run with :code:`hooktest [-h] [-i UUID] [-r REPOSITORY] [-b BRANC
 +----------------------------------------+----------------------------------------------------------------------+
 | -j JSON, --json JSON                   | Save to specified json file the results                              |
 +----------------------------------------+----------------------------------------------------------------------+
-| -c, --console  [{table,inline}]        | Print to console    [Default : table]                                |
+| -c, --console                          | Print to console                                                     |
 +----------------------------------------+----------------------------------------------------------------------+
 | -f FILTER, --filter FILTER             | Filter using the last part of the URN (eg. tlg0001.tlg001, tlg0001,  |
 |                                        | tlg0001.tlg001.p-grc1 for urn:cts:greekLit:tlg0001.tlg001.p-grc1     |
@@ -93,21 +93,6 @@ The command is run with :code:`hooktest [-h] [-i UUID] [-r REPOSITORY] [-b BRANC
 | --manifest                             | Produce a Manifest                                                   |
 +----------------------------------------+----------------------------------------------------------------------+
 | --allowfailure                         | Returns a passing test result as long as at least one text passes    |
-+----------------------------------------+----------------------------------------------------------------------+
-
-How to use with remote GIT ?
-############################
-
-HookTests offers a download/clowning facility that will get the version you ask for the repository you want and will perform test upon it. All other methods for local applies.
-
-+----------------------------------------+----------------------------------------------------------------------+
-| Parameter in console                   | Detail about the Parameter                                           |
-+========================================+======================================================================+
-| -i UUID, --uuid UUID                   | Identifier for a test. This will be used as a temporary folder name  |
-+----------------------------------------+----------------------------------------------------------------------+
-| -r REPOSITORY, --repository REPOSITORY | Name of the git repository                                           |
-+----------------------------------------+----------------------------------------------------------------------+
-| -b BRANCH, --branch BRANCH             | Reference for the branch                                             |
 +----------------------------------------+----------------------------------------------------------------------+
 
 Running HookTest on Travis CI
@@ -124,7 +109,7 @@ Once you have done this, you will need to add a `.travis.yml` file to root folde
     - '3.5'
     install:
     - pip3 install HookTest
-    script:  hooktest --console table --scheme epidoc --workers 3 --verbose 5 --manifest --countword --allowfailure ./
+    script:  hooktest --console --scheme epidoc --workers 3 --verbose 5 --manifest --countword --allowfailure ./
     before_deploy:
     - hooktest-build --travis --txt ./
     - results=$(cat manifest.txt)

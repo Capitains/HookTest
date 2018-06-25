@@ -19,7 +19,10 @@ def parse_args(args):
 
     parser.add_argument('-w', "--workers", type=int, help='Number of workers (processes) to be used', default=1)
 
-    parser.add_argument('-s', "--scheme", help="Scheme to test. '-ignore' test will ignore RNG test but still inform which scheme is used", default="tei", choices=("tei", "epidoc", "epidoc-ignore", "tei-ignore"))
+    parser.add_argument(
+        '-s', "--scheme",
+        help="Scheme to test. '-ignore' test will ignore RNG test but still inform which scheme is used",
+        default="tei", choices=("tei", "epidoc", "epidoc-ignore", "tei-ignore"))
 
     parser.add_argument("-v", "--verbose", help="""Verbose Level\n
     - 0\t(Default) Only show necessary Information\n
@@ -40,7 +43,10 @@ def parse_args(args):
         default=False
     )
     parser.add_argument(
-        "--console", help="Console Mode [Default : table]", nargs="?", default=False, choices=("table", "inline")
+        "--console", help="Console Mode",
+        default=False, action="store", const="true",
+        # Allows for retro-compatibility with older code base
+        nargs="?"
     )
     parser.add_argument(
         "--manifest", dest="build_manifest", help="Produce a Manifest", action="store_true", default=False
@@ -53,32 +59,23 @@ def parse_args(args):
         help="Maximum time to be used on RelaxNG tests. If exceeded, test fails", type=int, default=30
     )
 
-
     parser.add_argument(
         "--hookUI", dest="from_travis_to_hook",
         help="Send results to a Hook UI endpoint",
         default=False
     )
 
-    #########
-    #
-    # Remote legacy mode
-    #
-    #########
-
-    #parser.add_argument("--ping", help="Send results to a server", default=None)
-    parser.add_argument(
-       "-i", "--uuid", help="[Remote] Identifier for a test. This will be used as a temporary folder name", default=None
-    )
-    parser.add_argument("-r", "--repository", help="[Remote] Name of the git repository", default=None)
-    parser.add_argument("-b", "--branch", help="[Remote] Reference for the branch", default=None)
-
     args = parser.parse_args(args)
     if args.finder:
         args.finderoptions = {"include": args.finder}
         args.finder = HookTest.test.FilterFinder
-    if args.console is None:
-        args.console = "table"
+    if args.console == "inline":
+        print("WARNING ! Inline printing is not available anymore since 1.1.8")
+        args.console = True
+    elif args.console == "table":
+        print("Since 1.1.8, you do not need to specify --console table anymore. --console is enough")
+    elif args.console:
+        args.console = True
     if args.verbose is None:
         args.verbose = 10
     return args
@@ -125,8 +122,9 @@ def parse_args_build(args):
         default=3
     )
 
-    args = parser.parse_args(args)
-    return args
+    arguments = parser.parse_args(args)
+
+    return arguments
 
 
 def cmd_build():
@@ -137,6 +135,7 @@ def cmd_build():
         sys.exit(0)
     else:
         sys.exit(message)
+
 
 if __name__ == '__main__':
     cmd()

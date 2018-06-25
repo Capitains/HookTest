@@ -377,7 +377,7 @@ class CTSText_TestUnit(TESTUnit):
         :param rng_path: Path to the RelaxNG file to run against the XML to test
         """
         test = subprocess.Popen(
-            ["java", "-jar", TESTUnit.JING, rng_path, self.path],
+            ["java", "-Duser.country=US",  "-Duser.language=en", "-jar", TESTUnit.JING, rng_path, self.path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False

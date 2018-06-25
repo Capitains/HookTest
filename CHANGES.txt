@@ -1,3 +1,9 @@
+## 1.1.8 - 2018-06-25
+
+- Removed legacy functions
+    - Cloning repository is not available anymore
+    - Inline printing is not available anymore, console defaults to table if called
+
 ## 1.1.7 - 2018-06-22
 
 - Implemented test for empty reference strings

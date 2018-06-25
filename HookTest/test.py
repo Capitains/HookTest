@@ -10,7 +10,6 @@ import re
 from collections import defaultdict, OrderedDict
 from multiprocessing.pool import Pool
 import json
-import git
 import shutil
 import requests
 import hashlib
@@ -100,12 +99,6 @@ class Test(object):
 
     :param path: Path where the test should happen
     :type path: str
-    :param uuid: Identifier for the test
-    :type uuid: str
-    :param repository: URI of the repository
-    :type repository: str
-    :param branch: Identifier of the branch
-    :type branch: str
     :param workers: Number of simultaneous workers to be used
     :type workers: str
     :param scheme: Name of the scheme
@@ -137,7 +130,7 @@ class Test(object):
 
     def __init__(
             self, path,
-            repository=None, branch=None, uuid=None, workers=1, scheme="tei",
+            workers=1, scheme="tei",
             verbose=0, ping=None, secret="", triggering_size=None, console=False, build_manifest=False,
             finder=DefaultFinder, finderoptions=None, countwords=False, allowfailure=False,
             from_travis_to_hook=False, timeout=30,
@@ -172,9 +165,6 @@ class Test(object):
         self.console = console
         self.build_manifest = build_manifest
         self.path = path
-        self.repository = repository
-        self.branch = branch
-        self.uuid = uuid
         self.workers = workers
         self.ping = ping
         if os.environ.get("HOOK_SECRET"):
@@ -254,13 +244,7 @@ class Test(object):
         :return: Path of the full directory
         :rtype: str
         """
-        if self.repository:
-            if self.uuid:
-                return os.path.join(self.path, self.uuid)
-            else:
-                return os.path.join(self.path, self.repository.split("/")[-1])
-        else:
-            return self.path
+        return self.path
 
     @property
     def stack(self):
@@ -336,7 +320,7 @@ class Test(object):
         return requests.post(
             self.ping,
             data=data,
-            headers={"HookTest-Secure-X": hashed, "HookTest-UUID": self.uuid}
+            headers={"HookTest-Secure-X": hashed}
         )
 
     def unit(self, filepath):
@@ -443,7 +427,7 @@ class Test(object):
         :type log: UnitLog
         :return: None
         """
-        if self.console == "table":
+        if self.console:
             if isinstance(log, UnitLog):
                 if log.status is True:
                     sys.stdout.write('.')
@@ -451,8 +435,6 @@ class Test(object):
                 else:
                     sys.stdout.write('X')
                     sys.stdout.flush()
-        elif self.console == "inline":
-            print(str(log), flush=True)
         elif self.ping and len(self.stack) >= self.triggering_size:
             self.flush(self.stack)
 
@@ -460,7 +442,7 @@ class Test(object):
         """ Deal with the start of the process
 
         """
-        if self.console is not False:
+        if self.console:
             print(">>> Starting tests !", flush=True)
             print(">>> Files to test : "+str(self.count_files), flush=True)
         elif self.ping:
@@ -488,7 +470,7 @@ class Test(object):
         """
         self.m_files = self.m_passing = len(self.results.values())
 
-        if self.console == "table" and self.verbose > 0:
+        if self.console and self.verbose > 0:
             print('', flush=True)
             if False not in [unit.status for unit in self.results.values()]:
                 print('All Metadata Files Passed', flush=True)
@@ -512,131 +494,122 @@ class Test(object):
         if self.verbose == 0:
             show.remove("Duplicate passages")
             show.remove("Forbidden characters")
-        if self.console is not False:
-            if self.console == "table":
-                duplicate_nodes = ''
-                forbidden_chars = ''
-                dtd_errors = ''
-                num_texts = 0
-                num_failed = 0
-                print('', flush=True)
+        if self.console:
+            duplicate_nodes = ''
+            forbidden_chars = ''
+            dtd_errors = ''
+            num_texts = 0
+            num_failed = 0
+            print('', flush=True)
 
-                if self.countwords is True:
-                    display_table = PT(["Identifier", "Words", "Nodes", "Failed Tests"])
-                    display_table.align["Identifier", "Words", "Nodes", "Failed Tests"] = "c"
-                else:
-                    display_table = PT(["Identifier", "Nodes", "Failed Tests"])
-                    display_table.align["Identifier", "Nodes", "Failed Tests"] = "c"
-
-                display_table.hrules = pt_all
-                # try using self.results and then the UnitLog attributes instead of self.report
-                # also use operator.attrgetter('name') instead of lambda x in the for statement
-                for unit in sorted(self.results.values(), key=attrgetter('name')):
-                    if not unit.name.endswith('__cts__.xml'):
-                        num_texts += 1
-                        if unit.units["Passage level parsing"] is False:
-                            try:
-                                show.remove("Duplicate passages")
-                                show.remove("Forbidden characters")
-                            except:
-                                pass
-                        if unit.coverage != 100.0:
-                            num_failed += 1
-                            text_color = magenta
-                        else:
-                            text_color = white
-
-                        if unit.coverage == 0.0:
-                            failed_tests = 'All'
-                        else:
-                            failed_tests = '\n'.join([x for x in unit.units if unit.units[x] is False and x in show])
-
-                        if unit.additional['duplicates']:
-                            duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                          nodes=', '.join(unit.additional['duplicates']))
-                        if unit.additional['forbiddens']:
-                            forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                          nodes=', '.join(unit.additional['forbiddens']))
-                        if unit.additional["dtd_errors"] and self.verbose >= 6:
-                            dtd_errors += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                       nodes=', '.join(unit.additional["dtd_errors"]))
-
-                        if self.verbose >= 7 or unit.status is False:
-                            if self.countwords:
-                                row = [
-                                    "{}".format(text_color(os.path.basename(unit.name))),
-                                     "{:,}".format(unit.additional['words']),
-                                     ';'.join([str(x[1]) for x in unit.additional['citations']]),
-                                     failed_tests
-                                ]
-                            else:
-                                row = [
-                                    "{}".format(text_color(os.path.basename(unit.name))),
-                                     ';'.join([str(x[1]) for x in unit.additional['citations']]),
-                                     failed_tests
-                                ]
-                            display_table.add_row(row)
-
-                        for x in unit.additional['citations']:
-                            total_units += x[1]
-
-                        if self.countwords:
-                            total_words += unit.additional['words']
-                            if unit.additional['words'] > 0:
-                                language_words[unit.additional['language']] += unit.additional['words']
-
-                print(display_table, flush=True)
-                print('', flush=True)
-                if self.verbose >= 5:
-                    if duplicate_nodes:
-                        duplicate_nodes = magenta('Duplicate nodes found:\n') + duplicate_nodes + '\n'
-                    if forbidden_chars:
-                        forbidden_chars = magenta('Forbidden characters found:\n') + forbidden_chars + '\n'
-                    if dtd_errors:
-                        dtd_errors = magenta('DTD errors found:\n') + dtd_errors + '\n'
-                else:
-                    duplicate_nodes = forbidden_chars = dtd_errors = ''
-
-                print("{dupes}{forbs}{dtds}>>> End of the test !\n".format(dupes=duplicate_nodes,
-                                                                          forbs=forbidden_chars,
-                                                                          dtds=dtd_errors))
-                t_pass = num_texts - num_failed
-                cov = round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
-                results_table = PT(["HookTestResults", ""])
-                results_table.align["HookTestResults", ""] = "c"
-                results_table.hrules = pt_all
-                results_table.add_row(["Total Texts", num_texts])
-                results_table.add_row(["Passing Texts", t_pass])
-                results_table.add_row(["Metadata Files", self.m_files])
-                results_table.add_row(["Passing Metadata", self.m_passing])
-                results_table.add_row(["Coverage", cov])
-                results_table.add_row(["Total Citation Units", "{:,}".format(total_units)])
-                if self.countwords is True:
-                    results_table.add_row(["Total Words", "{:,}".format(total_words)])
-                    for l, words in language_words.items():
-                        results_table.add_row(["Words in {}".format(l.upper()), "{:,}".format(words)])
-                print(results_table, flush=True)
-
-                # Pushing to HOOK !
-                if isinstance(self.from_travis_to_hook, str):
-                    args = [num_texts, t_pass, self.m_files, self.m_passing, cov, total_units]
-                    if self.countwords is True:
-                        args.append(language_words)
-                    print(self.send_to_hook_from_travis(*args).text)
-
-                #Manifest of passing files
-                if self.build_manifest:
-                    passing = self.create_manifest()
-                    with open('{}/manifest.txt'.format(self.path), mode="w") as f:
-                        f.write('\n'.join(passing))
+            if self.countwords is True:
+                display_table = PT(["Identifier", "Words", "Nodes", "Failed Tests"])
+                display_table.align["Identifier", "Words", "Nodes", "Failed Tests"] = "c"
             else:
-                print(
-                    ">>> End of the test !\n" \
-                    ">>> [{2}] {0} out of {1} files did not pass the tests".format(
-                        len(self.passing) - self.successes, len(self.passing), self.status
-                    ),
-                    flush=True
-            )
+                display_table = PT(["Identifier", "Nodes", "Failed Tests"])
+                display_table.align["Identifier", "Nodes", "Failed Tests"] = "c"
+
+            display_table.hrules = pt_all
+            # try using self.results and then the UnitLog attributes instead of self.report
+            # also use operator.attrgetter('name') instead of lambda x in the for statement
+            for unit in sorted(self.results.values(), key=attrgetter('name')):
+                if not unit.name.endswith('__cts__.xml'):
+                    num_texts += 1
+                    if unit.units["Passage level parsing"] is False:
+                        try:
+                            show.remove("Duplicate passages")
+                            show.remove("Forbidden characters")
+                        except:
+                            pass
+                    if unit.coverage != 100.0:
+                        num_failed += 1
+                        text_color = magenta
+                    else:
+                        text_color = white
+
+                    if unit.coverage == 0.0:
+                        failed_tests = 'All'
+                    else:
+                        failed_tests = '\n'.join([x for x in unit.units if unit.units[x] is False and x in show])
+
+                    if unit.additional['duplicates']:
+                        duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                      nodes=', '.join(unit.additional['duplicates']))
+                    if unit.additional['forbiddens']:
+                        forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                      nodes=', '.join(unit.additional['forbiddens']))
+                    if unit.additional["dtd_errors"] and self.verbose >= 6:
+                        dtd_errors += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                   nodes=', '.join(unit.additional["dtd_errors"]))
+
+                    if self.verbose >= 7 or unit.status is False:
+                        if self.countwords:
+                            row = [
+                                "{}".format(text_color(os.path.basename(unit.name))),
+                                 "{:,}".format(unit.additional['words']),
+                                 ';'.join([str(x[1]) for x in unit.additional['citations']]),
+                                 failed_tests
+                            ]
+                        else:
+                            row = [
+                                "{}".format(text_color(os.path.basename(unit.name))),
+                                 ';'.join([str(x[1]) for x in unit.additional['citations']]),
+                                 failed_tests
+                            ]
+                        display_table.add_row(row)
+
+                    for x in unit.additional['citations']:
+                        total_units += x[1]
+
+                    if self.countwords:
+                        total_words += unit.additional['words']
+                        if unit.additional['words'] > 0:
+                            language_words[unit.additional['language']] += unit.additional['words']
+
+            print(display_table, flush=True)
+            print('', flush=True)
+            if self.verbose >= 5:
+                if duplicate_nodes:
+                    duplicate_nodes = magenta('Duplicate nodes found:\n') + duplicate_nodes + '\n'
+                if forbidden_chars:
+                    forbidden_chars = magenta('Forbidden characters found:\n') + forbidden_chars + '\n'
+                if dtd_errors:
+                    dtd_errors = magenta('DTD errors found:\n') + dtd_errors + '\n'
+            else:
+                duplicate_nodes = forbidden_chars = dtd_errors = ''
+
+            print("{dupes}{forbs}{dtds}>>> End of the test !\n".format(dupes=duplicate_nodes,
+                                                                      forbs=forbidden_chars,
+                                                                      dtds=dtd_errors))
+            t_pass = num_texts - num_failed
+            cov = round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
+            results_table = PT(["HookTestResults", ""])
+            results_table.align["HookTestResults", ""] = "c"
+            results_table.hrules = pt_all
+            results_table.add_row(["Total Texts", num_texts])
+            results_table.add_row(["Passing Texts", t_pass])
+            results_table.add_row(["Metadata Files", self.m_files])
+            results_table.add_row(["Passing Metadata", self.m_passing])
+            results_table.add_row(["Coverage", cov])
+            results_table.add_row(["Total Citation Units", "{:,}".format(total_units)])
+            if self.countwords is True:
+                results_table.add_row(["Total Words", "{:,}".format(total_words)])
+                for l, words in language_words.items():
+                    results_table.add_row(["Words in {}".format(l.upper()), "{:,}".format(words)])
+            print(results_table, flush=True)
+
+            # Pushing to HOOK !
+            if isinstance(self.from_travis_to_hook, str):
+                args = [num_texts, t_pass, self.m_files, self.m_passing, cov, total_units]
+                if self.countwords is True:
+                    args.append(language_words)
+                print(self.send_to_hook_from_travis(*args).text)
+
+            # Manifest of passing files
+            if self.build_manifest:
+                passing = self.create_manifest()
+                with open('{}/manifest.txt'.format(self.path), mode="w") as f:
+                    f.write('\n'.join(passing))
         elif self.ping:
             report = self.report
             report["units"] = [unit.dict for unit in self.stack]
@@ -708,37 +681,6 @@ class Test(object):
                 passing.append('{}/__cts__.xml'.format('/'.join(f.split('/')[:-2])))
         return sorted(list(set(passing)))
 
-    def clone(self):
-        """ Clone the repository
-
-        :return: Indicator of success
-        :rtype: bool
-        """
-        self.progress = Progress(parent=self)
-        repo = git.repo.Repo.init(self.directory, mkdir=True)
-        repo.create_remote("origin", url="https://github.com/{0}.git".format(self.repository))
-
-        if self.branch is None:
-            self.branch = "refs/heads/master"
-
-        if pr_finder.match(self.branch):
-            ref = "refs/{0}".format(self.branch)
-        else:
-            ref = self.branch
-        if git.cmd.Git().version_info >= (2, 9, 0, 0):
-            repo.remote().pull(
-                ref, progress=self.progress, allow_unrelated_histories=True, depth=self.depth
-            )
-        else:
-            repo.remote().pull(
-                ref, progress=self.progress, depth=self.depth
-            )
-
-        return repo is None
-
-    def clean(self):
-        shutil.rmtree(self.directory, ignore_errors=True)
-
     def find(self):
         """ Find CTS files in a directory
         :param directory: Path of the directory
@@ -776,7 +718,6 @@ class Test(object):
                 coverage=len([v for v in results if v is True])/len(results)*100,
                 status=False not in results,
                 logs=logs,
-                repository=self.repository,
                 additional=additional,
                 testtype=testtype
             )
@@ -788,7 +729,6 @@ class Test(object):
                 coverage=0.0,
                 status=False,
                 logs=logs,
-                repository=self.repository,
                 testtype=testtype
             )
 
@@ -810,25 +750,6 @@ def cmd(console=False, **kwargs):
     test = HookTest.test.Test(console=console, **kwargs)
     test.console = console
 
-    if test.ping:
-        test.send({"status": "download"})
-
-    if "repository" in kwargs and kwargs["repository"]:
-        try:
-            test.clone()
-        except Exception as E:
-            type_, value_, traceback_ = sys.exc_info()
-            tb = "".join(traceback.format_exception(type_, value_, traceback_))
-            if test.ping:
-                test.send({"status": Test.ERROR, "message": tb})
-            elif console:
-                print(tb, flush=True)
-            test.clean()
-            raise(E)
-
-    if test.ping:
-        test.send({"status": "pending"})
-
     status = {}
 
     try:
@@ -841,56 +762,11 @@ def cmd(console=False, **kwargs):
         elif console:
             print(tb, flush=True)
 
-    if "repository" in kwargs and kwargs["repository"]:
-        test.clean()
-
     if "json" in kwargs and kwargs["json"]:
         with open(kwargs["json"], "w") as json_file:
             json.dump(test.report, json_file)
 
     return status
-
-
-class Progress(git.RemoteProgress):
-    """ Progress object for HookTest
-    """
-    def __init__(self, parent=None):
-        super(Progress, self).__init__()
-        self.parent = parent
-        self.start = ["Cloning repository"]
-        self.end = []
-        self.download = ""
-        self.progress = None
-
-        self.current = 0
-        self.maximum = 0
-
-    def update(self, op_code, cur_count, max_count=None, message=''):
-        self.current = cur_count
-        self.maximum = max_count
-
-        if message:
-            if message[-2:] == "/s":
-                if self.progress is None:
-                    self.progress = True
-                self.download = message
-            else:
-                if self.progress:
-                    self.progress = False
-                    self.end.append(message)
-                else:
-                    self.start.append(message)
-
-        if isinstance(self.parent, Test):
-            self.parent.download()
-
-    @property
-    def json(self):
-        return [
-            "\n".join(self.start),
-            "Downloaded {0}/{1} ({2})".format(self.current, self.maximum, self.download),
-            "\n".join(self.end)
-        ]
 
 
 class UnitLog(object):
@@ -902,11 +778,10 @@ class UnitLog(object):
     :param status: Status of the unit
     :param logs: Logs
     :param sent: Status regarding the logging
-    :param repository: Repository
     :param additional: Additional informations. Can be used for words counting
     """
 
-    def __init__(self, directory, name, units, coverage, status, testtype=None, logs=None, sent=False, repository=None, additional=None
+    def __init__(self, directory, name, units, coverage, status, testtype=None, logs=None, sent=False, additional=None
                  ):
         """ Initiate the object
 
@@ -924,7 +799,6 @@ class UnitLog(object):
         self.__logs = list()
         self.sent = sent
         self.time = time.strftime("%Y-%m-%d %H:%M:%S")
-        self.repository = repository
 
         self.name = self.directory_replacer(name)
         self.logs = logs
@@ -943,9 +817,7 @@ class UnitLog(object):
             self.__logs = [self.directory_replacer(data) for data in logs]
 
     def directory_replacer(self, data):
-        if self.repository:
-            return data.replace(self.directory, self.repository)
-        elif self.directory != ".":
+        if self.directory != ".":
             return data.replace(self.directory, "")
         else:
             return data
