@@ -590,11 +590,11 @@ class Test(object):
                 if empty_refs:
                     empty_refs = magenta('Empty references found:\n') + empty_refs + '\n'
             else:
-                duplicate_nodes = forbidden_chars = dtd_errors = ''
+                duplicate_nodes = forbidden_chars = dtd_errors = empty_refs = ''
 
             if capitains_errors:
                 capitains_errors = magenta('CapiTainS parsing errors found:\n') + capitains_errors + '\n'
-
+                
             print("{caps}{dupes}{forbs}{dtds}{empts}>>> End of the test !\n".format(caps=capitains_errors,
                                                                                     dupes=duplicate_nodes,
                                                                                     forbs=forbidden_chars,

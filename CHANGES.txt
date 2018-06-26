@@ -1,3 +1,7 @@
+## 1.1.10 - 2018-06-26
+
+    - Added unit tests to make sure the empty references and MissingRefsDecl exceptions print in the console
+
 ## 1.1.9 - 2018-06-26
 
     - Added tests for new EmptyRefsDecl exception

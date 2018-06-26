@@ -8,6 +8,7 @@ from collections import OrderedDict
 import shutil
 import os
 import statistics
+from colors import white, magenta, black
 
 
 def unitlog_dict():
@@ -844,7 +845,7 @@ class TestTest(unittest.TestCase):
         process.results["001"].additional['forbiddens'] = []
         process.results["001"].additional['dtd_errors'] = []
         process.results["001"].additional['language'] = 'UNK'
-        process.results["001"].additional['capitains_errors'] = []
+        process.results["001"].additional['capitains_errors'] = ["No reference declaration (refsDecl) found."]
         process.results["001"].additional['empties'] = []
         process.results["002"].units = {
             "Metadata": True,
@@ -858,7 +859,7 @@ class TestTest(unittest.TestCase):
         process.results["002"].additional['dtd_errors'] = ['error: value of attribute "cause" is invalid [In (L112 C52)]']
         process.results["002"].additional['language'] = 'UNK'
         process.results["002"].additional['capitains_errors'] = []
-        process.results["002"].additional['empties'] = []
+        process.results["002"].additional['empties'] = ["1 empty reference(s) at citation level 1"]
         # add a unit where all tests fail
         process.results['003'] = HookTest.test.UnitLog(
             directory=".",
@@ -905,12 +906,16 @@ class TestTest(unittest.TestCase):
         duplicate_nodes = '\x1b[35mDuplicate nodes found:\n\x1b[0m\t\x1b[35m002\x1b[0m\t1.1, 1.2\n\n'
         forbidden_chars = '\x1b[35mForbidden characters found:\n\x1b[0m\t\x1b[35m002\x1b[0m\t1$1, 1-1\n\n'
         dtd_errors = '\x1b[35mDTD errors found:\n\x1b[0m\t\x1b[35m002\x1b[0m\terror: value of attribute "cause" is invalid [In (L112 C52)]\n\n'
+        capitains_errors = magenta("CapiTainS parsing errors found:\n") + "\t" + magenta("001") + "\tNo reference declaration (refsDecl) found.\n\n"
+        empty_refs = magenta('Empty references found:\n') + "\t" + magenta("002") + "\t1 empty reference(s) at citation level 1\n\n"
         printMock.assert_has_calls([
             mock.call('', flush=True),
             mock.call(InstanceMock, flush=True),
-            mock.call("{dupes}{forbs}{dtds}>>> End of the test !\n".format(dupes=duplicate_nodes,
-                                                                           forbs=forbidden_chars,
-                                                                           dtds=dtd_errors))
+            mock.call("{caps}{dupes}{forbs}{dtds}{empts}>>> End of the test !\n".format(caps=capitains_errors,
+                                                                                    dupes=duplicate_nodes,
+                                                                                    forbs=forbidden_chars,
+                                                                                    dtds=dtd_errors,
+                                                                                    empts=empty_refs))
         ], any_order=True)
 
     @mock.patch("HookTest.test.print", create=True)  # We patch and feed print to PrintMock
@@ -938,7 +943,7 @@ class TestTest(unittest.TestCase):
         process.results["001"].additional['duplicates'] = []
         process.results["001"].additional['forbiddens'] = []
         process.results["001"].additional['dtd_errors'] = []
-        process.results["001"].additional['capitains_errors'] = []
+        process.results["001"].additional['capitains_errors'] = ["No reference declaration (refsDecl) found."]
         process.results["001"].additional['empties'] = []
         process.results["002"].units = {
             "Metadata": True,
@@ -950,7 +955,7 @@ class TestTest(unittest.TestCase):
         process.results["002"].additional['forbiddens'] = ['1$1', '1-1']
         process.results["002"].additional['dtd_errors'] = ['error: value of attribute "cause" is invalid [In (L112 C52)]']
         process.results["002"].additional['capitains_errors'] = []
-        process.results["002"].additional['empties'] = []
+        process.results["002"].additional['empties'] = ["1 empty reference(s) at citation level 1"]
         # add a unit where all tests fail
         process.results['003'] = HookTest.test.UnitLog(
             directory=".",
@@ -995,12 +1000,17 @@ class TestTest(unittest.TestCase):
         duplicate_nodes = ''
         forbidden_chars = ''
         dtd_errors = ''
+        capitains_errors = magenta("CapiTainS parsing errors found:\n") + "\t" + magenta("001") + "\tNo reference declaration (refsDecl) found.\n\n"
+
+        empty_refs = ''
         printMock.assert_has_calls([
             mock.call('', flush=True),
             mock.call(InstanceMock, flush=True),
-            mock.call("{dupes}{forbs}{dtds}>>> End of the test !\n".format(dupes=duplicate_nodes,
-                                                                           forbs=forbidden_chars,
-                                                                           dtds=dtd_errors))
+            mock.call("{caps}{dupes}{forbs}{dtds}{empts}>>> End of the test !\n".format(caps=capitains_errors,
+                                                                                    dupes=duplicate_nodes,
+                                                                                    forbs=forbidden_chars,
+                                                                                    dtds=dtd_errors,
+                                                                                    empts=empty_refs))
         ], any_order=True)
 
     def test_manifest_build(self):
