@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import MyCapytain.common
 from MyCapytain.common.constants import Mimetypes
-from MyCapytain.errors import DuplicateReference, EmptyReference
+from MyCapytain.errors import DuplicateReference, EmptyReference, MissingRefsDecl
 from MyCapytain.resources.collections.cts import XmlCtsTextgroupMetadata, XmlCtsWorkMetadata
 from MyCapytain.resources.texts.local.capitains.cts import CapitainsCtsText
 
@@ -339,6 +339,7 @@ class CTSText_TestUnit(TESTUnit):
         self.duplicates = list()
         self.forbiddens = list()
         self.empties = list()
+        self.capitains_errors = list()
         self.test_status = defaultdict(bool)
         self.lang = ''
         self.dtd_errors = list()
@@ -353,7 +354,13 @@ class CTSText_TestUnit(TESTUnit):
             super(CTSText_TestUnit, self).parsable()
         )
         if status is True:
-            self.Text = CapitainsCtsText(resource=self.xml.getroot())
+            try:
+                self.Text = CapitainsCtsText(resource=self.xml.getroot())
+            except MissingRefsDecl as E:
+                self.Text = None
+                self.log(str(E))
+                self.capitains_errors.append(str(E))
+                yield False
         else:
             self.Text = None
         yield status

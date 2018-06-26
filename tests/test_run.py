@@ -165,20 +165,21 @@ class TestProcess(TestCase):
         ####
         #
         #   /data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml
-        #   Has wrong root node
+        #   Has wrong root node and a capitains_error
         #
         ####
         text = self.filter(parsed, "/data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml")
         self.assertEqual(
             {'Naming conventions': False, 'RefsDecl parsing': False, 'Epidoc DTD validation': False,
-             'URN informations': False, 'File parsing': True, 'Passage level parsing': False,
+             'URN informations': False, 'File parsing': False, 'Passage level parsing': False,
              'Available in inventory': False, 'Unique nodes found by XPath': False,
              'Duplicate passages': False, 'Forbidden characters': False, 'Correct xml:lang attribute': False,
              'Empty References': False}
             ,
-            text["units"], "Everything but XML parsing should fail in TEI.2 files"
+            text["units"], "Everything should fail in TEI.2 files"
         )
         self.assertFalse(text["status"], "Wrong XML scheme should fail file")
+        self.assertEqual(text['capitains_errors'], ['No reference declaration (refsDecl) found.'])
 
         ####
         #
@@ -380,7 +381,7 @@ class TestProcess(TestCase):
         ####
         text = self.filter(parsed, "/data/tei/tei/tei.tei.weirdurn.xml")
         self.assertIn(
-            '>>>>>> error: element "encodingDesc" incomplete [In (L27 C20)]', text["logs"],
+            '>>>>>> error: element "fileDesc" incomplete [In (L10 C16)]', text["logs"],
             "TEI RNG Error should show"
         )
         self.assertIn(

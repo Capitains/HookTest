@@ -376,6 +376,8 @@ class Test(object):
             additional["forbiddens"] = unit.forbiddens
             additional["dtd_errors"] = unit.dtd_errors
             additional['language'] = unit.lang
+            additional['empties'] = unit.empties
+            additional['capitains_errors'] = unit.capitains_errors
             if self.countwords:
                 additional["words"] = unit.count
         return self.cover(filepath, results, testtype=texttype, logs=logs, additional=additional), filepath, additional
@@ -498,6 +500,8 @@ class Test(object):
             duplicate_nodes = ''
             forbidden_chars = ''
             dtd_errors = ''
+            capitains_errors = ''
+            empty_refs = ''
             num_texts = 0
             num_failed = 0
             print('', flush=True)
@@ -542,6 +546,14 @@ class Test(object):
                         dtd_errors += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
                                                                    nodes=', '.join(unit.additional["dtd_errors"]))
 
+                    if unit.additional["capitains_errors"]:
+                        capitains_errors += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                   nodes=', '.join(unit.additional["capitains_errors"]))
+
+                    if unit.additional["empties"]:
+                        empty_refs += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
+                                                                   nodes=', '.join(unit.additional["empties"]))
+
                     if self.verbose >= 7 or unit.status is False:
                         if self.countwords:
                             row = [
@@ -575,12 +587,19 @@ class Test(object):
                     forbidden_chars = magenta('Forbidden characters found:\n') + forbidden_chars + '\n'
                 if dtd_errors:
                     dtd_errors = magenta('DTD errors found:\n') + dtd_errors + '\n'
+                if empty_refs:
+                    empty_refs = magenta('Empty references found:\n') + empty_refs + '\n'
             else:
                 duplicate_nodes = forbidden_chars = dtd_errors = ''
 
-            print("{dupes}{forbs}{dtds}>>> End of the test !\n".format(dupes=duplicate_nodes,
-                                                                      forbs=forbidden_chars,
-                                                                      dtds=dtd_errors))
+            if capitains_errors:
+                capitains_errors = magenta('CapiTainS parsing errors found:\n') + capitains_errors + '\n'
+
+            print("{caps}{dupes}{forbs}{dtds}{empts}>>> End of the test !\n".format(caps=capitains_errors,
+                                                                                    dupes=duplicate_nodes,
+                                                                                    forbs=forbidden_chars,
+                                                                                    dtds=dtd_errors,
+                                                                                    empts=empty_refs))
             t_pass = num_texts - num_failed
             cov = round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
             results_table = PT(["HookTestResults", ""])

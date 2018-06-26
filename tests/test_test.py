@@ -415,7 +415,7 @@ class TestTest(unittest.TestCase):
         # UnitInstance is a mock which has a test method is a mock
         UnitInstance = mock.Mock(
             test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation'], lang="grc",
-            dtd_errors=['dtd_errors']
+            dtd_errors=['dtd_errors'], capitains_errors=['capitains_errors'], empties=["empties"]
         )
         # ctsunit is a mock of the class CTSText_TestUnit and will return the instance UnitInstance
         ctsunit = mock.Mock(
@@ -438,6 +438,8 @@ class TestTest(unittest.TestCase):
                 'duplicates': ['duplicate'],
                 'forbiddens': ['forbid'],
                 'dtd_errors': ['dtd_errors'],
+                'capitains_errors': ['capitains_errors'],
+                'empties': ['empties'],
                 'units': {
                     'Folder Name': True,
                     'MyCapytain': True
@@ -462,7 +464,7 @@ class TestTest(unittest.TestCase):
         ]
         INVObject = mock.Mock(
             test=test, forbiddens=['forbid'], duplicates=['duplicate'], citation=['citation'], lang="grc",
-            dtd_errors=['dtd_errors']
+            dtd_errors=['dtd_errors'], capitains_errors=['capitains_errors'], empties=["empties"]
         )
         ctsunit = mock.Mock(
             return_value=INVObject
@@ -485,6 +487,8 @@ class TestTest(unittest.TestCase):
                 'duplicates': ['duplicate'],
                 'forbiddens': ['forbid'],
                 'dtd_errors': ['dtd_errors'],
+                'capitains_errors': ['capitains_errors'],
+                'empties': ['empties'],
                 'units': {
                     'Folder Name': False,
                     'MyCapytain': True
@@ -748,6 +752,8 @@ class TestTest(unittest.TestCase):
         process.results["001"].additional['duplicates'] = []
         process.results["001"].additional['forbiddens'] = []
         process.results["001"].additional['dtd_errors'] = []
+        process.results["001"].additional['capitains_errors'] = []
+        process.results["001"].additional['empties'] = []
         process.results["002"].units = {
             "Metadata": True,
             "Filename": False,
@@ -756,6 +762,8 @@ class TestTest(unittest.TestCase):
         process.results["002"].additional['citations'] = []
         process.results["002"].additional['duplicates'] = ['1.1', '1.2']
         process.results["002"].additional['forbiddens'] = ['1$1', '1-1']
+        process.results["002"].additional['capitains_errors'] = []
+        process.results["002"].additional['empties'] = []
         process.results["002"].additional['dtd_errors'] = ['error: value of attribute "cause" is invalid [In (L112 C52)]']
         # add a unit where all tests fail
         process.results['003'] = HookTest.test.UnitLog(
@@ -775,6 +783,8 @@ class TestTest(unittest.TestCase):
         process.results["003"].additional['duplicates'] = []
         process.results["003"].additional['forbiddens'] = []
         process.results["003"].additional['dtd_errors'] = []
+        process.results["003"].additional['capitains_errors'] = []
+        process.results["003"].additional['empties'] = []
         process.m_passing = 3
         process.m_files = 3
 
@@ -834,6 +844,8 @@ class TestTest(unittest.TestCase):
         process.results["001"].additional['forbiddens'] = []
         process.results["001"].additional['dtd_errors'] = []
         process.results["001"].additional['language'] = 'UNK'
+        process.results["001"].additional['capitains_errors'] = []
+        process.results["001"].additional['empties'] = []
         process.results["002"].units = {
             "Metadata": True,
             "Filename": False,
@@ -845,6 +857,8 @@ class TestTest(unittest.TestCase):
         process.results["002"].additional['forbiddens'] = ['1$1', '1-1']
         process.results["002"].additional['dtd_errors'] = ['error: value of attribute "cause" is invalid [In (L112 C52)]']
         process.results["002"].additional['language'] = 'UNK'
+        process.results["002"].additional['capitains_errors'] = []
+        process.results["002"].additional['empties'] = []
         # add a unit where all tests fail
         process.results['003'] = HookTest.test.UnitLog(
             directory=".",
@@ -864,6 +878,8 @@ class TestTest(unittest.TestCase):
         process.results["003"].additional['forbiddens'] = []
         process.results["003"].additional['dtd_errors'] = []
         process.results["003"].additional['language'] = 'UNK'
+        process.results["003"].additional['capitains_errors'] = []
+        process.results["003"].additional['empties'] = []
         process.m_passing = 3
         process.m_files = 3
 
@@ -922,6 +938,8 @@ class TestTest(unittest.TestCase):
         process.results["001"].additional['duplicates'] = []
         process.results["001"].additional['forbiddens'] = []
         process.results["001"].additional['dtd_errors'] = []
+        process.results["001"].additional['capitains_errors'] = []
+        process.results["001"].additional['empties'] = []
         process.results["002"].units = {
             "Metadata": True,
             "Filename": False,
@@ -931,6 +949,8 @@ class TestTest(unittest.TestCase):
         process.results["002"].additional['duplicates'] = ['1.1', '1.2']
         process.results["002"].additional['forbiddens'] = ['1$1', '1-1']
         process.results["002"].additional['dtd_errors'] = ['error: value of attribute "cause" is invalid [In (L112 C52)]']
+        process.results["002"].additional['capitains_errors'] = []
+        process.results["002"].additional['empties'] = []
         # add a unit where all tests fail
         process.results['003'] = HookTest.test.UnitLog(
             directory=".",
@@ -949,6 +969,8 @@ class TestTest(unittest.TestCase):
         process.results["003"].additional['duplicates'] = []
         process.results["003"].additional['forbiddens'] = []
         process.results["003"].additional['dtd_errors'] = []
+        process.results["003"].additional['capitains_errors'] = []
+        process.results["003"].additional['empties'] = []
         process.m_passing = 3
         process.m_files = 3
 

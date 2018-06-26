@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?> <?xml-model href="http://www.stoa.org/epidoc/schema/latest/tei-epidoc.rng" schematypens="http://relaxng.org/ns/structure/1.0"?><TEI xmlns="http://www.tei-c.org/ns/1.0"><teiHeader><fileDesc>
+      <titleStmt>
+        <title>Encomium of Helen</title>
+        <author>Gorgias</author>
+        <editor role="editor">Friedrich Blass</editor>
+      </titleStmt>
+      <publicationStmt><publisher>Trustees of Tufts University</publisher><pubPlace>Medford, MA</pubPlace><authority>Perseus Project</authority></publicationStmt>
+      <sourceDesc>
+        <biblStruct>
+          <monogr>
+            <title>ΕΛΕΝΗΣ ΕΓΚΩΜΙΟΝ</title>
+            <author>ΓΟΡΓΙΟΥ</author>
+            <editor role="editor">Friedrich Blass</editor>
+            <imprint>
+              <publisher>Teubner</publisher>
+              <pubPlace>Leipzig</pubPlace>
+              <date>1908</date>
+            </imprint>
+          </monogr>
+        </biblStruct>
+        
+        </sourceDesc>
+    </fileDesc><encodingDesc>
+      <refsDecl n="CTS">
+        <cRefPattern n="section" matchPattern="(.+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div[@type='edition']/tei:p/tei:div[@n='$1'])"/>
+      </refsDecl>
+
+    </encodingDesc><profileDesc>
+      <langUsage>
+	<language ident="grc">Greek</language>
+      </langUsage>
+    </profileDesc>
+  
+  <revisionDesc>
+    <change who="Thibault Clerice" when="2016-05-17">Changed refsDecl, added seg element for capitains scheme, added del to reflect [spurious text]</change>
+  </revisionDesc>
+</teiHeader>
+
+  <text><body> <div type="edition" n="urn:cts:greekLit:tlg2255.perseus001.perseus-grc1" xml:lang="grc">
+<pb ed="alt" n="p. 91 R."/> <head>ΓΟΡΓΙΟΥ ΕΛΕΝΗΣ ΕΓΚΩΜΙΟΝ.</head>
+<p><seg n="1"><milestone unit="section" n="1"/> Κόσμος πόλει μὲν εὐανδρία, σώματι δὲ κάλλος,
+<pb ed="alt" n="679"/> ψυχῇ δὲ σοφία, πράγματι δὲ ἀρετή, λόγῳ δὲ ἀλήθεια·
+
+<pb xml:id="v.3.p.151"/>
+
+τὰ δ᾿ ἐναντία τούτων ἀκοσμία. ἄνδρα δὲ καὶ γυναῖκα
+καὶ λόγον καὶ ἔργον καὶ πόλιν καὶ πρᾶγμα χρὴ τὸ μὲν
+<pb ed="alt" n="680"/> ἄξιον ἐπαίνου ἐπαίνῳ τιμᾶν, τῷ δὲ ἀναξίῳ μῶμον 
+ἐπιτιθέναι· ἴση γὰρ ἁμαρτία καὶ ἀμαθία μέμφεσθαί τε
+τὰ ἐπαινετὰ καὶ ἐπαινεῖν τὰ μωμητά.</seg> <milestone unit="section" n="2"/><seg n="2">τοῦ δ᾿ αὐτοῦ 
+ἀνδρὸς λέξαι τε τὸ δέον ὀρθῶς καὶ ἐλέγξαι . . . . . .
+
+<add>ἐλέγξαι</add> τοὺς μεμφομένους Ἑλένην, γυναῖκα περὶ ἧς
+ὁμόφωνος καὶ ὁμόψηφος γέγονεν ἥ τε τῶν ποιητῶν
+. . . . <add>ἥ τε τῶν</add> ἀκουσάντων πίστις, ἥ τε τοῦ ὀνόματος
+φήμη τῶν συμφορῶν μνήμη γέγονεν. ἐγὼ δὲ βούλομαι
+λογισμόν τινα τῷ λόγῳ δοὺς τὴν μὲν κακῶς
+ἀκούουσαν παῦσαι τῆς αἰτίας, τοὺς δὲ μεμφομένους
+ψευδομένους ἐπιδείξας καὶ δείξας τἀληθὲς παῦσαι τῆς
+ἀμαθίας.</seg></p>
+<p><milestone unit="section" n="3"/><seg n="3">Ὅτι μὲν οὖν φύσει καὶ γένει τὰ πρῶτα τῶν πρώτων 
+ἀνδρῶν καὶ γυναικῶν ἡ γυνὴ περὶ ἧς ὅδε ὁ λόγος,
+<pb xml:id="v.3.p.152"/>
+
+οὐκ ἄδηλον οὐδ᾿ ὀλίγοις. δῆλον γὰρ ὡς μητρὸς μὲν
+Λήδας, πατρὸς δὲ τοῦ μὲν γενομένου θεοῦ, λεγομένου
+δὲ θνητοῦ, Τυνδάρεω καὶ Διός, ὧν ὁ μὲν διὰ τὸ εἶναι
+ἔδοξεν, ὁ δὲ διὰ τὸ φάναι ἐλέχθη, καὶ ἦν ὁ μὲν
+ ἀνδρῶν κράτιστος, ὁ δὲ πάντων τύραννος.</seg> <milestone unit="section" n="4"/><seg n="4">ἐκ τοιούτων
+δὲ γενομένη ἔσχε τὸ ἰσόθεον κάλλος, ὃ λαβοῦσα
+[καὶ] οὐ λαθοῦσα ἔσχε, πλείστας δὲ πλείστοις ἐπιθυμίας
+ἔρωτος ἐνειργάσατο, ἑνὶ δὲ σώματι πολλὰ σώματα
+συνήγαγεν ἀνδρῶν ἐπὶ μεγάλοις μεγάλα φρονούντων,
+ὧν οἱ μὲν πλούτου μεγέθη, οἱ δὲ εὐγενείας παλαιᾶς
+εὐδοξίαν, οἱ δὲ ἀλκῆς οἰκείας εὐεξίαν, οἱ δὲ σοφίας
+ἐπικτήτου δύναμιν ἔσχον, καὶ ἧκον ἅπαντες ὑπ᾿ ἔρωτός
+ τε φιλονίκου φιλοτιμίας τε ἀνικήτου. </seg><milestone unit="section" n="5"/><seg n="5">ὅστις μὲν
+οὖν καὶ δι᾿ ὅ τι καὶ ὅπως ἀπέπλησε τὸν ἔρωτα τὴν
+Ἑλένην λαβών, οὐ λέξω· τὸ γὰρ τοῖς εἰδόσιν ἃ ἴσασι
+λέγειν πίστιν μὲν ἔχει, τέρψιν δὲ οὐ φέρει. τὸν χρόνον
+δὲ τῷ λόγῳ τὸν τότε <add>τῷ</add> νῦν ὑπερβὰς ἐπὶ τὴν
+ἀρχὴν τοῦ μέλλοντος λόγου προβήσομαι, καὶ προθήσομαι
+τὰς αἰτίας δι᾿ ἃς εἰκὸς ἦν γενέσθαι τὸν τῆς Ἑλένης
+εἰς τὴν Τροίαν στόλον.</seg></p>
+</div></body></text></TEI>

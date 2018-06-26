@@ -7,23 +7,9 @@
         <editor role="editor">Friedrich Blass</editor>
       </titleStmt>
       <publicationStmt><publisher>Trustees of Tufts University</publisher><pubPlace>Medford, MA</pubPlace><authority>Perseus Project</authority></publicationStmt>
-      <sourceDesc>
-        <biblStruct>
-          <monogr>
-            <title>ΕΛΕΝΗΣ ΕΓΚΩΜΙΟΝ</title>
-            <author>ΓΟΡΓΙΟΥ</author>
-            <editor role="editor">Friedrich Blass</editor>
-            <imprint>
-              <publisher>Teubner</publisher>
-              <pubPlace>Leipzig</pubPlace>
-              <date>1908</date>
-            </imprint>
-          </monogr>
-        </biblStruct>
-
-        </sourceDesc>
-    </fileDesc><encodingDesc>
-
+    </fileDesc><encodingDesc><refsDecl n="CTS">
+        <cRefPattern n="section" matchPattern="(.+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div[@type='edition']/tei:p/tei:seg[@n='$1'])"/>
+      </refsDecl>
     </encodingDesc><profileDesc>
       <langUsage>
 	<language ident="grc">Greek</language>

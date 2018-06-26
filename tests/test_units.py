@@ -551,7 +551,7 @@ class TestText(unittest.TestCase):
     def test_count_words_fails(self):
         """ Test collision of passages
         """
-        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/repo2/data/capitainingest/tei2/tlg4089.tlg004.1st1k-grc1.xml")
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("tests/repo2/data/tlg2255/perseus001/refsDecl_no_targets.xml")
         HookTest.capitains_units.cts.CTSText_TestUnit.tests = [
             "parsable", "has_urn", "passages"
         ]
@@ -592,4 +592,5 @@ class TestText(unittest.TestCase):
         results = [result for result in unit.passages()]
         passages = list(unit.empty())
         self.assertEqual(passages, [False], "Empty references should result in fail")
-        self.assertIn(">>>>>> Empty references found : 1 empty reference(s) at citation level 1, 2 empty reference(s) at citation level 2, 2 empty reference(s) at citation level 3", unit.logs)
+        self.assertIn(">>>>>> Empty references found : 1 empty reference(s) at citation level 1, 1 empty reference(s) at citation level 2, 1 empty reference(s) at citation level 3", unit.logs)
+        self.assertEqual(unit.empties, ["1 empty reference(s) at citation level 1", "1 empty reference(s) at citation level 2", "1 empty reference(s) at citation level 3"])
