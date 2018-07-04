@@ -1,2 +1,3 @@
 include HookTest/resources/*.rng
 include CHANGES.txt
+include requirements.txt
