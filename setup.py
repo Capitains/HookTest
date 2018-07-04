@@ -13,6 +13,7 @@ setup(
     version="1.2.0",
     description='Hook Test Script for GitHub/CapiTainS repositories',
     long_description=long_description,
+    long_description_content_type="text/x-rst",
     url='http://github.com/Capitains/HookTest',
     author='Thibault Clérice, Matt Munson',
     author_email='leponteineptique@gmail.com',
