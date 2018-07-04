@@ -8,9 +8,22 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
+# Pull requirements from requirements.txt file
+with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
+    install_requires, tests_require = [], []
+    now_we_have_dev = False
+    for line in f:
+        if line.startswith("#"):
+             if "test" in line:
+                   now_we_have_dev = True
+        elif now_we_have_dev:
+            tests_require.append(line.strip())
+        else:
+            install_requires.append(line.strip())
+
 setup(
     name='HookTest',
-    version="1.2.0",
+    version="1.2.1",
     description='Hook Test Script for GitHub/CapiTainS repositories',
     long_description=long_description,
     long_description_content_type="text/x-rst",
@@ -27,18 +40,8 @@ setup(
         "Topic :: Text Processing :: General",
         "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
     ],
-    install_requires=[
-        "MyCapytain>=2.0.0",
-        "jingtrang==0.1.1",
-        "GitPython==2.1.0",
-        "requests>=2.8.1",
-        "prettytable==0.7.2",
-        "ansicolors==1.0.2"
-    ],
-    tests_require=[
-        "mock==1.3.0",
-        "six>=1.10.0",
-    ],
+    install_requires=install_requires,
+    tests_require=tests_require,
     package_data={
         'HookTest': ['resources/*.rng']
     },
