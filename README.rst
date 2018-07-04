@@ -123,7 +123,7 @@ HookTest can now be run on the Travis Continuous Integration (CI) platform. This
 
 Once you have done this, you will need to add a `.travis.yml` file to root folder of your repository. (Note that the name of the file starts with a period ('.').) Use the following as a template for your own `.travis.yml` file:
 
-.. code-block:: yml
+.. code-block:: yaml
 
     language: python
     python:
@@ -158,7 +158,7 @@ Once you have done this, you will need to add a `.travis.yml` file to root folde
 	
 To help you set up this file for your own repository, a line-by-line explanation follows.
 
-.. code-block:: yml
+.. code-block:: yaml
 
     language: python
     python:
@@ -169,14 +169,14 @@ To help you set up this file for your own repository, a line-by-line explanation
 
 These first 5 lines are for the basic setup of HookTest on Travis. Do not change them.
 
-.. code-block:: yml
+.. code-block:: yaml
 
     script: hooktest --scheme epidoc --workers 3 --verbose --manifest --console --countword --allowfailure ./
 
 
 This line runs HookTest. The parameters are those described in the parameter table above. If you do not want to make a new release of your corpus unless it is 100% CapiTainS-compliant, then remove the `--allowfailure` parameter. Without this parameter, the build will fail if the corpus is not 100% compliant causing Travis to skip the build and release steps. Because of the way Travis is set up, we recommend not setting `--workers` higher than 3.
 
-.. code-block:: yml
+.. code-block:: yaml
 
     before_deploy:
     - hooktest-build --travis --txt ./
@@ -202,7 +202,7 @@ Of special note here are two things that you will need to set up yourself. The f
 
 The second important change to this line is to replace the string "YOUR_REPOSITORY_NAME" with the Github user name or organization name and the repository name, e.g., "OpenGreekAndLatin/First1KGreek". If any of these pre-deployment steps fail, then the repository will not build and release.
 
-.. code-block:: yml
+.. code-block:: yaml
 
     deploy:
       provider: releases

@@ -23,7 +23,7 @@ with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
 
 setup(
     name='HookTest',
-    version="1.2.1",
+    version="1.2.2",
     description='Hook Test Script for GitHub/CapiTainS repositories',
     long_description=long_description,
     url='http://github.com/Capitains/HookTest',
