@@ -32,7 +32,8 @@ setup(
         "GitPython==2.1.0",
         "requests>=2.8.1",
         "prettytable==0.7.2",
-        "ansicolors==1.0.2"
+        "ansicolors==1.0.2",
+        "validators==0.12.2"
     ],
     tests_require=[
         "mock==1.3.0",
