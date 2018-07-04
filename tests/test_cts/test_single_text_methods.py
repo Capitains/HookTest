@@ -29,6 +29,7 @@ class TestText(unittest.TestCase):
         """
         node = HookTest.capitains_units.cts.CTSText_TestUnit("/false/path")
         node.scheme = scheme
+        node.guidelines = "2." + scheme
         node.xml = etree.fromstring(xml_string, HookTest.units.TESTUnit.PARSER)
         return node
 

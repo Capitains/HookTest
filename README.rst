@@ -73,13 +73,34 @@ The command is run with :code:`hooktest [-h] [-w WORKERS] [-s SCHEME] [-v] [-j J
 +----------------------------------------+----------------------------------------------------------------------+
 | -w WORKERS, --workers WORKERS          | Number of workers to be used                                         |
 +----------------------------------------+----------------------------------------------------------------------+
-| -s SCHEME, --scheme SCHEME             | 'tei' or 'epidoc' scheme to be used                                  |
+| -s SCHEME, --scheme SCHEME             |Possible Values:                                                      |
+|                                        |                                                                      |
+|                                        |* "tei": Use the most recent TEI-ALL DTD                              |
+|                                        |* "epidoc": Use the most recent epiDoc DTD                            |
+|                                        |* "ignore": Perform no schema validation                              |
+|                                        |* "auto" (Default) - Automatically detect the RNG to use from the     |
+|                                        |  xml-model declaration in each individual XML file. If the reference |
+|                                        |  is to a remote URL, the file will be downloaded and used.           |
+|                                        |* <filepath>: If a file path is given, this should refer to a local   |
+|                                        |  RNG file that should be used to check all text documents            |
+|                                        |                                                                      |
 +----------------------------------------+----------------------------------------------------------------------+
-| -v, --verbose [{0,5,7,10}]             | Verbose Level                                                        |
-|                                        | - 0 (Default) Only show necessary Information                        |
-|                                        | - 5 Show duplicate or forbidden characters                           |
-|                                        | - 7 All of before + show failing units                               |
-|                                        | - 10 All available details                                           |
+| --guidelines                           |Possible Values:                                                      |
+|                                        |                                                                      |
+|                                        |* "2.tei" (Default) - Will use version 2.0 of the CapiTainS guidelines|
+|                                        |  for generic TEI texts.                                              |
+|                                        |* "2.epidoc" - Will use version 2.0 of the CapiTainS guidelines for   |
+|                                        |  EpiDoc encoded texts.                                               |
+|                                        |                                                                      |
+|                                        |(Details at http://capitains.org/pages/guidelines#urn-information)    |
++----------------------------------------+----------------------------------------------------------------------+
+| -v, --verbose [{0,5,7,10}]             |Verbose Level                                                         |
+|                                        |                                                                      |
+|                                        |- 0 (Default) Only show necessary Information                         |
+|                                        |- 5 Show duplicate or forbidden characters                            |
+|                                        |- 7 All of before + show failing units                                |
+|                                        |- 10 All available details                                            |
+|                                        |                                                                      |
 +----------------------------------------+----------------------------------------------------------------------+
 | -j JSON, --json JSON                   | Save to specified json file the results                              |
 +----------------------------------------+----------------------------------------------------------------------+

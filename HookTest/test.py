@@ -124,16 +124,16 @@ class Test(object):
     SCHEMES = {
         "tei": "tei.rng",
         "epidoc": "epidoc.rng",
-        "tei-ignore": "tei.rng",
-        "epidoc-ignore": "epidoc.rng"
+        "ignore": "epidoc.rng",
+        "auto": "auto_rng"
     }
 
     def __init__(
             self, path,
-            workers=1, scheme="tei",
+            workers=1, scheme="auto",
             verbose=0, ping=None, secret="", triggering_size=None, console=False, build_manifest=False,
             finder=DefaultFinder, finderoptions=None, countwords=False, allowfailure=False,
-            from_travis_to_hook=False, timeout=30,
+            from_travis_to_hook=False, timeout=30, guidelines=None,
             **kwargs
     ):
         """ Create a Test object
@@ -172,22 +172,31 @@ class Test(object):
         else:
             self.secret = bytes(secret, "utf-8")
         self.scheme = scheme
+        self.rng = None
+        if isinstance(scheme, list):
+            self.scheme = scheme[0]
+            self.rng = scheme[1]
         self.verbose = verbose
         self.countwords = countwords
         self.allowfailure = allowfailure
         self.__triggering_size = None
         self.timeout = timeout
+        self.guidelines = guidelines
+        if self.guidelines is None:
+            if self.scheme == "epidoc":
+                self.guidelines = "2.epidoc"
+            else:
+                self.guidelines = "2.tei"
         if isinstance(triggering_size, int):
             self.__triggering_size = triggering_size
 
-        if scheme is not "tei" and scheme not in Test.SCHEMES:
+        if not isinstance(scheme, list) and scheme not in Test.SCHEMES:
             raise ValueError(
                 "Scheme {0} unknown, please use one of the following : {1}".format(
                     scheme,
                     ", ".join(Test.SCHEMES.keys())
                 )
             )
-
         self.results = OrderedDict()
         self.passing = defaultdict(bool)
         self.inventory = []
@@ -357,7 +366,7 @@ class Test(object):
             unit = HookTest.capitains_units.cts.CTSText_TestUnit(filepath, countwords=self.countwords, timeout=self.timeout)
             texttype = "CTSText"
             logs.append(">>>> Testing " + filepath.split("data")[-1])
-            for name, status, unitlogs in unit.test(self.scheme, self.inventory):
+            for name, status, unitlogs in unit.test(self.scheme, self.guidelines, self.rng, self.inventory):
 
                 if status:
                     status_str = " passed"
@@ -444,6 +453,8 @@ class Test(object):
         """ Deal with the start of the process
 
         """
+        if self.scheme == "auto":
+            self.scheme = "auto_rng"
         if self.console:
             print(">>> Starting tests !", flush=True)
             print(">>> Files to test : "+str(self.count_files), flush=True)

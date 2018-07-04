@@ -2,6 +2,26 @@ import argparse
 import sys
 import HookTest.test
 import HookTest.build
+import os
+
+
+SCHEMES = {
+    "tei": "Use the most recent TEI-ALL DTD",
+    "epidoc": "Use the most recent epiDoc DTD",
+    "ignore": "Perform no schema validation",
+    "auto": "Automatically detect the RNG to use from the xml-model declaration in each individual XML file"
+}
+
+
+def check_schema(schema):
+    if schema in SCHEMES:
+        return schema
+    elif os.path.isfile(schema):
+        return ['local_file', schema]
+    else:
+        raise argparse.ArgumentTypeError('--scheme must either point to an existing local RNG file or be one of the following:\n {}'.format(
+            '\n'.join([': '.join([k, v]) for k, v in SCHEMES.items()])
+        ))
 
 
 def parse_args(args):
@@ -19,10 +39,10 @@ def parse_args(args):
 
     parser.add_argument('-w', "--workers", type=int, help='Number of workers (processes) to be used', default=1)
 
-    parser.add_argument(
-        '-s', "--scheme",
-        help="Scheme to test. '-ignore' test will ignore RNG test but still inform which scheme is used",
-        default="tei", choices=("tei", "epidoc", "epidoc-ignore", "tei-ignore"))
+    parser.add_argument('-s', "--scheme",
+                        help="Scheme to test. 'ignore' test will ignore RNG.",
+                        default="auto",
+                        type=check_schema)
 
     parser.add_argument("-v", "--verbose", help="""Verbose Level\n
     - 0\t(Default) Only show necessary Information\n
@@ -63,6 +83,11 @@ def parse_args(args):
         "--hookUI", dest="from_travis_to_hook",
         help="Send results to a Hook UI endpoint",
         default=False
+    )
+
+    parser.add_argument(
+        "--guidelines", help="The version and type of guidelines to use",
+        choices=("2.tei", "2.epidoc")
     )
 
     args = parser.parse_args(args)

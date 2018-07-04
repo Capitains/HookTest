@@ -3,6 +3,14 @@ import subprocess
 import warnings
 from threading import Timer
 from collections import defaultdict
+from os import makedirs
+import os.path
+from hashlib import md5
+import time
+import requests
+import shutil
+from lxml.etree import parse
+import validators
 
 import MyCapytain.common
 from MyCapytain.common.constants import Mimetypes
@@ -317,6 +325,8 @@ class CTSText_TestUnit(TESTUnit):
         "forbidden": "Forbidden characters",
         "epidoc": "Epidoc DTD validation",
         "tei": "TEI DTD Validation",
+        "auto_rng": "Automatic RNG validation",
+        "local_file": "Custom local RNG validation",
         "has_urn": "URN informations",
         "naming_convention": "Naming conventions",
         "inventory": "Available in inventory",
@@ -331,6 +341,8 @@ class CTSText_TestUnit(TESTUnit):
         self.inv = list()
         self.timeout = timeout
         self.scheme = None
+        self.guidelines = None
+        self.rng = None
         self.Text = None
         self.xml = None
         self.count = 0
@@ -418,6 +430,65 @@ class CTSText_TestUnit(TESTUnit):
                 self.dtd_errors.append(issue)
         yield len(out) == 0 and len(error) == 0
 
+    def auto_rng(self):
+        xml = parse(self.path)
+        xml_dir = os.path.dirname(os.path.abspath(self.path))
+        # A file can have multiple schema
+        for rng in xml.xpath("/processing-instruction('xml-model')"):
+            uri = rng.attrib["href"]
+            rng_path = os.path.abspath(os.path.join(xml_dir, uri))
+            if validators.url(uri):
+                rng_path = self.get_remote_rng(uri)
+            elif not os.path.isfile(rng_path):
+                self.dtd_errors.append("No RNG was found at " + rng_path)
+                yield False
+                continue
+            for status in self.run_rng(rng_path):
+                yield status
+
+    def get_remote_rng(self, url):
+        """ Given a valid URL, downloads the RNG from the given URL and returns the filepath and name
+
+        :param url: the URL of the RNG
+        :return: filenpath and name where the RNG was saved
+        """
+        # If the file is remote, have a file-system approved name
+        # The md5 hash seems like a good option
+        sha = md5(url.encode()).hexdigest()
+
+        # We have a name for the rng file but also for the in-download marker
+        # Note : we might want to add a os.makedirs somewhere with exists=True
+        makedirs(".rngs", exist_ok=True)
+        stable_local = os.path.join(".rngs", sha+".rng")
+        stable_local_downloading = os.path.join(".rngs", sha+".rng-indownload")
+
+        # check if the stable_local rng already exists
+        # if it does, immediately run the rng test and move to the next rng in the file
+        if os.path.exists(stable_local):
+            return stable_local
+        # We check if the in-download proof file is shown here
+        # Until the in-download marker is there, we need to wait
+        elif os.path.exists(stable_local_downloading):
+            # Wait up to 30 secs ?
+            # Have it as a constant that could be changed in environment variables ?
+            waited = self.timeout
+            while not os.path.exists(stable_local):
+                time.sleep(1)
+                waited -= 1
+                if waited < 0:
+                    # Maybe we can wait more ?
+                    raise EnvironmentError("The download of the RNG took too long")
+        else:
+            with open(stable_local_downloading, "w") as f:
+                f.write("Downloading...")
+            data = requests.get(url)
+            data.raise_for_status()
+            with open(stable_local_downloading, "w") as f:
+                f.write(data.text)
+            shutil.move(stable_local_downloading, stable_local)
+
+        return stable_local
+
     def epidoc(self):
         """ Check the original file against Epidoc rng through a java pipe
         """
@@ -429,6 +500,13 @@ class CTSText_TestUnit(TESTUnit):
         """
 
         for status in self.run_rng(TESTUnit.TEI_ALL):
+            yield status
+
+    def local_file(self):
+        """ Check the original file against TEI rng through a java pipe
+        """
+
+        for status in self.run_rng(self.rng):
             yield status
 
     def passages(self):
@@ -536,7 +614,7 @@ class CTSText_TestUnit(TESTUnit):
         """ Test that a file has its urn according to CapiTainS Guidelines in its scheme
         """
         if self.xml is not None:
-            if self.scheme == "tei":
+            if self.guidelines == "2.tei":
                 urns = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS) + \
                         self.xml.xpath("//tei:text[starts-with(@xml:base, 'urn:cts:')]", namespaces=TESTUnit.NS)
             else:
@@ -607,14 +685,14 @@ class CTSText_TestUnit(TESTUnit):
     def language(self):
         """ Tests to make sure an xml:lang element is on the correct node
         """
-        if self.scheme == "epidoc":
+        if self.guidelines == "2.epidoc":
             urns_holding_node = self.xml.xpath(
                 "//tei:text/tei:body/tei:div"
                 "[@type='edition' or @type='translation' or @type='commentary']"
                 "[starts-with(@n, 'urn:cts:')]",
                 namespaces=TESTUnit.NS
             )
-        elif self.scheme == "tei":
+        elif self.guidelines == "2.tei":
             urns_holding_node = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS) + \
                     self.xml.xpath("//tei:text[starts-with(@xml:base, 'urn:cts:')]", namespaces=TESTUnit.NS)
 
@@ -628,7 +706,7 @@ class CTSText_TestUnit(TESTUnit):
         else:
             yield True
 
-    def test(self, scheme, inventory=None):
+    def test(self, scheme, guidelines, rng=None, inventory=None):
         """ Test a file with various checks
 
         :param scheme: Test with TEI DTD
@@ -640,7 +718,6 @@ class CTSText_TestUnit(TESTUnit):
         """
         if inventory is not None:
             self.inv = inventory
-
         tests = [] + CTSText_TestUnit.tests
         if self.countwords:
             tests.append("count_words")
@@ -651,6 +728,8 @@ class CTSText_TestUnit(TESTUnit):
             tests = [scheme] + tests
 
         self.scheme = scheme
+        self.guidelines = guidelines
+        self.rng = rng
 
         i = 0
         for test in tests:

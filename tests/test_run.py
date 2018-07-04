@@ -8,6 +8,7 @@ import os
 import shutil
 import re
 from colors import white, magenta
+import os
 
 def temp_dir_path(*args):
     """ Generate the temp directory path for given file"""
@@ -34,7 +35,7 @@ class TestProcess(TestCase):
         :param right_column: Right Column content
         :param message: Message to show for failure
         """
-        self.assertRegex(logs, "|\s+"+left_column+"\s+|\s+" + right_column + "\s+|", message)
+        self.assertRegex(logs, "\|\s+"+left_column+"\s+\|\s+" + right_column + "\s+\|", message)
 
     def parse_subset(self, logs, file):
         """
@@ -223,7 +224,7 @@ class TestProcess(TestCase):
 
     def test_run_local_console(self):
         """ Test a run on the local tests passages with console print """
-        status, logs = self.hooktest(["./tests/repo1", "--console"])
+        status, logs = self.hooktest(["./tests/repo1", "--console", "--scheme", "tei"])
         self.assertIn(
             "..XXX\n", logs,
             "Test conclusion should be printed"
@@ -252,7 +253,7 @@ class TestProcess(TestCase):
 
     def test_run_local_console_verbose(self):
         """ Test a run on the local tests passages with console print and verbose """
-        status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose"])
+        status, logs = self.hooktest(["./tests/repo1", "--console", "--verbose", "--scheme", "tei"])
         self.assertLogResult(
             logs, "Metadata Files", "2",
             "2 metadata files should be described in logs"
@@ -272,7 +273,7 @@ class TestProcess(TestCase):
 
         node_count, unit = self.parse_subset(logs, "hafez.divan.perseus-far1.xml")
         self.assertEqual(
-            node_count, "32;495;4192;8384",
+            node_count, "1;1;7;14",
             "Count of nodes should be displayed"
         )
         self.assertFailed(unit, "URN informations")
@@ -300,10 +301,102 @@ class TestProcess(TestCase):
         )
         node_count, unit = self.parse_subset(logs, "hafez.divan.perseus-far1.xml")
         self.assertEqual(
-            node_count, "32;495;4192;8384",
+            node_count, "1;1;7;14",
             "Count of nodes should be displayed"
         )
         self.assertEqual(status, "success", "Test should success")
+
+    def test_run_local_console_verbose_auto_rng(self):
+        """ Test a run on the local tests passages with console print while automatically detecting downloading the correct remote rng """
+        status, logs = self.hooktest([
+            "./tests/test_auto_rng", "--console", "--verbose", "--scheme", "auto", "--guidelines", "2.epidoc"])
+        self.assertLogResult(
+            logs, "Metadata Files", "2",
+            "2 metadata files should be described in logs"
+        )
+        self.assertLogResult(
+            logs, "Passing Metadata", "2",
+            "2 metadata files should be passing in logs"
+        )
+        self.assertLogResult(
+            logs, "Total Texts", "3",
+            "3 texts should be described in logs"
+        )
+        self.assertLogResult(
+            logs, "Passing Texts", "2",
+            "2 texts should be passing in logs"
+        )
+        node_count, unit = self.parse_subset(logs, "hafez.divan.perseus-far1.xml")
+        self.assertEqual(
+            node_count, "1;1;7;14",
+            "Correct node counts should be displayed for file using remote RNG"
+        )
+
+        node_count2, result = self.parse_subset(logs, "hafez.divan.perseus-ger1.xml")
+        self.assertEqual(result, ['Automatic RNG validation'], "RNG validation should fail with invalid file path")
+
+        self.assertEqual(status, "failed", "Test should fail")
+        shutil.rmtree('./.rngs/')
+
+    def test_run_local_console_verbose_path_to_rng_success(self):
+        """ Test a run on the local tests passages with --scheme as local RNG path """
+        status, logs = self.hooktest([
+            "./tests/repo1", "--console", "--verbose", "--scheme", os.path.abspath("HookTest/resources/epidoc.rng"), "--guidelines", "2.epidoc"])
+        self.assertLogResult(
+            logs, "Metadata Files", "2",
+            "2 metadata files should be described in logs"
+        )
+        self.assertLogResult(
+            logs, "Passing Metadata", "2",
+            "2 metadata files should be passing in logs"
+        )
+        self.assertLogResult(
+            logs, "Total Texts", "3",
+            "3 texts should be described in logs"
+        )
+        self.assertLogResult(
+            logs, "Passing Texts", "3",
+            "3 texts should not be passing in logs"
+        )
+        node_count, unit = self.parse_subset(logs, "hafez.divan.perseus-far1.xml")
+        self.assertEqual(
+            node_count, "1;1;7;14",
+            "Count of nodes should be displayed"
+        )
+        self.assertEqual(status, "success", "Test should success")
+
+    def test_run_local_console_verbose_path_to_rng_failure(self):
+        """ Test a run on the local tests passages with --scheme as wrong local RNG path """
+        message = """--scheme must either point to an existing local RNG file or be one of the following:
+ tei: Use the most recent TEI-ALL DTD
+epidoc: Use the most recent epiDoc DTD
+ignore: Perform no schema validation
+auto: Automatically detect the RNG to use from the xml-model declaration in each individual XML file"""
+        with self.assertRaises(BaseException, msg=message) as cm:
+            status, logs = self.hooktest([
+                "./tests/repo1", "--console", "--verbose", "--scheme", os.path.abspath("wrong/path"), "--guidelines", "2.epidoc"])
+
+    def test_run_local_console_verbose_remote_download_timeout_and_use_existing_rng(self):
+        """ Test that the download of a remote RNG will timeout after the period set in the --timeout argument
+            And then est that a run with --scheme auto will use an existing local download if it has previously been downloaded
+            I have joined these two tests because I think Travis runs them concurrently and one interferes with the other
+        """
+        os.makedirs('.rngs', exist_ok=True)
+        with open('.rngs/af2245c1fd91fabf76516bb0b9332a90.rng-indownload', mode="w") as f:
+            f.write("Downloading...")
+        message = "The download of the RNG took too long"
+        status, logs = self.hooktest([
+            "./tests/test_auto_rng", "--console", "--verbose", "--scheme", 'auto', "--guidelines", "2.epidoc", "--timeout", "1"])
+        self.assertIn('OSError: The download of the RNG took too long', logs, "The Error should show up in the logs")
+        shutil.rmtree('./.rngs')
+        os.makedirs('.rngs', exist_ok=True)
+        with open('.rngs/af2245c1fd91fabf76516bb0b9332a90.rng', mode="w") as f:
+            f.write("Downloading...")
+        status, logs = self.hooktest([
+            "./tests/test_auto_rng", "--console", "--verbose", "--scheme", 'auto', "--guidelines", "2.epidoc", "--timeout", "1"])
+        self.assertIn("fatal: Content is not allowed in prolog. [In (L1 C1)]", logs,
+                      "Since the created RNG file has no content, this error shows that this RNG was used.")
+        shutil.rmtree('./.rngs')
 
     def test_run_filter(self):
         """ Test a run on the local testFilers Repo with json

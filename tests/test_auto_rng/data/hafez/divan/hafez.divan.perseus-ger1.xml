@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-model href="../../../epidoc.rng"
-schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml-model href="some/stupid/path/to/epidoc.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
     <teiHeader>
         <fileDesc>
@@ -8,7 +7,7 @@ schematypens="http://relaxng.org/ns/structure/1.0"?>
                 <title type="work">Divan</title>
                 <title type="sub">Machine readable text</title>
                 <author n="Hafez">Khwāja Shams-ud-Dīn Muhammad Hāfez-e Shīrāzī</author>
-                <editor role="editor">H. Wilberforce Clarke</editor>
+                <editor role="editor"> Joseph Freiherr von Hammer Purgstall</editor>
                 <sponsor>Perseus Project, Tufts University</sponsor>
                 <principal>Gregory Crane</principal>
                 <respStmt>
@@ -28,9 +27,9 @@ schematypens="http://relaxng.org/ns/structure/1.0"?>
                     <author>Khwāja Shams-ud-Dīn Muhammad Hāfez-e Shīrāzī</author>
                
                     <title>Divan</title>
-                    <pubPlace>Calcutta</pubPlace>
-                    <publisher>Government of India Central Printing Office</publisher>
-                    <date>1891</date>
+                    <pubPlace>Stuttgart and Tübingen</pubPlace>
+                    <publisher/>
+                    <date>1812</date>
                 </bibl>
             </sourceDesc>
         </fileDesc>
@@ -57,48 +56,63 @@ schematypens="http://relaxng.org/ns/structure/1.0"?>
         </encodingDesc>
         <profileDesc>
             <langUsage>
-                <language ident="en">English</language>
                 <language ident="fa">Farsi</language>
+                <language ident="de">German</language>
             </langUsage>
         </profileDesc>
         <revisionDesc>
-            <change when="2014-10-25" who="Saeed Majidi">Automatically generated initial markup</change>
+            <change when="2014-11-01" who="Saeed Majidi">Automatically generated initial markup</change>
         </revisionDesc>
     </teiHeader>
-    <text xml:lang="en">
+    <text xml:lang="de">
         <body>
-            <div type="translation" n="urn:cts:farsiLit:hafez.divan.perseus-eng1" xml:lang="eng">
+            <div type="translation" n="urn:cts:farsiLit:hafez.divan.perseus-ger1" xml:lang="ger">
                 <div type="textpart" subtype="letter" n="1" xml:id="Alif">
                     <div type="textpart" subtype="poem" n="1">
                         <l n="1">
-                            <seg n="1">Ho ! Saki, pass around and offer the bowl (of love for God) : ### </seg>
-                            <seg n="2">For (the burden of) love (for God) at first (on the day of covenant) appeared easy, but (now) difficulties have occurred. *** </seg>
+                            <seg n="1">Reich mir o Schenke das Glas, ### </seg>
+                            <seg n="2">Bringe den Gästen es zu, ### </seg>
+                            <seg n="3">Leicht' ist die Lieb' im Anfang ### </seg>
+                            <seg n="4">Es folgen aber Schwierigkeiten. *** </seg>
                         </l>
                         <l n="2">
-                            <seg n="1">By reason of the perfume (hope) of the musk-pod, that, at the end (of night), the breeze displayeth from that (knotted) fore-lock, ### </seg>
-                            <seg n="2">From the twist of its musky (dark, fragrant) curl, what blood (of grief) befell the hearts (of the lovers of God)! *** </seg>
+                            <seg n="1">Wegen des Moschusgeruchs, ### </seg>
+                            <seg n="2">Welchen der Ostwind geraubt ### </seg>
+                            <seg n="3">Deinen gekrau'sten Locken, ### </seg>
+                            <seg n="4">Wie vieles Blut entfloß dem Herzen! *** </seg>
                         </l>
                         <l n="3">
-                            <seg n="1">With wine, becolour the prayer-mat if the Pir of the magians (the perfect murshid) bid thee ; ### </seg>
-                            <seg n="2">For of the way and usage of the stages (to God) not without knowledge is the holy traveller (the perfect murshid). *** </seg>
+                            <seg n="1">Folge dem Worte des Wirths ### </seg>
+                            <seg n="2">Färbe den Teppich mit Wein. ### </seg>
+                            <seg n="3">Reisende sind der Wege, ### </seg>
+                            <seg n="4">Sie sind des Laufs der Posten kundig. *** </seg>
                         </l>
                         <l n="4">
-                            <seg n="1">In the stage (this world) of the (true) Beloved, mine what ease and pleasure, when momently, ### </seg>
-                            <seg n="2">The (loud) bell (of the call of death) giveth voice, saying : " Bind ye up the chattels of existence !" *** </seg>
+                            <seg n="1">Kann ich genießen der Lust ### </seg>
+                            <seg n="2">In des Geliebten Gezelt, ### </seg>
+                            <seg n="3">Wenn mich zum Aufbruch immer ### </seg>
+                            <seg n="4">Der Karawane Glocke rufet! *** </seg>
                         </l>
                         <l n="5">
-                            <seg n="1">The dark night (of the world), and the fear of the wave (of grief), and the whirlpool so fearful (the time of death). ### </seg>
-                            <seg n="2">The light-burdened ones of the shore (ancestors who have passed the flood of death), how know they our state? *** </seg>
+                            <seg n="1">Finstere Schatten der Nacht! ### </seg>
+                            <seg n="2">Wogen und Wirbelgefahr, ### </seg>
+                            <seg n="3">Können Euch wohl begreifen, ### </seg>
+                            <seg n="4">Die leicht geschürzt am Ufer wohnen? *** </seg>
                         </l>
                         <l n="6">
-                            <seg n="1">By following my own fancy (in hastening to union with God), me (only) to ill fame all my work brought : ### </seg>
-                            <seg n="2">Secret, how remaineth that great mystery (of love) whereof (great) assemblies speak? *** </seg>
+                            <seg n="1">Durch die befriedigte Lust ### </seg>
+                            <seg n="2">Ward ich zum Mährchen der Stadt, ### </seg>
+                            <seg n="3">Kann ein Geheimniß bleiben ### </seg>
+                            <seg n="4">Der Stoff der allgemeinen Sage? *** </seg>
                         </l>
                         <l n="7">
-                            <seg n="1">Hafiz ! if thou desire the presence (union with God Most High) from Him be not absent : ### </seg>
-                            <seg n="2">When thou visitest thy Beloved, abandon the world ; and let it go. *** </seg>
+                            <seg n="1">Wünschest du Ruhe Hafis, ### </seg>
+                            <seg n="2">Folge dem köstlichen Rath: ### </seg>
+                            <seg n="3">Willst du das Liebchen finden, ### </seg>
+                            <seg n="4">Verlaß die Welt und laß sie gehen. *** </seg>
                         </l>
                     </div>
+                    
                 </div>
             </div>
         </body>

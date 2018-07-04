@@ -339,6 +339,7 @@ class TestText(unittest.TestCase):
     def setUp(self):
         self.TEI = HookTest.capitains_units.cts.CTSText_TestUnit("/false/path")
         self.TEI.scheme = "tei"
+        self.TEI.guidelines = "2.tei"
         self.backup = [x for x in HookTest.capitains_units.cts.CTSText_TestUnit.tests]
         self.Epidoc = HookTest.capitains_units.cts.CTSText_TestUnit("/false/path")
         self.Epidoc.scheme = "epidoc"
@@ -537,7 +538,7 @@ class TestText(unittest.TestCase):
         HookTest.capitains_units.cts.CTSText_TestUnit.tests = [
             "parsable", "has_urn", "passages"
         ]
-        x = list(unit.test("epidoc"))
+        x = list(unit.test("epidoc", "2.epidoc"))
         unit.flush()
         a = list(unit.count_words())
         self.assertEqual(
@@ -555,7 +556,7 @@ class TestText(unittest.TestCase):
         HookTest.capitains_units.cts.CTSText_TestUnit.tests = [
             "parsable", "has_urn", "passages"
         ]
-        x = list(unit.test("epidoc"))
+        x = list(unit.test("epidoc", "2.epidoc"))
         unit.flush()
         a = list(unit.count_words())
         self.assertEqual(

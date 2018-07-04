@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml-model href="../../../epidoc.rng"
-schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml-model href="https://digitallatin.github.io/guidelines/critical-editions.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
 <TEI xmlns="http://www.tei-c.org/ns/1.0">
     <teiHeader>
         <fileDesc>
             <titleStmt>
-                <title type="work">Divan</title>
+                <title type="work">Divān</title>
                 <title type="sub">Machine readable text</title>
                 <author n="Hafez">Khwāja Shams-ud-Dīn Muhammad Hāfez-e Shīrāzī</author>
-                <editor role="editor">H. Wilberforce Clarke</editor>
-                <sponsor>Perseus Project, Tufts University</sponsor>
+                <editor role="editor">ganjoor.net</editor>
+                <editor role="editor">Moḥammad Qazvini and Qāsem Ḡani</editor>
+                <sponsor>Open Philology Project, Tufts University</sponsor>
                 <principal>Gregory Crane</principal>
                 <respStmt>
                     <resp>Prepared under the supervision of</resp>
@@ -26,11 +26,10 @@ schematypens="http://relaxng.org/ns/structure/1.0"?>
             <sourceDesc>
                 <bibl>
                     <author>Khwāja Shams-ud-Dīn Muhammad Hāfez-e Shīrāzī</author>
-               
                     <title>Divan</title>
-                    <pubPlace>Calcutta</pubPlace>
-                    <publisher>Government of India Central Printing Office</publisher>
-                    <date>1891</date>
+                    <pubPlace>Tehran</pubPlace>
+                    <publisher>Caphana-i Maglis</publisher>
+                    <date>1941</date>
                 </bibl>
             </sourceDesc>
         </fileDesc>
@@ -62,43 +61,45 @@ schematypens="http://relaxng.org/ns/structure/1.0"?>
             </langUsage>
         </profileDesc>
         <revisionDesc>
-            <change when="2014-10-25" who="Saeed Majidi">Automatically generated initial markup</change>
+            <change when="2014-10-25" who="Saeed Majidi">Automatically generated initial
+                markup</change>
         </revisionDesc>
     </teiHeader>
-    <text xml:lang="en">
+    <text xml:lang="fa">
         <body>
-            <div type="translation" n="urn:cts:farsiLit:hafez.divan.perseus-eng1" xml:lang="eng">
+            <div type="edition" rend="rtl" n="urn:cts:farsiLit:hafez.divan.perseus-far1" xml:lang="far">
                 <div type="textpart" subtype="letter" n="1" xml:id="Alif">
                     <div type="textpart" subtype="poem" n="1">
                         <l n="1">
-                            <seg n="1">Ho ! Saki, pass around and offer the bowl (of love for God) : ### </seg>
-                            <seg n="2">For (the burden of) love (for God) at first (on the day of covenant) appeared easy, but (now) difficulties have occurred. *** </seg>
+                            <seg n="1">الا یا ایها الساقی ادر کاسا و ناولها ### </seg>
+                            <seg n="2">که عشق آسان نمود اول ولی افتاد مشکل‌ها *** </seg>
                         </l>
                         <l n="2">
-                            <seg n="1">By reason of the perfume (hope) of the musk-pod, that, at the end (of night), the breeze displayeth from that (knotted) fore-lock, ### </seg>
-                            <seg n="2">From the twist of its musky (dark, fragrant) curl, what blood (of grief) befell the hearts (of the lovers of God)! *** </seg>
+                            <seg n="1">به بوی نافه‌ای کاخر صبا زان طره بگشاید ### </seg>
+                            <seg n="2">ز تاب جعد مشکینش چه خون افتاد در دل‌ها *** </seg>
                         </l>
                         <l n="3">
-                            <seg n="1">With wine, becolour the prayer-mat if the Pir of the magians (the perfect murshid) bid thee ; ### </seg>
-                            <seg n="2">For of the way and usage of the stages (to God) not without knowledge is the holy traveller (the perfect murshid). *** </seg>
+                            <seg n="1">مرا در منزل جانان چه امن عیش چون هر دم ### </seg>
+                            <seg n="2">جرس فریاد می‌دارد که بربندید محمل‌ها *** </seg>
                         </l>
                         <l n="4">
-                            <seg n="1">In the stage (this world) of the (true) Beloved, mine what ease and pleasure, when momently, ### </seg>
-                            <seg n="2">The (loud) bell (of the call of death) giveth voice, saying : " Bind ye up the chattels of existence !" *** </seg>
+                            <seg n="1">به می سجاده رنگین کن گرت پیر مغان گوید ### </seg>
+                            <seg n="2">که سالک بی‌خبر نبود ز راه و رسم منزل‌ها *** </seg>
                         </l>
                         <l n="5">
-                            <seg n="1">The dark night (of the world), and the fear of the wave (of grief), and the whirlpool so fearful (the time of death). ### </seg>
-                            <seg n="2">The light-burdened ones of the shore (ancestors who have passed the flood of death), how know they our state? *** </seg>
+                            <seg n="1">شب تاریک و بیم موج و گردابی چنین هایل ### </seg>
+                            <seg n="2">کجا دانند حال ما سبکباران ساحل‌ها *** </seg>
                         </l>
                         <l n="6">
-                            <seg n="1">By following my own fancy (in hastening to union with God), me (only) to ill fame all my work brought : ### </seg>
-                            <seg n="2">Secret, how remaineth that great mystery (of love) whereof (great) assemblies speak? *** </seg>
+                            <seg n="1">همه کارم ز خود کامی به بدنامی کشید آخر ### </seg>
+                            <seg n="2">نهان کی ماند آن رازی کز او سازند محفل‌ها *** </seg>
                         </l>
                         <l n="7">
-                            <seg n="1">Hafiz ! if thou desire the presence (union with God Most High) from Him be not absent : ### </seg>
-                            <seg n="2">When thou visitest thy Beloved, abandon the world ; and let it go. *** </seg>
+                            <seg n="1">حضوری گر همی‌خواهی از او غایب مشو حافظ ### </seg>
+                            <seg n="2">متی ما تلق من تهوی دع الدنیا و اهملها *** </seg>
                         </l>
                     </div>
+                    
                 </div>
             </div>
         </body>

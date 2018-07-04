@@ -1,3 +1,12 @@
+## 1.2.0 - 2018-07-04
+
+    - Added auto as a scheme for automatic RNG detection
+        - This detects the RNG from the <xml-model> element in the XML header
+        - Downloads the RNG if it is a URL
+        - Tests the file using this RNG
+    - Added possibility to give a local RNG file path in the --scheme argument to test against a custom local RNG
+    - Added --guideline argument in which the version of the CapiTainS guidelines should be specified
+
 ## 1.1.10 - 2018-06-26
 
     - Added unit tests to make sure the empty references and MissingRefsDecl exceptions print in the console
