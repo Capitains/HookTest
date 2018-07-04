@@ -1,3 +1,8 @@
+## 1.2.1 - 2018-07-04
+
+    - Added required validators package to setup.py
+    - Declared long description type so that documentation will show up better on PyPI
+
 ## 1.2.0 - 2018-07-04
 
     - Added auto as a scheme for automatic RNG detection
