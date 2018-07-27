@@ -444,7 +444,7 @@ class Test(object):
                     sys.stdout.write('.')
                     sys.stdout.flush()
                 else:
-                    sys.stdout.write('X')
+                    sys.stdout.write(str('X'))
                     sys.stdout.flush()
         elif self.ping and len(self.stack) >= self.triggering_size:
             self.flush(self.stack)
