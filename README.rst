@@ -116,6 +116,13 @@ The command is run with :code:`hooktest [-h] [-w WORKERS] [-s SCHEME] [-v] [-j J
 | --allowfailure                         | Returns a passing test result as long as at least one text passes    |
 +----------------------------------------+----------------------------------------------------------------------+
 
+Debugging
+#########
+
+Note that you can run some debugging function adding `HOOKTEST_DEBUG=True` before your command : `HOOKTEST_DEBUG=True hooktest --console --scheme tei --workers 1 --verbose 10  --countword --allowfailure ./ --scheme ignore`.
+It will display more informations in case tests struggle to go from one file to another. We recommend using only one worker in this context.
+
+
 Running HookTest on Travis CI
 #############################
 

@@ -338,6 +338,34 @@ class TestProcess(TestCase):
         self.assertEqual(status, "failed", "Test should fail")
         shutil.rmtree('./.rngs/')
 
+    def test_run_local_console_verbose_no_scheme(self):
+        """ Test a run on the local tests passages with console print with no RNG run """
+        status, logs = self.hooktest([
+            "./tests/test_repositories/test_wrong_tei", "--console", "--verbose", "--scheme", "ignore", "--guidelines", "2.epidoc"])
+        self.assertLogResult(
+            logs, "Metadata Files", "2",
+            "2 metadata files should be described in logs"
+        )
+        self.assertLogResult(
+            logs, "Passing Metadata", "2",
+            "2 metadata files should be passing in logs"
+        )
+        self.assertLogResult(
+            logs, "Total Texts", "1",
+            "3 texts should be described in logs"
+        )
+        self.assertLogResult(
+            logs, "Passing Texts", "1",
+            "2 texts should be passing in logs"
+        )
+        node_count, unit = self.parse_subset(logs, "hafez.divan.perseus-ger1.xml")
+        self.assertEqual(
+            node_count, "1;1;7;28",
+            "Correct node counts should be displayed for file using remote RNG"
+        )
+
+        self.assertEqual(status, "success", "Test should success")
+
     def test_run_local_console_verbose_path_to_rng_success(self):
         """ Test a run on the local tests passages with --scheme as local RNG path """
         status, logs = self.hooktest([

@@ -124,7 +124,7 @@ class Test(object):
     SCHEMES = {
         "tei": "tei.rng",
         "epidoc": "epidoc.rng",
-        "ignore": "epidoc.rng",
+        "ignore": None,
         "auto": "auto_rng"
     }
 

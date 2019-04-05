@@ -3,7 +3,7 @@ import subprocess
 import warnings
 from threading import Timer
 from collections import defaultdict
-from os import makedirs
+from os import makedirs, environ
 import os.path
 from hashlib import md5
 import time
@@ -722,19 +722,21 @@ class CTSText_TestUnit(TESTUnit):
         if self.countwords:
             tests.append("count_words")
 
-        if scheme.endswith("-ignore"):
-            scheme = scheme.replace("-ignore", "")
-        else:
+        if scheme in["tei", "epidoc", "auto_rng", "local_file"]:
             tests = [scheme] + tests
 
         self.scheme = scheme
         self.guidelines = guidelines
         self.rng = rng
-
+        if environ.get("HOOKTEST_DEBUG", False):
+            print("Starting %s " % self.path)
         i = 0
         for test in tests:
 
             # Show the logs and return the status
+
+            if environ.get("HOOKTEST_DEBUG", False):
+                print("\t Testing %s " % test)
             status = False not in [status for status in getattr(self, test)()]
             self.test_status[test] = status
             yield (CTSText_TestUnit.readable[test], status, self.logs)
