@@ -1,3 +1,8 @@
+## 1.2.3 - 2019-04-05
+
+- Fixed `--scheme ignore` (Issue #139)
+- Added the ability to debug tests with HOOKTEST_DEBUG environment variable
+
 ## 1.2.2 - 2018-07-04
 
     - Added requirements.txt to MANIFEST.in so that it will be included in PyPI
