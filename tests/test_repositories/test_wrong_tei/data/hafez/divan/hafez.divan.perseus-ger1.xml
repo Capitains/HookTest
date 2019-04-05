@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="some/stupid/path/to/epidoc.rng" type="application/xml" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<TEI xmlns="http://www.tei-c.org/ns/1.0">
+    <teiHeader>
+        <should_fail_whatever_this_should_be>
+            <titleStmt>
+                <title type="work">Divan</title>
+                <title type="sub">Machine readable text</title>
+                <author n="Hafez">Khwāja Shams-ud-Dīn Muhammad Hāfez-e Shīrāzī</author>
+                <editor role="editor"> Joseph Freiherr von Hammer Purgstall</editor>
+                <sponsor>Perseus Project, Tufts University</sponsor>
+                <principal>Gregory Crane</principal>
+                <respStmt>
+                    <resp>Prepared under the supervision of</resp>
+                    <name>Maryam Foradi</name>
+                    <name>Saeed Majidi</name>
+                </respStmt>
+                <funder n="org:HUM">Humboldt Foundation</funder>
+            </titleStmt>
+            <publicationStmt>
+                <publisher>Leipzig University</publisher>
+                <pubPlace>Leipzig, Germany</pubPlace>
+                <authority>Open Philology Project Project</authority>
+            </publicationStmt>
+            <sourceDesc>
+                <bibl>
+                    <author>Khwāja Shams-ud-Dīn Muhammad Hāfez-e Shīrāzī</author>
+               
+                    <title>Divan</title>
+                    <pubPlace>Stuttgart and Tübingen</pubPlace>
+                    <publisher/>
+                    <date>1812</date>
+                </bibl>
+            </sourceDesc>
+        </should_fail_whatever_this_should_be>
+        <encodingDesc><refsDecl n="CTS">
+            <cRefPattern matchPattern="(\\w+).(\\w+).(\\w+).(\\w+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n=\'$1\']/tei:div[@n=\'$2\']/tei:l[@n=\'$3\']/tei:seg[@n=\'$4\'])">
+                <p>This pointer pattern extracts letter and poem and line and seg</p>
+            </cRefPattern>
+            <cRefPattern matchPattern="(\\w+).(\\w+).(\\w+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n=\'$1\']/tei:div[@n=\'$2\']/tei:l[@n=\'$3\'])">
+                <p>This pointer pattern extracts letter and poem and line</p>
+            </cRefPattern>
+            <cRefPattern matchPattern="(\\w+).(\\w+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n=\'$1\']/tei:div[@n=\'$2\'])">
+                <p>This pointer pattern extracts letter and poem</p>
+            </cRefPattern>
+            <cRefPattern matchPattern="(\\w+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n=\'$1\'])">
+                <p>This pointer pattern extracts letter</p>
+            </cRefPattern>
+        </refsDecl>
+            <refsDecl>
+                <refState unit="letter" delim="."/>
+                <refState unit="poem" delim="."/>
+                <refState unit="line" delim="."/>
+                <refState unit="misra"/>
+            </refsDecl>
+        </encodingDesc>
+        <profileDesc>
+            <langUsage>
+                <language ident="fa">Farsi</language>
+                <language ident="de">German</language>
+            </langUsage>
+        </profileDesc>
+        <revisionDesc>
+            <change when="2014-11-01" who="Saeed Majidi">Automatically generated initial markup</change>
+        </revisionDesc>
+    </teiHeader>
+    <text xml:lang="de">
+        <body>
+            <div type="translation" n="urn:cts:farsiLit:hafez.divan.perseus-ger1" xml:lang="ger">
+                <div type="textpart" subtype="letter" n="1" xml:id="Alif">
+                    <div type="textpart" subtype="poem" n="1">
+                        <l n="1">
+                            <seg n="1">Reich mir o Schenke das Glas, ### </seg>
+                            <seg n="2">Bringe den Gästen es zu, ### </seg>
+                            <seg n="3">Leicht' ist die Lieb' im Anfang ### </seg>
+                            <seg n="4">Es folgen aber Schwierigkeiten. *** </seg>
+                        </l>
+                        <l n="2">
+                            <seg n="1">Wegen des Moschusgeruchs, ### </seg>
+                            <seg n="2">Welchen der Ostwind geraubt ### </seg>
+                            <seg n="3">Deinen gekrau'sten Locken, ### </seg>
+                            <seg n="4">Wie vieles Blut entfloß dem Herzen! *** </seg>
+                        </l>
+                        <l n="3">
+                            <seg n="1">Folge dem Worte des Wirths ### </seg>
+                            <seg n="2">Färbe den Teppich mit Wein. ### </seg>
+                            <seg n="3">Reisende sind der Wege, ### </seg>
+                            <seg n="4">Sie sind des Laufs der Posten kundig. *** </seg>
+                        </l>
+                        <l n="4">
+                            <seg n="1">Kann ich genießen der Lust ### </seg>
+                            <seg n="2">In des Geliebten Gezelt, ### </seg>
+                            <seg n="3">Wenn mich zum Aufbruch immer ### </seg>
+                            <seg n="4">Der Karawane Glocke rufet! *** </seg>
+                        </l>
+                        <l n="5">
+                            <seg n="1">Finstere Schatten der Nacht! ### </seg>
+                            <seg n="2">Wogen und Wirbelgefahr, ### </seg>
+                            <seg n="3">Können Euch wohl begreifen, ### </seg>
+                            <seg n="4">Die leicht geschürzt am Ufer wohnen? *** </seg>
+                        </l>
+                        <l n="6">
+                            <seg n="1">Durch die befriedigte Lust ### </seg>
+                            <seg n="2">Ward ich zum Mährchen der Stadt, ### </seg>
+                            <seg n="3">Kann ein Geheimniß bleiben ### </seg>
+                            <seg n="4">Der Stoff der allgemeinen Sage? *** </seg>
+                        </l>
+                        <l n="7">
+                            <seg n="1">Wünschest du Ruhe Hafis, ### </seg>
+                            <seg n="2">Folge dem köstlichen Rath: ### </seg>
+                            <seg n="3">Willst du das Liebchen finden, ### </seg>
+                            <seg n="4">Verlaß die Welt und laß sie gehen. *** </seg>
+                        </l>
+                    </div>
+                    
+                </div>
+            </div>
+        </body>
+    </text>
+</TEI>
