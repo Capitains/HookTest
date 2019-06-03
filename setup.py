@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from setuptools import setup, find_packages
 from codecs import open  # To use a consistent encoding
 from os import path
