@@ -612,7 +612,11 @@ class Test(object):
                                                                                     dtds=dtd_errors,
                                                                                     empts=empty_refs))
             t_pass = num_texts - num_failed
-            cov = round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
+            cov_results = [test.coverage for test in self.results.values()]
+            if cov_results:
+                cov = round(statistics.mean(cov_results), ndigits=2)
+            else:
+                cov = 0.00
             results_table = PT(["HookTestResults", ""])
             results_table.align["HookTestResults", ""] = "c"
             results_table.hrules = pt_all
