@@ -233,7 +233,7 @@ class CTSMetadata_TestUnit(TESTUnit):
                 status = allMembers and \
                     matches and onlyOneWork and self.urn and \
                     len(groupUrns) == 1 and \
-                    (len(texts)*2 + 1) == len(self.urns + worksUrns)
+                    (len(texts) * 2 + 1) == len(self.urns + worksUrns)
 
         yield status
 
@@ -521,7 +521,7 @@ class CTSText_TestUnit(TESTUnit):
                     with warnings.catch_warnings(record=True) as warning_record:
                         # Cause all warnings to always be triggered.
                         warnings.simplefilter("always")
-                        passages = self.Text.getValidReff(level=i+1, _debug=True)
+                        passages = self.Text.getValidReff(level=i + 1, _debug=True)
                         ids = [ref.split(".", i)[-1] for ref in passages]
                         space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
                         len_passage = len(passages)
@@ -543,7 +543,7 @@ class CTSText_TestUnit(TESTUnit):
                         yield status
                 except Exception as E:
                     self.error(E)
-                    self.log("Error when searching passages at level {0}".format(i+1))
+                    self.log("Error when searching passages at level {0}".format(i + 1))
                     yield False
                     break
         else:
@@ -698,7 +698,7 @@ class CTSText_TestUnit(TESTUnit):
             )
         elif self.guidelines == "2.tei":
             urns_holding_node = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS) + \
-                    self.xml.xpath("//tei:text[starts-with(@xml:base, 'urn:cts:')]", namespaces=TESTUnit.NS)
+                self.xml.xpath("//tei:text[starts-with(@xml:base, 'urn:cts:')]", namespaces=TESTUnit.NS)
 
         try:
             self.lang = urns_holding_node[0].get('{http://www.w3.org/XML/1998/namespace}lang')
@@ -745,7 +745,7 @@ class CTSText_TestUnit(TESTUnit):
             self.test_status[test] = status
             yield (CTSText_TestUnit.readable[test], status, self.logs)
             if test in self.breaks and not status:
-                for t in tests[i+1:]:
+                for t in tests[i + 1:]:
                     self.test_status[t] = False
                     yield (CTSText_TestUnit.readable[t], False, [])
                 break
