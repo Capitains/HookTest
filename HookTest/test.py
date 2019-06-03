@@ -534,7 +534,7 @@ class Test(object):
                         try:
                             show.remove("Duplicate passages")
                             show.remove("Forbidden characters")
-                        except:
+                        except ValueError:
                             pass
                     if unit.coverage != 100.0:
                         num_failed += 1
