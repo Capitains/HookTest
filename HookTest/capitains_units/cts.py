@@ -412,7 +412,7 @@ class CTSText_TestUnit(TESTUnit):
             yield False
             pass
         finally:
-            if not timer.isAlive():
+            if not timer.is_alive():
                 self.log("Timeout on RelaxNG")
                 yield False
                 timer.cancel()
