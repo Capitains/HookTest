@@ -20,7 +20,7 @@ from prettytable import ALL as pt_all
 
 import HookTest.capitains_units.cts
 import HookTest.units
-from colors import white, magenta, black
+from colors import white, magenta
 from operator import attrgetter
 
 
