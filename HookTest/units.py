@@ -33,11 +33,11 @@ class TESTUnit(object):
     @property
     def logs(self):
         return self.__logs
-    
+
     def log(self, message):
         if isinstance(message, str) and not message.isspace() and len(message) > 0:
             self.__logs.append(">>>>>> " + TESTUnit.SPACE_REPLACER.sub(" ", message.lstrip()))
-    
+
     def error(self, error):
         if isinstance(error, Exception):
             self.log(str(type(error)) + " : " + str(error))
@@ -100,5 +100,3 @@ class TESTUnit(object):
 
         for key, value in filtered_logs.items():
             yield "{0} [In {1}]".format(key, "; ".join(value))
-
-

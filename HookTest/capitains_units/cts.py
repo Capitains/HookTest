@@ -173,15 +173,15 @@ class CTSMetadata_TestUnit(TESTUnit):
                 onlyOneWork = True
                 allMembers = True
                 worksUrns = [
-                        urn
-                        for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
-                        if urn and len(MyCapytain.common.reference.URN(urn)) == 4
-                    ]
+                    urn
+                    for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
+                    if urn and len(MyCapytain.common.reference.URN(urn)) == 4
+                ]
                 groupUrns = [
-                        urn
-                        for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
-                        if urn and len(MyCapytain.common.reference.URN(urn)) == 3
-                    ]
+                    urn
+                    for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
+                    if urn and len(MyCapytain.common.reference.URN(urn)) == 3
+                ]
                 self.urn = None
                 urn = None
                 if len(worksUrns) == 1:
@@ -230,10 +230,10 @@ class CTSMetadata_TestUnit(TESTUnit):
 
                 self.log("Edition, translation, and commentary urns : " + " ".join(self.urns))
 
-                status = allMembers and\
-                         matches and onlyOneWork and self.urn and \
-                            len(groupUrns) == 1 and \
-                            (len(texts)*2+1) == len(self.urns + worksUrns)
+                status = allMembers and \
+                    matches and onlyOneWork and self.urn and \
+                    len(groupUrns) == 1 and \
+                    (len(texts)*2 + 1) == len(self.urns + worksUrns)
 
         yield status
 
@@ -396,7 +396,7 @@ class CTSText_TestUnit(TESTUnit):
         :param rng_path: Path to the RelaxNG file to run against the XML to test
         """
         test = subprocess.Popen(
-            ["java", "-Duser.country=US",  "-Duser.language=en", "-jar", TESTUnit.JING, rng_path, self.path],
+            ["java", "-Duser.country=US", "-Duser.language=en", "-jar", TESTUnit.JING, rng_path, self.path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False
@@ -459,8 +459,8 @@ class CTSText_TestUnit(TESTUnit):
         # We have a name for the rng file but also for the in-download marker
         # Note : we might want to add a os.makedirs somewhere with exists=True
         makedirs(".rngs", exist_ok=True)
-        stable_local = os.path.join(".rngs", sha+".rng")
-        stable_local_downloading = os.path.join(".rngs", sha+".rng-indownload")
+        stable_local = os.path.join(".rngs", sha + ".rng")
+        stable_local_downloading = os.path.join(".rngs", sha + ".rng-indownload")
 
         # check if the stable_local rng already exists
         # if it does, immediately run the rng test and move to the next rng in the file
@@ -615,8 +615,12 @@ class CTSText_TestUnit(TESTUnit):
         """
         if self.xml is not None:
             if self.guidelines == "2.tei":
-                urns = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS) + \
-                        self.xml.xpath("//tei:text[starts-with(@xml:base, 'urn:cts:')]", namespaces=TESTUnit.NS)
+                urns = self.xml.xpath(
+                    "//tei:text/tei:body[starts-with(@n, 'urn:cts:')]",
+                    namespaces=TESTUnit.NS)
+                urns += self.xml.xpath(
+                    "//tei:text[starts-with(@xml:base, 'urn:cts:')]",
+                    namespaces=TESTUnit.NS)
             else:
                 urns = self.xml.xpath(
                     "//tei:body/tei:div[@type='edition' and starts-with(@n, 'urn:cts:')]",
