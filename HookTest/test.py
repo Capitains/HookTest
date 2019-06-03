@@ -24,7 +24,7 @@ from colors import white, magenta
 from operator import attrgetter
 
 
-pr_finder = re.compile("pull\/([0-9]+)\/head")
+pr_finder = re.compile("pull/([0-9]+)/head")
 
 
 class DefaultFinder(object):
