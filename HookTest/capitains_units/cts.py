@@ -702,7 +702,7 @@ class CTSText_TestUnit(TESTUnit):
 
         try:
             self.lang = urns_holding_node[0].get('{http://www.w3.org/XML/1998/namespace}lang')
-        except:
+        except IndexError:
             self.lang = ''
         if self.lang == '' or self.lang is None:
             self.lang = 'UNK'
