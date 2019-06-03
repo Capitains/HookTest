@@ -740,7 +740,7 @@ class CTSText_TestUnit(TESTUnit):
             status = False not in [status for status in getattr(self, test)()]
             self.test_status[test] = status
             yield (CTSText_TestUnit.readable[test], status, self.logs)
-            if test in self.breaks and status == False:
+            if test in self.breaks and not status:
                 for t in tests[i+1:]:
                     self.test_status[t] = False
                     yield (CTSText_TestUnit.readable[t], False, [])
