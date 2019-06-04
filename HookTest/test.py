@@ -400,11 +400,11 @@ class Test(object):
 
         self.text_files, self.cts_files = self.find()
         self.start()
-        # We deal with Inventory files first to get a list of urns
 
+        # We deal with Inventory files first to get a list of urns
         with Pool(processes=self.workers) as executor:
-            # We iterate over a dictionary of completed tasks
-            for future in executor.imap_unordered(self.unit, [file for file in self.cts_files]):
+            # We iterate over the list of files, checking them in parallel.
+            for future in executor.imap_unordered(self.unit, self.cts_files):
                 result, filepath, additional = future
                 self.results[filepath] = result
                 self.passing[filepath] = result.status
@@ -416,10 +416,9 @@ class Test(object):
             executor.join()
             self.middle()  # To print the results from the metadata file tests
 
-        # We load a thread pool which has 5 maximum workers
+        # Now deal with the text files.
         with Pool(processes=self.workers) as executor:
-            # We create a dictionary of tasks which
-            for future in executor.imap_unordered(self.unit, [file for file in self.text_files]):
+            for future in executor.imap_unordered(self.unit, self.text_files):
                 result, filepath, additional = future
                 self.results[filepath] = result
                 self.passing[filepath] = result.status
