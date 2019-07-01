@@ -7,11 +7,12 @@ python:
 # command to install dependencies
 install:
     - pip install -r requirements.txt
-    - pip install coveralls
+    - pip install coveralls pycodestyle
 
 # command to run tests
 script:
     - coverage run setup.py test
+    - pycodestyle --ignore E501 *.py HookTest
 after_success:
     - coverage combine
     - coveralls

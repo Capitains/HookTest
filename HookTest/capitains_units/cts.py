@@ -173,15 +173,15 @@ class CTSMetadata_TestUnit(TESTUnit):
                 onlyOneWork = True
                 allMembers = True
                 worksUrns = [
-                        urn
-                        for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
-                        if urn and len(MyCapytain.common.reference.URN(urn)) == 4
-                    ]
+                    urn
+                    for urn in self.xml.xpath("//ti:work/@urn", namespaces=TESTUnit.NS)
+                    if urn and len(MyCapytain.common.reference.URN(urn)) == 4
+                ]
                 groupUrns = [
-                        urn
-                        for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
-                        if urn and len(MyCapytain.common.reference.URN(urn)) == 3
-                    ]
+                    urn
+                    for urn in self.xml.xpath("//ti:work/@groupUrn", namespaces=TESTUnit.NS)
+                    if urn and len(MyCapytain.common.reference.URN(urn)) == 3
+                ]
                 self.urn = None
                 urn = None
                 if len(worksUrns) == 1:
@@ -230,10 +230,10 @@ class CTSMetadata_TestUnit(TESTUnit):
 
                 self.log("Edition, translation, and commentary urns : " + " ".join(self.urns))
 
-                status = allMembers and\
-                         matches and onlyOneWork and self.urn and \
-                            len(groupUrns) == 1 and \
-                            (len(texts)*2+1) == len(self.urns + worksUrns)
+                status = allMembers and \
+                    matches and onlyOneWork and self.urn and \
+                    len(groupUrns) == 1 and \
+                    (len(texts) * 2 + 1) == len(self.urns + worksUrns)
 
         yield status
 
@@ -396,7 +396,7 @@ class CTSText_TestUnit(TESTUnit):
         :param rng_path: Path to the RelaxNG file to run against the XML to test
         """
         test = subprocess.Popen(
-            ["java", "-Duser.country=US",  "-Duser.language=en", "-jar", TESTUnit.JING, rng_path, self.path],
+            ["java", "-Duser.country=US", "-Duser.language=en", "-jar", TESTUnit.JING, rng_path, self.path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False
@@ -412,7 +412,7 @@ class CTSText_TestUnit(TESTUnit):
             yield False
             pass
         finally:
-            if not timer.isAlive():
+            if not timer.is_alive():
                 self.log("Timeout on RelaxNG")
                 yield False
                 timer.cancel()
@@ -459,8 +459,8 @@ class CTSText_TestUnit(TESTUnit):
         # We have a name for the rng file but also for the in-download marker
         # Note : we might want to add a os.makedirs somewhere with exists=True
         makedirs(".rngs", exist_ok=True)
-        stable_local = os.path.join(".rngs", sha+".rng")
-        stable_local_downloading = os.path.join(".rngs", sha+".rng-indownload")
+        stable_local = os.path.join(".rngs", sha + ".rng")
+        stable_local_downloading = os.path.join(".rngs", sha + ".rng-indownload")
 
         # check if the stable_local rng already exists
         # if it does, immediately run the rng test and move to the next rng in the file
@@ -521,7 +521,7 @@ class CTSText_TestUnit(TESTUnit):
                     with warnings.catch_warnings(record=True) as warning_record:
                         # Cause all warnings to always be triggered.
                         warnings.simplefilter("always")
-                        passages = self.Text.getValidReff(level=i+1, _debug=True)
+                        passages = self.Text.getValidReff(level=i + 1, _debug=True)
                         ids = [ref.split(".", i)[-1] for ref in passages]
                         space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
                         len_passage = len(passages)
@@ -543,7 +543,7 @@ class CTSText_TestUnit(TESTUnit):
                         yield status
                 except Exception as E:
                     self.error(E)
-                    self.log("Error when searching passages at level {0}".format(i+1))
+                    self.log("Error when searching passages at level {0}".format(i + 1))
                     yield False
                     break
         else:
@@ -615,8 +615,12 @@ class CTSText_TestUnit(TESTUnit):
         """
         if self.xml is not None:
             if self.guidelines == "2.tei":
-                urns = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS) + \
-                        self.xml.xpath("//tei:text[starts-with(@xml:base, 'urn:cts:')]", namespaces=TESTUnit.NS)
+                urns = self.xml.xpath(
+                    "//tei:text/tei:body[starts-with(@n, 'urn:cts:')]",
+                    namespaces=TESTUnit.NS)
+                urns += self.xml.xpath(
+                    "//tei:text[starts-with(@xml:base, 'urn:cts:')]",
+                    namespaces=TESTUnit.NS)
             else:
                 urns = self.xml.xpath(
                     "//tei:body/tei:div[@type='edition' and starts-with(@n, 'urn:cts:')]",
@@ -694,11 +698,11 @@ class CTSText_TestUnit(TESTUnit):
             )
         elif self.guidelines == "2.tei":
             urns_holding_node = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS) + \
-                    self.xml.xpath("//tei:text[starts-with(@xml:base, 'urn:cts:')]", namespaces=TESTUnit.NS)
+                self.xml.xpath("//tei:text[starts-with(@xml:base, 'urn:cts:')]", namespaces=TESTUnit.NS)
 
         try:
             self.lang = urns_holding_node[0].get('{http://www.w3.org/XML/1998/namespace}lang')
-        except:
+        except IndexError:
             self.lang = ''
         if self.lang == '' or self.lang is None:
             self.lang = 'UNK'
@@ -740,8 +744,8 @@ class CTSText_TestUnit(TESTUnit):
             status = False not in [status for status in getattr(self, test)()]
             self.test_status[test] = status
             yield (CTSText_TestUnit.readable[test], status, self.logs)
-            if test in self.breaks and status == False:
-                for t in tests[i+1:]:
+            if test in self.breaks and not status:
+                for t in tests[i + 1:]:
                     self.test_status[t] = False
                     yield (CTSText_TestUnit.readable[t], False, [])
                 break
