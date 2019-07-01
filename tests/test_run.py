@@ -35,7 +35,7 @@ class TestProcess(TestCase):
         :param right_column: Right Column content
         :param message: Message to show for failure
         """
-        self.assertRegex(logs, "\|\s+"+left_column+"\s+\|\s+" + right_column + "\s+\|", message)
+        self.assertRegex(logs, r"\|\s+" + left_column + r"\s+\|\s+" + right_column + r"\s+\|", message)
 
     def parse_subset(self, logs, file):
         """
@@ -45,11 +45,11 @@ class TestProcess(TestCase):
         :return:
         """
         regex = re.compile(
-            "(?:("+re.escape(white(file))+")|(" + re.escape(magenta(file)) + "))"  # Starts with the file name
-            "\s+\|\s+([0-9;]+)\s+\|\s+"  # Nodes Count
-            "([a-zA-Z0-9 \n\|\:\;]+)\+---"  # Colonnes
+            r"(?:(" + re.escape(white(file)) + ")|(" + re.escape(magenta(file)) + "))"  # Starts with the file name
+            r"\s+\|\s+([0-9;]+)\s+\|\s+"     # Nodes Count
+            r"([a-zA-Z0-9 \n\|\:\;]+)\+---"  # Colonnes
         )
-        regex_tests = re.compile("(?:(?:\|\s+)+)?((?:[A-Za-z0-9:]+\s)+)")
+        regex_tests = re.compile(r"(?:(?:\|\s+)+)?((?:[A-Za-z0-9:]+\s)+)")
         for _, match, nodes, text in regex.findall(logs):
             tests = [l.strip() for l in regex_tests.findall(text)]
             return nodes, tests
@@ -238,15 +238,15 @@ class TestProcess(TestCase):
             "3 texts should be described in logs"
         )
         self.assertRegex(
-            logs, "hafez\.divan\.perseus-far1\.xml",
+            logs, r"hafez\.divan\.perseus-far1\.xml",
             "Far1 file should be named"
         )
         self.assertRegex(
-            logs, "hafez\.divan\.perseus-eng1\.xml",
+            logs, r"hafez\.divan\.perseus-eng1\.xml",
             "eng1 file should be named"
         )
         self.assertRegex(
-            logs, "hafez\.divan\.perseus-ger1\.xml",
+            logs, r"hafez\.divan\.perseus-ger1\.xml",
             "ger1 file should be named"
         )
         self.assertEqual(status, "failed", "Test should fail")
