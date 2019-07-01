@@ -1,3 +1,8 @@
+## 1.2.4 - 2019-07-01
+
+- Mostly warning fixed thanks to @rilian
+- Avoid StatisticError if the directory is empty by @rilian
+
 ## 1.2.3 - 2019-04-05
 
 - Fixed `--scheme ignore` (Issue #139)
