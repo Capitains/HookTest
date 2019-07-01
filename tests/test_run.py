@@ -77,7 +77,7 @@ class TestProcess(TestCase):
         ..note:: See https://wrongsideofmemphis.wordpress.com/2010/03/01/store-standard-output-on-a-variable-in-python/
 
         :param args: List of commandline arguments
-        :return: Sys stdout, status
+        :return: status, output_string
         """
         # Store the reference, in case you want to show things again in standard output
         old_stdout = sys.stdout
@@ -570,3 +570,28 @@ auto: Automatically detect the RNG to use from the xml-model declaration in each
             "Word Counting", logs,
             "Word Counting should not be there"
         )
+
+    def test_run_emptyDir(self):
+        """Test a run against an empty directory.
+
+        Should fail but not assert."""
+        status, logs = self.hooktest([
+            "./tests/emptyDir", "--console", "--verbose"
+        ])
+        self.assertLogResult(
+            logs, "Total Texts", "0",
+            "No texts should have been found"
+        )
+        self.assertLogResult(
+            logs, "Passing Texts", "0",
+            "No texts should have passed"
+        )
+        self.assertLogResult(
+            logs, "Metadata Files", "0",
+            "No metadata should have been found"
+        )
+        self.assertLogResult(
+            logs, "Passing Metadata", "0",
+            "No metadata should have passed"
+        )
+        self.assertEqual(status, "error", "Should error with no files")
