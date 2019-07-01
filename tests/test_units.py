@@ -343,7 +343,7 @@ class TestText(unittest.TestCase):
         self.backup = [x for x in HookTest.capitains_units.cts.CTSText_TestUnit.tests]
         self.Epidoc = HookTest.capitains_units.cts.CTSText_TestUnit("/false/path")
         self.Epidoc.scheme = "epidoc"
-        self.frame = """<TEI xmlns="http://www.tei-c.org/ns/1.0">
+        self.frame = r"""<TEI xmlns="http://www.tei-c.org/ns/1.0">
 <teiHeader>
 <encodingDesc>
 <refsDecl n="CTS">

@@ -14,10 +14,10 @@ class TESTUnit(object):
     EPIDOC = pkg_resources.resource_filename("HookTest", "resources/epidoc.rng")
     TEI_ALL = pkg_resources.resource_filename("HookTest", "resources/tei.rng")
     JING = pkg_resources.resource_filename("jingtrang", "jing.jar")
-    RNG_ERROR = re.compile("([0-9]+):([0-9]+):(.*);")
-    RNG_FAILURE = re.compile("([0-9]+):([0-9]+):(\s*fatal.*)")
-    SPACE_REPLACER = re.compile("(\s{2,})")
-    FORBIDDEN_CHAR = re.compile("[^\w\d]")
+    RNG_ERROR = re.compile(r"([0-9]+):([0-9]+):(.*);")
+    RNG_FAILURE = re.compile(r"([0-9]+):([0-9]+):(\s*fatal.*)")
+    SPACE_REPLACER = re.compile(r"(\s{2,})")
+    FORBIDDEN_CHAR = re.compile(r"[^\w\d]")
     NS = {"tei": "http://www.tei-c.org/ns/1.0", "ti": "http://chs.harvard.edu/xmlns/cts"}
     PARSER = etree.XMLParser(no_network=True, resolve_entities=False)
 
@@ -33,11 +33,11 @@ class TESTUnit(object):
     @property
     def logs(self):
         return self.__logs
-    
+
     def log(self, message):
         if isinstance(message, str) and not message.isspace() and len(message) > 0:
             self.__logs.append(">>>>>> " + TESTUnit.SPACE_REPLACER.sub(" ", message.lstrip()))
-    
+
     def error(self, error):
         if isinstance(error, Exception):
             self.log(str(type(error)) + " : " + str(error))
@@ -100,5 +100,3 @@ class TESTUnit(object):
 
         for key, value in filtered_logs.items():
             yield "{0} [In {1}]".format(key, "; ".join(value))
-
-
