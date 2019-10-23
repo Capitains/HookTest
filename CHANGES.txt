@@ -1,3 +1,7 @@
+## 1.2.3 - 2019-10-23
+
+    - Changed requirments.txt so that MyCapytain < 3.0.0 will be installed
+
 ## 1.2.2 - 2018-07-04
 
     - Added requirements.txt to MANIFEST.in so that it will be included in PyPI
