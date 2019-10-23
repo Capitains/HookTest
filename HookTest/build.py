@@ -80,10 +80,7 @@ class Build(object):
                     continue
         # Covers the case where the source and destination directories are different, so files are copied instead of removed
         else:
-            try:
-                shutil.rmtree('{}data'.format(self.dest))
-            except:
-                pass
+            shutil.rmtree('{}data'.format(self.dest), ignore_errors=True)
             for file in files:
                 if file.replace(self.path, '') in passing:
                     try:

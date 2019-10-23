@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from setuptools import setup, find_packages
 from codecs import open  # To use a consistent encoding
 from os import path
@@ -14,8 +16,8 @@ with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
     now_we_have_dev = False
     for line in f:
         if line.startswith("#"):
-             if "test" in line:
-                   now_we_have_dev = True
+            if "test" in line:
+                now_we_have_dev = True
         elif now_we_have_dev:
             tests_require.append(line.strip())
         else:
@@ -23,7 +25,7 @@ with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
 
 setup(
     name='HookTest',
-    version="1.2.3",
+    version="1.2.5",
     description='Hook Test Script for GitHub/CapiTainS repositories',
     long_description=long_description,
     long_description_content_type="text/x-rst",

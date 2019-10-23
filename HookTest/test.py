@@ -20,11 +20,11 @@ from prettytable import ALL as pt_all
 
 import HookTest.capitains_units.cts
 import HookTest.units
-from colors import white, magenta, black
+from colors import white, magenta
 from operator import attrgetter
 
 
-pr_finder = re.compile("pull\/([0-9]+)\/head")
+pr_finder = re.compile("pull/([0-9]+)/head")
 
 
 class DefaultFinder(object):
@@ -82,9 +82,9 @@ class FilterFinder(DefaultFinder):
         cts = glob.glob(os.path.join(directory, "data/{textgroup}/__cts__.xml".format(
             textgroup=textgroup
         ))) + \
-              glob.glob(os.path.join(directory, "data/{textgroup}/{work}/__cts__.xml".format(
-                  textgroup=textgroup, work=work
-              )))
+            glob.glob(os.path.join(directory, "data/{textgroup}/{work}/__cts__.xml".format(
+                textgroup=textgroup, work=work
+            )))
         files = glob.glob(os.path.join(directory, "data/{textgroup}/{work}/{version}.xml".format(
             textgroup=textgroup, work=work, version=version
         )))
@@ -124,7 +124,7 @@ class Test(object):
     SCHEMES = {
         "tei": "tei.rng",
         "epidoc": "epidoc.rng",
-        "ignore": "epidoc.rng",
+        "ignore": None,
         "auto": "auto_rng"
     }
 
@@ -400,11 +400,11 @@ class Test(object):
 
         self.text_files, self.cts_files = self.find()
         self.start()
-        # We deal with Inventory files first to get a list of urns
 
+        # We deal with Inventory files first to get a list of urns
         with Pool(processes=self.workers) as executor:
-            # We iterate over a dictionary of completed tasks
-            for future in executor.imap_unordered(self.unit, [file for file in self.cts_files]):
+            # We iterate over the list of files, checking them in parallel.
+            for future in executor.imap_unordered(self.unit, self.cts_files):
                 result, filepath, additional = future
                 self.results[filepath] = result
                 self.passing[filepath] = result.status
@@ -416,10 +416,9 @@ class Test(object):
             executor.join()
             self.middle()  # To print the results from the metadata file tests
 
-        # We load a thread pool which has 5 maximum workers
+        # Now deal with the text files.
         with Pool(processes=self.workers) as executor:
-            # We create a dictionary of tasks which
-            for future in executor.imap_unordered(self.unit, [file for file in self.text_files]):
+            for future in executor.imap_unordered(self.unit, self.text_files):
                 result, filepath, additional = future
                 self.results[filepath] = result
                 self.passing[filepath] = result.status
@@ -444,7 +443,7 @@ class Test(object):
                     sys.stdout.write('.')
                     sys.stdout.flush()
                 else:
-                    sys.stdout.write('X')
+                    sys.stdout.write(str('X'))
                     sys.stdout.flush()
         elif self.ping and len(self.stack) >= self.triggering_size:
             self.flush(self.stack)
@@ -457,7 +456,7 @@ class Test(object):
             self.scheme = "auto_rng"
         if self.console:
             print(">>> Starting tests !", flush=True)
-            print(">>> Files to test : "+str(self.count_files), flush=True)
+            print(">>> Files to test : " + str(self.count_files), flush=True)
         elif self.ping:
             self.send({
                 "logs": [
@@ -534,7 +533,7 @@ class Test(object):
                         try:
                             show.remove("Duplicate passages")
                             show.remove("Forbidden characters")
-                        except:
+                        except ValueError:
                             pass
                     if unit.coverage != 100.0:
                         num_failed += 1
@@ -548,36 +547,41 @@ class Test(object):
                         failed_tests = '\n'.join([x for x in unit.units if unit.units[x] is False and x in show])
 
                     if unit.additional['duplicates']:
-                        duplicate_nodes += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                      nodes=', '.join(unit.additional['duplicates']))
+                        duplicate_nodes += '\t{name}\t{nodes}\n'.format(
+                            name=magenta(os.path.basename(unit.name)),
+                            nodes=', '.join(unit.additional['duplicates']))
                     if unit.additional['forbiddens']:
-                        forbidden_chars += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                      nodes=', '.join(unit.additional['forbiddens']))
+                        forbidden_chars += '\t{name}\t{nodes}\n'.format(
+                            name=magenta(os.path.basename(unit.name)),
+                            nodes=', '.join(unit.additional['forbiddens']))
                     if unit.additional["dtd_errors"] and self.verbose >= 6:
-                        dtd_errors += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                   nodes=', '.join(unit.additional["dtd_errors"]))
+                        dtd_errors += '\t{name}\t{nodes}\n'.format(
+                            name=magenta(os.path.basename(unit.name)),
+                            nodes=', '.join(unit.additional["dtd_errors"]))
 
                     if unit.additional["capitains_errors"]:
-                        capitains_errors += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                   nodes=', '.join(unit.additional["capitains_errors"]))
+                        capitains_errors += '\t{name}\t{nodes}\n'.format(
+                            name=magenta(os.path.basename(unit.name)),
+                            nodes=', '.join(unit.additional["capitains_errors"]))
 
                     if unit.additional["empties"]:
-                        empty_refs += '\t{name}\t{nodes}\n'.format(name=magenta(os.path.basename(unit.name)),
-                                                                   nodes=', '.join(unit.additional["empties"]))
+                        empty_refs += '\t{name}\t{nodes}\n'.format(
+                            name=magenta(os.path.basename(unit.name)),
+                            nodes=', '.join(unit.additional["empties"]))
 
                     if self.verbose >= 7 or unit.status is False:
                         if self.countwords:
                             row = [
                                 "{}".format(text_color(os.path.basename(unit.name))),
-                                 "{:,}".format(unit.additional['words']),
-                                 ';'.join([str(x[1]) for x in unit.additional['citations']]),
-                                 failed_tests
+                                "{:,}".format(unit.additional['words']),
+                                ';'.join([str(x[1]) for x in unit.additional['citations']]),
+                                failed_tests
                             ]
                         else:
                             row = [
                                 "{}".format(text_color(os.path.basename(unit.name))),
-                                 ';'.join([str(x[1]) for x in unit.additional['citations']]),
-                                 failed_tests
+                                ';'.join([str(x[1]) for x in unit.additional['citations']]),
+                                failed_tests
                             ]
                         display_table.add_row(row)
 
@@ -605,14 +609,18 @@ class Test(object):
 
             if capitains_errors:
                 capitains_errors = magenta('CapiTainS parsing errors found:\n') + capitains_errors + '\n'
-                
+
             print("{caps}{dupes}{forbs}{dtds}{empts}>>> End of the test !\n".format(caps=capitains_errors,
                                                                                     dupes=duplicate_nodes,
                                                                                     forbs=forbidden_chars,
                                                                                     dtds=dtd_errors,
                                                                                     empts=empty_refs))
             t_pass = num_texts - num_failed
-            cov = round(statistics.mean([test.coverage for test in self.results.values()]), ndigits=2)
+            cov_results = [test.coverage for test in self.results.values()]
+            if cov_results:
+                cov = round(statistics.mean(cov_results), ndigits=2)
+            else:
+                cov = 0.00
             results_table = PT(["HookTestResults", ""])
             results_table.align["HookTestResults", ""] = "c"
             results_table.hrules = pt_all
@@ -745,7 +753,7 @@ class Test(object):
                 directory=self.directory,
                 name=name,
                 units=test,
-                coverage=len([v for v in results if v is True])/len(results)*100,
+                coverage=len([v for v in results if v is True]) / len(results) * 100,
                 status=False not in results,
                 logs=logs,
                 additional=additional,

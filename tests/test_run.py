@@ -35,7 +35,7 @@ class TestProcess(TestCase):
         :param right_column: Right Column content
         :param message: Message to show for failure
         """
-        self.assertRegex(logs, "\|\s+"+left_column+"\s+\|\s+" + right_column + "\s+\|", message)
+        self.assertRegex(logs, r"\|\s+" + left_column + r"\s+\|\s+" + right_column + r"\s+\|", message)
 
     def parse_subset(self, logs, file):
         """
@@ -45,11 +45,11 @@ class TestProcess(TestCase):
         :return:
         """
         regex = re.compile(
-            "(?:("+re.escape(white(file))+")|(" + re.escape(magenta(file)) + "))"  # Starts with the file name
-            "\s+\|\s+([0-9;]+)\s+\|\s+"  # Nodes Count
-            "([a-zA-Z0-9 \n\|\:\;]+)\+---"  # Colonnes
+            r"(?:(" + re.escape(white(file)) + ")|(" + re.escape(magenta(file)) + "))"  # Starts with the file name
+            r"\s+\|\s+([0-9;]+)\s+\|\s+"     # Nodes Count
+            r"([a-zA-Z0-9 \n\|\:\;]+)\+---"  # Colonnes
         )
-        regex_tests = re.compile("(?:(?:\|\s+)+)?((?:[A-Za-z0-9:]+\s)+)")
+        regex_tests = re.compile(r"(?:(?:\|\s+)+)?((?:[A-Za-z0-9:]+\s)+)")
         for _, match, nodes, text in regex.findall(logs):
             tests = [l.strip() for l in regex_tests.findall(text)]
             return nodes, tests
@@ -77,7 +77,7 @@ class TestProcess(TestCase):
         ..note:: See https://wrongsideofmemphis.wordpress.com/2010/03/01/store-standard-output-on-a-variable-in-python/
 
         :param args: List of commandline arguments
-        :return: Sys stdout, status
+        :return: status, output_string
         """
         # Store the reference, in case you want to show things again in standard output
         old_stdout = sys.stdout
@@ -238,15 +238,15 @@ class TestProcess(TestCase):
             "3 texts should be described in logs"
         )
         self.assertRegex(
-            logs, "hafez\.divan\.perseus-far1\.xml",
+            logs, r"hafez\.divan\.perseus-far1\.xml",
             "Far1 file should be named"
         )
         self.assertRegex(
-            logs, "hafez\.divan\.perseus-eng1\.xml",
+            logs, r"hafez\.divan\.perseus-eng1\.xml",
             "eng1 file should be named"
         )
         self.assertRegex(
-            logs, "hafez\.divan\.perseus-ger1\.xml",
+            logs, r"hafez\.divan\.perseus-ger1\.xml",
             "ger1 file should be named"
         )
         self.assertEqual(status, "failed", "Test should fail")
@@ -337,6 +337,34 @@ class TestProcess(TestCase):
 
         self.assertEqual(status, "failed", "Test should fail")
         shutil.rmtree('./.rngs/')
+
+    def test_run_local_console_verbose_no_scheme(self):
+        """ Test a run on the local tests passages with console print with no RNG run """
+        status, logs = self.hooktest([
+            "./tests/test_repositories/test_wrong_tei", "--console", "--verbose", "--scheme", "ignore", "--guidelines", "2.epidoc"])
+        self.assertLogResult(
+            logs, "Metadata Files", "2",
+            "2 metadata files should be described in logs"
+        )
+        self.assertLogResult(
+            logs, "Passing Metadata", "2",
+            "2 metadata files should be passing in logs"
+        )
+        self.assertLogResult(
+            logs, "Total Texts", "1",
+            "3 texts should be described in logs"
+        )
+        self.assertLogResult(
+            logs, "Passing Texts", "1",
+            "2 texts should be passing in logs"
+        )
+        node_count, unit = self.parse_subset(logs, "hafez.divan.perseus-ger1.xml")
+        self.assertEqual(
+            node_count, "1;1;7;28",
+            "Correct node counts should be displayed for file using remote RNG"
+        )
+
+        self.assertEqual(status, "success", "Test should success")
 
     def test_run_local_console_verbose_path_to_rng_success(self):
         """ Test a run on the local tests passages with --scheme as local RNG path """
@@ -542,3 +570,28 @@ auto: Automatically detect the RNG to use from the xml-model declaration in each
             "Word Counting", logs,
             "Word Counting should not be there"
         )
+
+    def test_run_emptyDir(self):
+        """Test a run against an empty directory.
+
+        Should fail but not assert."""
+        status, logs = self.hooktest([
+            "./tests/emptyDir", "--console", "--verbose"
+        ])
+        self.assertLogResult(
+            logs, "Total Texts", "0",
+            "No texts should have been found"
+        )
+        self.assertLogResult(
+            logs, "Passing Texts", "0",
+            "No texts should have passed"
+        )
+        self.assertLogResult(
+            logs, "Metadata Files", "0",
+            "No metadata should have been found"
+        )
+        self.assertLogResult(
+            logs, "Passing Metadata", "0",
+            "No metadata should have passed"
+        )
+        self.assertEqual(status, "error", "Should error with no files")

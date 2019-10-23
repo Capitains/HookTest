@@ -38,7 +38,8 @@ XMLLANG_DOCUMENTS = [
     ("epidoc", "<body>", "<body n='{urn}'>", False, "Epidoc fails with urn without xml lang on @n/body"),
 
 ]
-# Epidocs Tests
+
+# Epidocs Tests
 XMLLANG_DOCUMENTS += [
     (scheme, source, replacement.replace("{epidoc}", type_epidoc), boolean, message.replace("{epidoc}", type_epidoc))
     for scheme, source, replacement, boolean, message in
