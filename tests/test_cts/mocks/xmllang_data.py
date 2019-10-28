@@ -1,4 +1,4 @@
-from MyCapytain.common.utils import xmlparser
+from MyCapytain.common.utils.xml import xmlparser
 from lxml.etree import tostring
 
 TEMPLATES = """<TEI xmlns="http://www.tei-c.org/ns/1.0">

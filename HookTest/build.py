@@ -122,7 +122,7 @@ class Build(object):
         plaintext = [r.export(Mimetypes.PLAINTEXT, exclude=["tei:note"]).strip() for r in passages]
         if self.cites is True:
             for i, t in enumerate(plaintext):
-                plaintext[i] = '#' + reffs[i] + '#\n' + t
+                plaintext[i] = '#' + str(reffs[i]) + '#\n' + t
         with open('{}text/{}.txt'.format(self.dest, text.split('/')[-1].replace('.xml', '')), mode='w') as f:
             f.write('\n\n'.join(plaintext))
 

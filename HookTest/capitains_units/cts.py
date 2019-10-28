@@ -382,7 +382,7 @@ class CTSText_TestUnit(TESTUnit):
         """
         if self.Text:
             # In 1.0.1, MyCapytain actually create an empty citation by default
-            if not self.Text.citation.isEmpty():
+            if self.Text.citation.is_set():
                 self.log(str(len(self.Text.citation)) + " citation's level found")
                 yield True
             else:
@@ -522,8 +522,9 @@ class CTSText_TestUnit(TESTUnit):
                         # Cause all warnings to always be triggered.
                         warnings.simplefilter("always")
                         passages = self.Text.getValidReff(level=i + 1, _debug=True)
-                        ids = [ref.split(".", i)[-1] for ref in passages]
+                        ids = [str(ref).split(".", i)[-1] for ref in passages]
                         space_in_passage = TESTUnit.FORBIDDEN_CHAR.search("".join(ids))
+                        with_dot = [str(ref) for ref in passages if ref and ref.depth > i + 1]
                         len_passage = len(passages)
                         status = len_passage > 0
                         self.log(str(len_passage) + " found")
@@ -537,6 +538,8 @@ class CTSText_TestUnit(TESTUnit):
                             self.forbiddens += ["'{}'".format(n)
                                                 for ref, n in zip(ids, passages)
                                                 if TESTUnit.FORBIDDEN_CHAR.search(ref)]
+                        if with_dot and with_dot is not None:
+                            self.forbiddens += ["'{}'".format(n) for n in with_dot if "'{}'".format(n) not in self.forbiddens]
                         if status is False:
                             yield status
                             break
@@ -592,7 +595,7 @@ class CTSText_TestUnit(TESTUnit):
             # Checking for duplicate
             xpaths = [
                 self.Text.xml.xpath(
-                    MyCapytain.common.reference.REFERENCE_REPLACER.sub(
+                    MyCapytain.common.reference._capitains_cts.REFERENCE_REPLACER.sub(
                         r"\1",
                         citation.refsDecl
                     ),

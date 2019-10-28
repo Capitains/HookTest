@@ -531,6 +531,24 @@ class TestText(unittest.TestCase):
         self.assertEqual(results, [True], "Illegal characters should pass if no forbidden characters")
         self.assertEqual(unit.forbiddens, [], "All passage IDs containing forbidden characters should be stored.")
 
+    def test_dots_in_citations_fail(self):
+        """ Test that a dot in a single citation unit fails"""
+
+        unit = HookTest.capitains_units.cts.CTSText_TestUnit("/a/b")
+        unit.xml = etree.ElementTree(etree.fromstring(self.frame.format(
+            "/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']",
+            "/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2']",
+            "0", "1", "a.b", "d-d", "@", "7", "1", "2"
+        ))).getroot()
+        unit.Text = CapitainsCtsText(resource=unit.xml)
+        unit.flush()
+        results = [result for result in unit.passages()]
+        self.assertEqual(results, [True, True], "Passages are found")
+        results = list(unit.forbidden())
+        self.assertEqual(results, [False], "Illegal character should fail")
+        self.assertIn(">>>>>> Reference with forbidden characters found: '@', '0.a.b', '0.d-d'", unit.logs)
+        self.assertCountEqual(unit.forbiddens, ["'@'", "'0.a.b'", "'0.d-d'"], "All passage IDs containing forbidden characters should be stored.")
+
     def test_count_words(self):
         """ Test collision of passages
         """
