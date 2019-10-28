@@ -1,6 +1,11 @@
+## 1.3.0 - 2019-10-23
+
+    - Small changes to imports and functions to be compatible with MyCapytain 3.0.0
+    - Also a change so that the forbidden characters test will actually fail when a citation has too many periods ('.')
+
 ## 1.2.5 - 2019-10-23
 
-    - Changed requirments.txt so that MyCapytain < 3.0.0 will be installed
+    - Changed requirements.txt so that MyCapytain < 3.0.0 will be installed
 
 ## 1.2.4 - 2019-07-01
 
