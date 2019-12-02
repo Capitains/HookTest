@@ -18,7 +18,7 @@ import time
 from prettytable import PrettyTable as PT
 from prettytable import ALL as pt_all
 
-import HookTest.capitains_units.cts
+import HookTest.capitains_units
 import HookTest.units
 from colors import white, magenta
 from operator import attrgetter
@@ -28,29 +28,35 @@ pr_finder = re.compile("pull/([0-9]+)/head")
 
 
 class DefaultFinder(object):
-    """ Finder are object used in Test to retrieve the target files of the tests
+    """ Finders are objects used in Test to retrieve the target files of the tests
 
     """
     def __init__(self, **options):
-        pass
+        self.metadata_names = options.get('metadata_names', '__cts__.xml')
 
     def find(self, directory):
         """ Return object to find
 
         :param directory: Root Directory to search in
 
-        :returns: Path of xml text files, Path of __cts__.xml files
+        :returns: Path of xml text files, Path of metadata files
         :rtype: (list, list)
         """
-        data = glob.glob(os.path.join(directory, "data/*/*/*.xml")) + glob.glob(os.path.join(directory, "data/*/*.xml"))
-        files, cts = [f for f in data if "__cts__.xml" not in f], [f for f in data if "__cts__.xml" in f]
+        # Note that the recursive glob was introduced in Python 3.5. Perhaps we need to set this as a requirement.
+        # Otherwise it will be difficult to know precisely how deep to go in the directory tree if guidelines == 3.0.
+        data = glob.glob(os.path.join(directory, "data/*/**/*.xml"), recursive=True)
+        files, metas = [f for f in data if self.metadata_names not in f], [f for f in data if self.metadata_names in f]
 
         # For unit testing and human readable progression
-        cts.sort()
+        metas.sort()
         files.sort()
-        return files, cts
+        return files, metas
 
 
+# I think we need a new FilterFinder for v3 guidelines that is folder based instead of URN based.
+# The value would then either be the folder to find the metadata file or the precise text file to test.
+# It would also be easiest here to base this only on directories and sub-directories.
+# It it were based on parents and children, then any metadata file would need to be parsed to find the children.
 class FilterFinder(DefaultFinder):
     """ FilterFinder provide a filtering capacity to DefaultFinder.
 
@@ -62,13 +68,14 @@ class FilterFinder(DefaultFinder):
     """
     def __init__(self, include, **options):
         self.include = include.split(".")
+        self.metadata_names = options.get('metadata_names', '__cts__.xml')
 
     def find(self, directory):
         """ Return object to find
 
         :param directory: Root Directory to search in
 
-        :returns: Path of xml text files, Path of __cts__.xml files
+        :returns: Path of xml text files, Path of metadata files
         :rtype: (list, list)
         """
         textgroup, work, version = "*", "*", "*.*.*",
@@ -126,6 +133,20 @@ class Test(object):
         "epidoc": "epidoc.rng",
         "ignore": None,
         "auto": "auto_rng"
+    }
+    GUIDELINES = {
+        "2": {
+            'metadata_names': '__cts__.xml',
+            'metadata_class': HookTest.capitains_units.cts.CTSMetadata_TestUnit,
+            'text_class': HookTest.capitains_units.cts.CTSText_TestUnit,
+            'finder_splitter': '.'
+        },
+        "3": {
+            'metadata_names': '__capitains__.xml',
+            'metadata_class': HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit,
+            'text_class': HookTest.capitains_units.guidelines_3.V3Text_TestUnit,
+            'finder_splitter': '/'
+        }
     }
 
     def __init__(
@@ -187,6 +208,7 @@ class Test(object):
                 self.guidelines = "2.epidoc"
             else:
                 self.guidelines = "2.tei"
+        self.guideline_options = self.GUIDELINES[self.guidelines.split('.')[0]]
         if isinstance(triggering_size, int):
             self.__triggering_size = triggering_size
 

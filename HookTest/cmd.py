@@ -87,7 +87,7 @@ def parse_args(args):
 
     parser.add_argument(
         "--guidelines", help="The version and type of guidelines to use",
-        choices=("2.tei", "2.epidoc")
+        choices=("2.tei", "2.epidoc", "3.tei", "3.epidoc")
     )
 
     args = parser.parse_args(args)

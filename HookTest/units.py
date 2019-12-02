@@ -3,6 +3,8 @@ from collections import defaultdict
 
 import pkg_resources
 from lxml import etree
+import subprocess
+from threading import Timer
 
 
 class TESTUnit(object):
@@ -100,3 +102,43 @@ class TESTUnit(object):
 
         for key, value in filtered_logs.items():
             yield "{0} [In {1}]".format(key, "; ".join(value))
+
+    def run_rng(self, rng_path):
+        """ Run the RNG through JingTrang
+
+        :param rng_path: Path to the RelaxNG file to run against the XML to test
+        """
+        test = subprocess.Popen(
+            ["java", "-Duser.country=US", "-Duser.language=en", "-jar", TESTUnit.JING, rng_path, self.path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False
+        )
+        out = []
+        error = []
+        timer = Timer(self.timeout, test.kill)
+        try:
+            timer.start()
+            out, error = test.communicate()
+        except Exception as E:
+            self.error(E)
+            yield False
+            pass
+        finally:
+            if not timer.is_alive():
+                self.log("Timeout on RelaxNG")
+                yield False
+                timer.cancel()
+                pass
+            timer.cancel()
+
+        # This is to deal with Travis printing a message about the _JAVA_OPTIONS when a java command is run
+        # Travis printing this command resulted in this test not passing
+        out = '\n'.join([x for x in out.decode().split('\n') if '_JAVA_OPTIONS' not in x]).encode()
+        error = '\n'.join([x for x in error.decode().split('\n') if '_JAVA_OPTIONS' not in x]).encode()
+
+        if len(out) > 0:
+            for issue in TESTUnit.rng_logs(out):
+                self.log(issue)
+                self.dtd_errors.append(issue)
+        yield len(out) == 0 and len(error) == 0
