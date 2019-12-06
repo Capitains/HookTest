@@ -53,12 +53,8 @@ class DefaultFinder(object):
         return files, metas
 
 
-# I think we need a new FilterFinder for v3 guidelines that is folder based instead of URN based.
-# The value would then either be the folder to find the metadata file or the precise text file to test.
-# It would also be easiest here to base this only on directories and sub-directories.
-# It it were based on parents and children, then any metadata file would need to be parsed to find the children.
 class FilterFinder(DefaultFinder):
-    """ FilterFinder provide a filtering capacity to DefaultFinder.
+    """ FilterFinder provides a URN-based filtering capacity to DefaultFinder.
 
     It takes an include option which takes the form of the work urn (*ie.* in urn:cts:latinLit:phi1294.phi002.perseus-lat2 \
     this would be phi1294.phi002.perseus-lat2, cut at any of the points : phi1294, phi1294.phi002, phi1294.phi002.perseus-lat2)
@@ -67,8 +63,8 @@ class FilterFinder(DefaultFinder):
     :type include: str
     """
     def __init__(self, include, **options):
+        super(FilterFinder, self).__init__(**options)
         self.include = include.split(".")
-        self.metadata_names = options.get('metadata_names', '__cts__.xml')
 
     def find(self, directory):
         """ Return object to find
@@ -86,11 +82,11 @@ class FilterFinder(DefaultFinder):
         if len(self.include) >= 1:
             textgroup = self.include[0]
 
-        cts = glob.glob(os.path.join(directory, "data/{textgroup}/__cts__.xml".format(
-            textgroup=textgroup
+        cts = glob.glob(os.path.join(directory, "data/{textgroup}/{metadata_name}".format(
+            textgroup=textgroup, metadata_name=self.metadata_names
         ))) + \
-            glob.glob(os.path.join(directory, "data/{textgroup}/{work}/__cts__.xml".format(
-                textgroup=textgroup, work=work
+            glob.glob(os.path.join(directory, "data/{textgroup}/{work}/{metadata_name}".format(
+                textgroup=textgroup, work=work, metadata_name=self.metadata_names
             )))
         files = glob.glob(os.path.join(directory, "data/{textgroup}/{work}/{version}.xml".format(
             textgroup=textgroup, work=work, version=version
@@ -99,6 +95,46 @@ class FilterFinder(DefaultFinder):
         cts.sort()
         files.sort()
         return files, cts
+
+
+# This is a new finder for v3 guidelines that is folder based instead of URN based.
+# It is based on purely on directories and sub-directories.
+# If it were based on parents and children, then any metadata file would need to be parsed to find the children.
+class FolderFinder(DefaultFinder):
+    """ FolderFinder provides a folder-based filtering capacity to DefaultFinder.
+
+    It points either to a folder, in which case it will test all metadata and text files in that folder and all of its
+    sub-folders, or to a specific text file, in which case it will test that file as well as its governing metadata file
+
+    :param include: The folder or file to be tested
+    :type include: str
+    """
+    def __init__(self, include, **options):
+        super(FolderFinder, self).__init__(**options)
+        self.include = os.path.relpath(include)
+
+    def find(self, directory):
+        """ Return object to find
+
+        :param directory: Root Directory to search in
+
+        :returns: Path of xml text files, Path of metadata files
+        :rtype: (list, list)
+        """
+        if self.include.endswith('.xml'):
+            if not os.path.isfile(self.include):
+                self.include = os.path.join(directory, 'data', self.include)
+            metadata = glob.glob(os.path.join(os.path.dirname(self.include), self.metadata_names))
+            files = glob.glob(self.include)
+        else:
+            if not os.path.isdir(self.include) or self.include == '.':
+                self.include = os.path.join(directory, 'data', self.include)
+            metadata = glob.glob(os.path.join(self.include, '**/{}'.format(self.metadata_names)), recursive=True)
+            files = [f for f in glob.glob(os.path.join(self.include, '**/*.xml'), recursive=True) if self.metadata_names not in f]
+        # For unit testing and human readable progression
+        metadata.sort()
+        files.sort()
+        return files, metadata
 
 
 class Test(object):
@@ -138,14 +174,12 @@ class Test(object):
         "2": {
             'metadata_names': '__cts__.xml',
             'metadata_class': HookTest.capitains_units.cts.CTSMetadata_TestUnit,
-            'text_class': HookTest.capitains_units.cts.CTSText_TestUnit,
-            'finder_splitter': '.'
+            'text_class': HookTest.capitains_units.cts.CTSText_TestUnit
         },
         "3": {
             'metadata_names': '__capitains__.xml',
             'metadata_class': HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit,
-            'text_class': HookTest.capitains_units.guidelines_3.V3Text_TestUnit,
-            'finder_splitter': '/'
+            'text_class': HookTest.capitains_units.guidelines_3.V3Text_TestUnit
         }
     }
 
@@ -230,9 +264,9 @@ class Test(object):
         if not finder:
             self.finder = DefaultFinder
         if finderoptions:
-            self.finder = self.finder(**finderoptions)
+            self.finder = self.finder(metadata_names=self.guideline_options['metadata_names'], **finderoptions)
         else:
-            self.finder = self.finder()
+            self.finder = self.finder(metadata_names=self.guideline_options['metadata_names'])
 
         self.from_travis_to_hook = from_travis_to_hook
 
@@ -288,7 +322,7 @@ class Test(object):
 
     @property
     def status(self):
-        """  Updated the status string based on available informations
+        """  Updated the status string based on available information
 
         :return: Status string updated
         :rtype: str
@@ -365,11 +399,11 @@ class Test(object):
         logs = []
         results = {}
         additional = []
-        if filepath.endswith("__cts__.xml"):
-            unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit(filepath)
-            texttype = "CTSMetadata"
+        if filepath.endswith(self.guideline_options['metadata_names']):
+            unit = self.guideline_options['metadata_class'](filepath)
+            texttype = "Metadata"
             logs.append(">>>> Testing " + filepath)
-            for name, status, unitlogs in unit.test():
+            for name, status, unitlogs in unit.test(scheme=self.scheme):
 
                 if status:
                     status_str = " passed"
@@ -385,8 +419,8 @@ class Test(object):
             additional += unit.urns
 
         else:
-            unit = HookTest.capitains_units.cts.CTSText_TestUnit(filepath, countwords=self.countwords, timeout=self.timeout)
-            texttype = "CTSText"
+            unit = self.guideline_options['text_class'](filepath, countwords=self.countwords, timeout=self.timeout)
+            texttype = "Text"
             logs.append(">>>> Testing " + filepath.split("data")[-1])
             for name, status, unitlogs in unit.test(self.scheme, self.guidelines, self.rng, self.inventory):
 
@@ -549,7 +583,7 @@ class Test(object):
             # try using self.results and then the UnitLog attributes instead of self.report
             # also use operator.attrgetter('name') instead of lambda x in the for statement
             for unit in sorted(self.results.values(), key=attrgetter('name')):
-                if not unit.name.endswith('__cts__.xml'):
+                if not unit.name.endswith(self.guideline_options['metadata_names']):
                     num_texts += 1
                     if unit.units["Passage level parsing"] is False:
                         try:

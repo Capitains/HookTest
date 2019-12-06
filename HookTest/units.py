@@ -5,6 +5,14 @@ import pkg_resources
 from lxml import etree
 import subprocess
 from threading import Timer
+from hashlib import md5
+import time
+import requests
+import shutil
+from lxml.etree import parse
+import validators
+from os import makedirs
+import os.path
 
 
 class TESTUnit(object):
@@ -142,3 +150,65 @@ class TESTUnit(object):
                 self.log(issue)
                 self.dtd_errors.append(issue)
         yield len(out) == 0 and len(error) == 0
+
+    def auto_rng(self):
+        xml = parse(self.path)
+        xml_dir = os.path.dirname(os.path.abspath(self.path))
+        # A file can have multiple schema
+        rngs = xml.xpath("/processing-instruction('xml-model')")
+        if len(rngs) == 0:
+            raise FileNotFoundError
+        for rng in rngs:
+            uri = rng.attrib["href"]
+            rng_path = os.path.abspath(os.path.join(xml_dir, uri))
+            if validators.url(uri):
+                rng_path = self.get_remote_rng(uri)
+            elif not os.path.isfile(rng_path):
+                self.dtd_errors.append("No RNG was found at " + rng_path)
+                yield False
+                continue
+            for status in self.run_rng(rng_path):
+                yield status
+
+    def get_remote_rng(self, url):
+        """ Given a valid URL, downloads the RNG from the given URL and returns the filepath and name
+
+        :param url: the URL of the RNG
+        :return: filenpath and name where the RNG was saved
+        """
+        # If the file is remote, have a file-system approved name
+        # The md5 hash seems like a good option
+        sha = md5(url.encode()).hexdigest()
+
+        # We have a name for the rng file but also for the in-download marker
+        # Note : we might want to add a os.makedirs somewhere with exists=True
+        makedirs(".rngs", exist_ok=True)
+        stable_local = os.path.join(".rngs", sha + ".rng")
+        stable_local_downloading = os.path.join(".rngs", sha + ".rng-indownload")
+
+        # check if the stable_local rng already exists
+        # if it does, immediately run the rng test and move to the next rng in the file
+        if os.path.exists(stable_local):
+            return stable_local
+        # We check if the in-download proof file is shown here
+        # Until the in-download marker is there, we need to wait
+        elif os.path.exists(stable_local_downloading):
+            # Wait up to 30 secs ?
+            # Have it as a constant that could be changed in environment variables ?
+            waited = self.timeout
+            while not os.path.exists(stable_local):
+                time.sleep(1)
+                waited -= 1
+                if waited < 0:
+                    # Maybe we can wait more ?
+                    raise EnvironmentError("The download of the RNG took too long")
+        else:
+            with open(stable_local_downloading, "w") as f:
+                f.write("Downloading...")
+            data = requests.get(url)
+            data.raise_for_status()
+            with open(stable_local_downloading, "w") as f:
+                f.write(data.text)
+            shutil.move(stable_local_downloading, stable_local)
+
+        return stable_local

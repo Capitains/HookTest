@@ -251,6 +251,9 @@
     <element name="dc:publisher">
       <a:documentation xml:lang="eng"> This holds publisher information according to the
         Dublin Core Elements ontology </a:documentation>
+      <optional>
+        <ref name="lang-att"/>
+      </optional>
       <choice>
         <data type="anyURI"/>
         <text/>
@@ -271,6 +274,9 @@
     <element name="dc:rights">
       <a:documentation xml:lang="eng"> This holds rights information according to the
         Dublin Core Elements ontology </a:documentation>
+      <optional>
+        <ref name="lang-att"/>
+      </optional>
       <choice>
         <data type="anyURI"/>
         <text/>
@@ -291,6 +297,9 @@
     <element name="dc:subject">
       <a:documentation xml:lang="eng"> This holds hold subject information according to the
         Dublin Core Elements ontology </a:documentation>
+      <optional>
+        <ref name="lang-att"/>
+      </optional>
       <choice>
         <data type="anyURI"/>
         <text/>
@@ -320,6 +329,9 @@
               <nsName ns="http://purl.org/ns/capitains"/>
             </except>
           </anyName>
+          <optional>
+            <ref name="lang-att"/>
+          </optional>
           <text/>
         </element>
       </zeroOrMore>

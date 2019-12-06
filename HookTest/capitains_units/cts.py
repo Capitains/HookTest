@@ -255,7 +255,7 @@ class CTSMetadata_TestUnit(TESTUnit):
             self.log("URN and path does not match")
         yield status
 
-    def test(self):
+    def test(self, **kwargs):
         """ Test a file with various checks
 
         :returns: List of urns

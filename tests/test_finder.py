@@ -1,5 +1,6 @@
 from unittest import TestCase
-from HookTest.test import FilterFinder, Test
+from HookTest.test import FilterFinder, Test, FolderFinder
+import os.path
 
 
 class TestFilterFinders(TestCase):
@@ -163,4 +164,210 @@ class TestFilterFindersInContext(TestCase):
                 'tests/repoFilters/data/stoa0255/stoa004/__cts__.xml'
             ],
             "All metadata should be found for version stoa0255.stoa004.perseus-fre2"
+        )
+
+
+class TestFolderFinders(TestCase):
+    def test_base_repo_folder(self):
+        texts, metadata = (FolderFinder(include='./', metadata_names='__capitains__.xml')).find('tests/guidelines_3.0_repo')
+        self.assertEqual(len(texts), 15, "There should be 15 texts in the whole repository.")
+        self.assertEqual(
+            texts, ['tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0004a/fulda_dronke.dronke0004a.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0041/fulda_dronke.dronke0041.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0064/fulda_dronke.dronke0064.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0124/fulda_dronke.dronke0124.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0126/fulda_dronke.dronke0126.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0192/fulda_dronke.dronke0192.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0323/fulda_dronke.dronke0323.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0616/fulda_dronke.dronke0616.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/passau.heuwieser0073.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/passau.heuwieser0073.lat002.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/passau.heuwieser0073.lat003.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/passau.heuwieser0073.lat004.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/passau.heuwieser0073.lat005.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0083/passau.heuwieser0083.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0083/passau.heuwieser0083.lat002.xml'])
+        self.assertEqual(
+            metadata, ['tests/guidelines_3.0_repo/data/./fulda_dronke/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0004a/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0041/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0064/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0124/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0126/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0192/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0323/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0616/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./passau/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./passau/heuwieser0083/__capitains__.xml']
+        )
+
+    def test_repo_relative_sub_folder(self):
+        texts, metadata = (FolderFinder(include='passau', metadata_names='__capitains__.xml')).find('tests/guidelines_3.0_repo')
+        self.assertEqual(len(texts), 7, "There should be 7 texts in passau.")
+        self.assertEqual(
+            texts, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat002.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat003.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat004.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat005.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0083/passau.heuwieser0083.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0083/passau.heuwieser0083.lat002.xml'])
+        self.assertEqual(
+            metadata, ['tests/guidelines_3.0_repo/data/passau/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/passau/heuwieser0073/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/passau/heuwieser0083/__capitains__.xml']
+        )
+
+    def test_repo_absolute_sub_folder(self):
+        texts, metadata = (FolderFinder(include=os.path.abspath('tests/guidelines_3.0_repo/data/passau'),
+                                        metadata_names='__capitains__.xml')).find('tests/guidelines_3.0_repo')
+        self.assertEqual(len(texts), 7,
+                         "There should be 7 texts in {}.".format(os.path.abspath('tests/guidelines_3.0_repo/data/passau')))
+        self.assertEqual(
+            texts, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat002.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat003.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat004.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat005.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0083/passau.heuwieser0083.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0083/passau.heuwieser0083.lat002.xml'])
+        self.assertEqual(
+            metadata, ['tests/guidelines_3.0_repo/data/passau/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/passau/heuwieser0073/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/passau/heuwieser0083/__capitains__.xml']
+        )
+
+    def test_repo_relative_sub_sub_folder(self):
+        texts, metadata = (FolderFinder(include='passau/heuwieser0073',
+                                        metadata_names='__capitains__.xml')).find('tests/guidelines_3.0_repo')
+        self.assertEqual(len(texts), 5, "There should be 5 texts in passau/heuwieser0073.")
+        self.assertEqual(
+            texts, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat002.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat003.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat004.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat005.xml'])
+        self.assertEqual(
+            metadata, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/__capitains__.xml']
+        )
+
+    def test_repo_relative_specific_text(self):
+        texts, metadata = (FolderFinder(include='passau/heuwieser0073/passau.heuwieser0073.lat001.xml',
+                                        metadata_names='__capitains__.xml')).find('tests/guidelines_3.0_repo')
+        self.assertEqual(len(texts), 1,
+                         "There should be 1 text in passau/heuwieser0073/passau.heuwieser0073.lat001.xml.")
+        self.assertEqual(
+            texts, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat001.xml'])
+        self.assertEqual(
+            metadata, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/__capitains__.xml']
+        )
+
+
+class TestFolderFindersInContext(TestCase):
+    def test_base_repo_folder(self):
+        texts, metadata = Test("tests/guidelines_3.0_repo",
+                               finder=FolderFinder,
+                               finderoptions={"include": "./"},
+                               guidelines='3.epidoc').find()
+        self.assertEqual(len(texts), 15, "There should be 15 texts in the whole repository.")
+        self.assertEqual(
+            texts, ['tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0004a/fulda_dronke.dronke0004a.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0041/fulda_dronke.dronke0041.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0064/fulda_dronke.dronke0064.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0124/fulda_dronke.dronke0124.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0126/fulda_dronke.dronke0126.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0192/fulda_dronke.dronke0192.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0323/fulda_dronke.dronke0323.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0616/fulda_dronke.dronke0616.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/passau.heuwieser0073.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/passau.heuwieser0073.lat002.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/passau.heuwieser0073.lat003.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/passau.heuwieser0073.lat004.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/passau.heuwieser0073.lat005.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0083/passau.heuwieser0083.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/./passau/heuwieser0083/passau.heuwieser0083.lat002.xml'])
+        self.assertEqual(
+            metadata, ['tests/guidelines_3.0_repo/data/./fulda_dronke/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0004a/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0041/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0064/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0124/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0126/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0192/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0323/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./fulda_dronke/dronke0616/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./passau/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./passau/heuwieser0073/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/./passau/heuwieser0083/__capitains__.xml']
+        )
+
+    def test_repo_relative_sub_folder(self):
+        texts, metadata = Test("tests/guidelines_3.0_repo",
+                               finder=FolderFinder,
+                               finderoptions={"include": "passau"},
+                               guidelines='3.epidoc').find()
+        self.assertEqual(len(texts), 7, "There should be 7 texts in passau.")
+        self.assertEqual(
+            texts, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat002.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat003.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat004.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat005.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0083/passau.heuwieser0083.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0083/passau.heuwieser0083.lat002.xml'])
+        self.assertEqual(
+            metadata, ['tests/guidelines_3.0_repo/data/passau/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/passau/heuwieser0073/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/passau/heuwieser0083/__capitains__.xml']
+        )
+
+    def test_repo_absolute_sub_folder(self):
+        texts, metadata = Test("tests/guidelines_3.0_repo",
+                               finder=FolderFinder,
+                               finderoptions={"include": os.path.abspath('tests/guidelines_3.0_repo/data/passau')},
+                               guidelines='3.epidoc').find()
+        self.assertEqual(len(texts), 7,
+                         "There should be 7 texts in {}.".format(os.path.abspath('tests/guidelines_3.0_repo/data/passau')))
+        self.assertEqual(
+            texts, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat002.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat003.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat004.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat005.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0083/passau.heuwieser0083.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0083/passau.heuwieser0083.lat002.xml'])
+        self.assertEqual(
+            metadata, ['tests/guidelines_3.0_repo/data/passau/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/passau/heuwieser0073/__capitains__.xml',
+                       'tests/guidelines_3.0_repo/data/passau/heuwieser0083/__capitains__.xml']
+        )
+
+    def test_repo_relative_sub_sub_folder(self):
+        texts, metadata = Test("tests/guidelines_3.0_repo",
+                               finder=FolderFinder,
+                               finderoptions={"include": 'passau/heuwieser0073'},
+                               guidelines='3.epidoc').find()
+        self.assertEqual(len(texts), 5, "There should be 5 texts in passau/heuwieser0073.")
+        self.assertEqual(
+            texts, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat001.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat002.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat003.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat004.xml',
+                    'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat005.xml'])
+        self.assertEqual(
+            metadata, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/__capitains__.xml']
+        )
+
+    def test_repo_relative_specific_text(self):
+        texts, metadata = Test("tests/guidelines_3.0_repo",
+                               finder=FolderFinder,
+                               finderoptions={"include": 'passau/heuwieser0073/passau.heuwieser0073.lat001.xml'},
+                               guidelines='3.epidoc').find()
+        self.assertEqual(len(texts), 1,
+                         "There should be 1 text in passau/heuwieser0073/passau.heuwieser0073.lat001.xml.")
+        self.assertEqual(
+            texts, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat001.xml'])
+        self.assertEqual(
+            metadata, ['tests/guidelines_3.0_repo/data/passau/heuwieser0073/__capitains__.xml']
         )

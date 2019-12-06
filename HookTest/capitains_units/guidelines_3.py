@@ -1,20 +1,13 @@
 import re
 import warnings
 from collections import defaultdict
-from os import makedirs, environ
+from os import environ
 import os.path
-from hashlib import md5
-import time
-import requests
-import shutil
-from lxml.etree import parse
-import validators
 import pkg_resources
 
 import MyCapytain.common
 from MyCapytain.common.constants import Mimetypes
 from MyCapytain.errors import DuplicateReference, EmptyReference, MissingRefsDecl
-from MyCapytain.resources.collections.dts import DtsCollection
 from MyCapytain.resources.texts.local.capitains.cts import CapitainsCtsText
 
 from HookTest.units import TESTUnit
@@ -56,16 +49,25 @@ class V3Metadata_TestUnit(TESTUnit):
     ns = {'dc': 'http://purl.org/dc/elements/1.1/', 'cpt': 'http://purl.org/ns/capitains'}
     CAPITAINS_RNG = pkg_resources.resource_filename("HookTest", "resources/capitains.rng")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, timeout=30, **kwargs):
         super(V3Metadata_TestUnit, self).__init__(*args, **kwargs)
-        self.identifiers = []
+        self.timeout = timeout
+        self.urns = []
         self.paths = []
+        self.dtd_errors = list()
 
     def capitain(self):
         """ Check that the file conforms to the Capitains RNG
         """
         try:
-            self.Text = self.run_rng(self.CAPITAINS_RNG)
+            if self.scheme == 'auto_rng':
+                try:
+                    self.Text = self.auto_rng().__next__()
+                except FileNotFoundError:
+                    self.log('No RNG processing instruction found for {}. Using default capitains.rng instead'.format(self.path))
+                    self.Text = self.run_rng(self.CAPITAINS_RNG).__next__()
+            else:
+                self.Text = self.run_rng(self.CAPITAINS_RNG).__next__()
         except Exception as E:
             self.error(E)
 
@@ -88,7 +90,7 @@ class V3Metadata_TestUnit(TESTUnit):
                 child_path = child.get('path')
                 child_id = child.get('identifier')
                 if child_path:
-                    self.paths.append(os.path.normpath(os.path.join(self.path, child_path)))
+                    self.paths.append(os.path.normpath(os.path.join(os.path.dirname(self.path), child_path)))
                 if child_id is None:
                     child_id = child.xpath('cpt:identifier', namespaces=self.ns)[0].text
                 if child.get('readable') == 'true':
@@ -99,7 +101,7 @@ class V3Metadata_TestUnit(TESTUnit):
             self.log("Sub-collection Identifiers : " + ", ".join(collection_children))
             self.log("Readable Children Identifiers : " + ", ".join(readable_children))
 
-            self.identifiers = collection_children + readable_children
+            self.urns = collection_children + readable_children
 
     def filename(self):
         """ Check to make sure the paths to local files represent actual files
@@ -112,14 +114,15 @@ class V3Metadata_TestUnit(TESTUnit):
         else:
             yield True
 
-    def test(self):
+    def test(self, **kwargs):
         """ Test a file with various checks
 
         :returns: List of urns
         :rtype: list.<str>
 
         """
-        self.identifiers = []
+        self.urns = []
+        self.scheme = kwargs.get('scheme', None)
 
         for test in V3Metadata_TestUnit.tests:
             # Show the logs and return the status
@@ -212,7 +215,7 @@ class V3Text_TestUnit(TESTUnit):
         self.test_status = defaultdict(bool)
         self.lang = ''
         self.dtd_errors = list()
-        super(DTSText_TestUnit, self).__init__(path, *args, **kwargs)
+        super(V3Text_TestUnit, self).__init__(path, *args, **kwargs)
 
     def parsable(self):
         """ Chacke that the text is parsable (as XML) and ingest it through MyCapytain then.
@@ -220,7 +223,7 @@ class V3Text_TestUnit(TESTUnit):
         .. note:: Override super(parsable) and add CapiTainS Ingesting to it
         """
         status = next(
-            super(DTSText_TestUnit, self).parsable()
+            super(V3Text_TestUnit, self).parsable()
         )
         if status is True:
             try:
@@ -246,66 +249,6 @@ class V3Text_TestUnit(TESTUnit):
                 yield False
         else:
             yield False
-
-
-    def auto_rng(self):
-        xml = parse(self.path)
-        xml_dir = os.path.dirname(os.path.abspath(self.path))
-        # A file can have multiple schema
-        for rng in xml.xpath("/processing-instruction('xml-model')"):
-            uri = rng.attrib["href"]
-            rng_path = os.path.abspath(os.path.join(xml_dir, uri))
-            if validators.url(uri):
-                rng_path = self.get_remote_rng(uri)
-            elif not os.path.isfile(rng_path):
-                self.dtd_errors.append("No RNG was found at " + rng_path)
-                yield False
-                continue
-            for status in self.run_rng(rng_path):
-                yield status
-
-    def get_remote_rng(self, url):
-        """ Given a valid URL, downloads the RNG from the given URL and returns the filepath and name
-
-        :param url: the URL of the RNG
-        :return: filenpath and name where the RNG was saved
-        """
-        # If the file is remote, have a file-system approved name
-        # The md5 hash seems like a good option
-        sha = md5(url.encode()).hexdigest()
-
-        # We have a name for the rng file but also for the in-download marker
-        # Note : we might want to add a os.makedirs somewhere with exists=True
-        makedirs(".rngs", exist_ok=True)
-        stable_local = os.path.join(".rngs", sha + ".rng")
-        stable_local_downloading = os.path.join(".rngs", sha + ".rng-indownload")
-
-        # check if the stable_local rng already exists
-        # if it does, immediately run the rng test and move to the next rng in the file
-        if os.path.exists(stable_local):
-            return stable_local
-        # We check if the in-download proof file is shown here
-        # Until the in-download marker is there, we need to wait
-        elif os.path.exists(stable_local_downloading):
-            # Wait up to 30 secs ?
-            # Have it as a constant that could be changed in environment variables ?
-            waited = self.timeout
-            while not os.path.exists(stable_local):
-                time.sleep(1)
-                waited -= 1
-                if waited < 0:
-                    # Maybe we can wait more ?
-                    raise EnvironmentError("The download of the RNG took too long")
-        else:
-            with open(stable_local_downloading, "w") as f:
-                f.write("Downloading...")
-            data = requests.get(url)
-            data.raise_for_status()
-            with open(stable_local_downloading, "w") as f:
-                f.write(data.text)
-            shutil.move(stable_local_downloading, stable_local)
-
-        return stable_local
 
     def epidoc(self):
         """ Check the original file against Epidoc rng through a java pipe
@@ -502,14 +445,14 @@ class V3Text_TestUnit(TESTUnit):
     def language(self):
         """ Tests to make sure an xml:lang element is on the correct node
         """
-        if self.guidelines == "2.epidoc":
+        if self.guidelines.endswith("epidoc"):
             urns_holding_node = self.xml.xpath(
                 "//tei:text/tei:body/tei:div"
                 "[@type='edition' or @type='translation' or @type='commentary']"
                 "[starts-with(@n, 'urn:cts:')]",
                 namespaces=TESTUnit.NS
             )
-        elif self.guidelines == "2.tei":
+        elif self.guidelines.endswith("tei"):
             urns_holding_node = self.xml.xpath("//tei:text/tei:body[starts-with(@n, 'urn:cts:')]", namespaces=TESTUnit.NS) + \
                 self.xml.xpath("//tei:text[starts-with(@xml:base, 'urn:cts:')]", namespaces=TESTUnit.NS)
 
@@ -535,7 +478,7 @@ class V3Text_TestUnit(TESTUnit):
         """
         if inventory is not None:
             self.inv = inventory
-        tests = [] + DTSText_TestUnit.tests
+        tests = [] + V3Text_TestUnit.tests
         if self.countwords:
             tests.append("count_words")
 
@@ -556,11 +499,11 @@ class V3Text_TestUnit(TESTUnit):
                 print("\t Testing %s " % test)
             status = False not in [status for status in getattr(self, test)()]
             self.test_status[test] = status
-            yield (DTSText_TestUnit.readable[test], status, self.logs)
+            yield (V3Text_TestUnit.readable[test], status, self.logs)
             if test in self.breaks and not status:
                 for t in tests[i + 1:]:
                     self.test_status[t] = False
-                    yield (DTSText_TestUnit.readable[t], False, [])
+                    yield (V3Text_TestUnit.readable[t], False, [])
                 break
             self.flush()
             i += 1

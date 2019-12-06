@@ -57,6 +57,13 @@ def parse_args(args):
         default=None
     )
     parser.add_argument(
+        "--filter-type", dest="finder_type",
+        help="Whether to filter the tested files according to their URN or the folder in which they are found. "
+             "Note that the URN filtering only works when the folder structure and file names conform to the MyCapytains "
+             "2.0 Guidlines.",
+        default='URN', choices=("URN", "folder")
+    )
+    parser.add_argument(
         "--countwords",
         help="Count words in texts passing the tests",
         action="store_true",
@@ -93,7 +100,10 @@ def parse_args(args):
     args = parser.parse_args(args)
     if args.finder:
         args.finderoptions = {"include": args.finder}
-        args.finder = HookTest.test.FilterFinder
+        if args.finder_type == 'folder':
+            args.finder = HookTest.test.FolderFinder
+        else:
+            args.finder = HookTest.test.FilterFinder
     if args.console == "inline":
         print("WARNING ! Inline printing is not available anymore since 1.1.8")
         args.console = True
