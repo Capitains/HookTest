@@ -489,7 +489,7 @@ auto: Automatically detect the RNG to use from the xml-model declaration in each
         ####
         text = self.filter(parsed, "/data/tei/tei/tei.tei.tei.xml")
         self.assertIn(
-            '>>>>>> error: element "varchar" not allowed anywhere [In (L3 C10)]', text["logs"],
+            '>>>>>> error: element "varchar" not allowed anywhere; expected element "teiHeader" [In (L3 C10)]', text["logs"],
             "TEI RNG Error should show"
         )
         self.assertFalse(text["status"], "Wrong TEI File should not pass")
@@ -502,7 +502,7 @@ auto: Automatically detect the RNG to use from the xml-model declaration in each
         ####
         text = self.filter(parsed, "/data/tei/tei/tei.tei.weirdurn.xml")
         self.assertIn(
-            '>>>>>> error: element "fileDesc" incomplete [In (L10 C16)]', text["logs"],
+            '>>>>>> error: element "fileDesc" incomplete; missing required element "sourceDesc" [In (L10 C16)]', text["logs"],
             "TEI RNG Error should show"
         )
         self.assertIn(

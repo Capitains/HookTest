@@ -1,9 +1,10 @@
 import unittest
 
-import HookTest.capitains_units.cts
+import HookTest.capitains_units
 import HookTest.units
 from MyCapytain.resources.texts.local.capitains.cts import CapitainsCtsText
 from lxml import etree
+from copy import copy
 
 
 class TestCTS(unittest.TestCase):
@@ -613,3 +614,156 @@ class TestText(unittest.TestCase):
         self.assertEqual(passages, [False], "Empty references should result in fail")
         self.assertIn(">>>>>> Empty references found : 1 empty reference(s) at citation level 1, 1 empty reference(s) at citation level 2, 1 empty reference(s) at citation level 3", unit.logs)
         self.assertEqual(unit.empties, ["1 empty reference(s) at citation level 1", "1 empty reference(s) at citation level 2", "1 empty reference(s) at citation level 3"])
+
+
+class TestCapitainsMetadata(unittest.TestCase):
+    """ Test the UnitTest for MyCapytain v3 metadata
+    """
+
+    def test_lang(self):
+        """ Test lang in readable check
+        """
+        # test passing readable
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit("tests/guidelines_3.0_repo/data/fulda_dronke/dronke0004a/__capitains__.xml")
+        self.assertEqual(unit.capitain().__next__(), True, "When lang, description and edition are there, metadata should work")
+        self.assertEqual(len(unit.logs), 0, 'There should be no DTD errors thrown.')
+
+        # test failing readable
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit("tests/guidelines_3.0_repo/data/fulda_dronke/dronke0041/__capitains__.xml")
+        self.assertEqual(unit.capitain().__next__(), False, "When lang fails, test should fail")
+        self.assertEqual(len(unit.dtd_errors), 1, 'There should only be one DTD error thrown.')
+        self.assertIn('missing required element "dc:language"',
+                      unit.dtd_errors[0],
+                      'Message about dc:language should be given')
+
+    def test_urn(self):
+        """ Test that the identifiers for sub-collections are correctly found.
+        """
+
+        # test all identifiers present
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit("tests/guidelines_3.0_repo/data/passau/heuwieser0083/__capitains__.xml")
+        results = [a for a in unit.parsable()] + [a for a in unit.capitain()]
+
+        self.assertCountEqual(['urn:cts:formulae:passau.heuwieser0083.lat001',
+                               'urn:cts:formulae:passau.heuwieser0083.lat002'],
+                              unit.urns,
+                              'All child identifiers should be found.')
+        self.assertEqual([True, True], results, 'Both parsable and capitains should pass.')
+
+        # test one missing identifier
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit('tests/guidelines_3.0_repo/data/passau/heuwieser0073/__capitains__.xml')
+        results = [a for a in unit.parsable()] + [a for a in unit.capitain()]
+        self.assertCountEqual(['urn:cts:formulae:passau.heuwieser0073.lat004',
+                               'urn:cts:formulae:passau.heuwieser0073.lat003',
+                               'urn:cts:formulae:passau.heuwieser0073.lat001',
+                               'urn:cts:formulae:passau.heuwieser0073.lat005'],
+                              unit.urns,
+                              'All child identifiers should be found except the missing one.')
+        self.assertIn('>>>>>> The identifier for a sub-collection in tests/guidelines_3.0_repo/data/passau/heuwieser0073/__capitains__.xml is missing.',
+                      unit.logs,
+                      'The fact that a sub-collection does not have an identifier should be noted.')
+        self.assertEqual([True, False], results, 'Parsable should pass while capitains should fail.')
+
+    def test_collected_collection(self):
+        """ Make sure that a collection that draws readable and non-readable members from other collections works
+        """
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit("tests/guidelines_3.0_repo/data/collected/__capitains__.xml")
+        results = [a for a in unit.parsable()] + [a for a in unit.capitain()] + [a for a in unit.filename()]
+        self.assertEqual([True, True, True], results, 'Parsable, capitains, and filename should pass.')
+        self.assertCountEqual(['urn:cts:formulae:passau.heuwieser0083',
+                               'urn:cts:formulae:passau.heuwieser0073.lat001',
+                               'urn:cts:formulae:passau.heuwieser0073.lat005'],
+                              unit.urns,
+                              'Both readable and non-readable children should be found.')
+        self.assertIn(">>>>>> Readable Children Identifiers : urn:cts:formulae:passau.heuwieser0073.lat001, urn:cts:formulae:passau.heuwieser0073.lat005",
+                      unit.logs,
+                      'Readable children should be correctly identified.')
+        self.assertIn(">>>>>> Sub-collection Identifiers : urn:cts:formulae:passau.heuwieser0083",
+                      unit.logs,
+                      'Non-readable children should be correctly identified.')
+        self.assertCountEqual(['tests/guidelines_3.0_repo/data/passau/heuwieser0083/__capitains__.xml',
+                               'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat001.xml',
+                               'tests/guidelines_3.0_repo/data/passau/heuwieser0073/passau.heuwieser0073.lat005.xml'],
+                              unit.paths,
+                              'All files mentioned in the metadata file should show up in paths')
+
+    def test_filename(self):
+        """ Make sure that files named in a collection's path that don't exit throw errors
+        """
+        # test text group file where all the files exist
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit("tests/guidelines_3.0_repo/data/fulda_dronke/__capitains__.xml")
+        results = [a for a in unit.parsable()] + [a for a in unit.capitain()] + [a for a in unit.filename()]
+        self.assertEqual([True, True, True], results, 'Parsable, capitains, and filename tests should all pass.')
+        self.assertCountEqual(['tests/guidelines_3.0_repo/data/fulda_dronke/dronke0004a/__capitains__.xml',
+                               'tests/guidelines_3.0_repo/data/fulda_dronke/dronke0041/__capitains__.xml',
+                               'tests/guidelines_3.0_repo/data/fulda_dronke/dronke0064/__capitains__.xml',
+                               'tests/guidelines_3.0_repo/data/fulda_dronke/dronke0124/__capitains__.xml',
+                               'tests/guidelines_3.0_repo/data/fulda_dronke/dronke0126/__capitains__.xml',
+                               'tests/guidelines_3.0_repo/data/fulda_dronke/dronke0192/__capitains__.xml',
+                               'tests/guidelines_3.0_repo/data/fulda_dronke/dronke0323/__capitains__.xml',
+                               'tests/guidelines_3.0_repo/data/fulda_dronke/dronke0616/__capitains__.xml'],
+                              unit.paths,
+                              'All files mentioned in the metadata file should show up in paths')
+
+        # test a text group where some files are missing
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit("tests/guidelines_3.0_repo/data/passau/__capitains__.xml")
+        results = [a for a in unit.parsable()] + [a for a in unit.capitain()] + [a for a in unit.filename()]
+        self.assertEqual([True, True, False], results, 'Parsable and capitains should pass, filename should fail.')
+        self.assertIn('>>>>>> The following files were not found: tests/guidelines_3.0_repo/data/passau/heuwieser0001/__capitains__.xml, tests/guidelines_3.0_repo/data/passau/heuwieser0002/__capitains__.xml',
+                      unit.logs,
+                      "The files that don't exist should be named in the logs.")
+
+        # test a work-level file where all files exist
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit("tests/guidelines_3.0_repo/data/passau/heuwieser0083/__capitains__.xml")
+        results = [a for a in unit.parsable()] + [a for a in unit.capitain()] + [a for a in unit.filename()]
+        self.assertEqual([True, True, True], results, 'Parsable, capitains, and filename tests should all pass.')
+        self.assertCountEqual(['tests/guidelines_3.0_repo/data/passau/heuwieser0083/passau.heuwieser0083.lat001.xml',
+                               'tests/guidelines_3.0_repo/data/passau/heuwieser0083/passau.heuwieser0083.lat002.xml'],
+                              unit.paths,
+                              'All files mentioned in the metadata file should show up in paths')
+
+        # test a work-level file where some file paths are incorrect
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit("tests/guidelines_3.0_repo/data/passau/heuwieser0073/__capitains__.xml")
+        results = [a for a in unit.parsable()] + [a for a in unit.capitain()] + [a for a in unit.filename()]
+        self.assertEqual([True, False, False], results, 'Parsable should pass, capitains and filename should fail.')
+        self.assertIn('>>>>>> The following files were not found: tests/guidelines_3.0_repo/data/passau/heuwieser0073/some/strange/path',
+                      unit.logs,
+                      "The files that don't exist should be named in the logs.")
+
+    def test_auto_rng(self):
+        """ Make sure that the auto_rng test works for metadata files
+        """
+        # auto_rng with correct pointer to local RNG file
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit("tests/guidelines_3.0_repo/data/collected/__capitains__.xml")
+        unit.scheme = 'auto_rng'
+        self.assertEqual(unit.capitain().__next__(), True)
+
+        # auto_rng with no RNG processing instructions. This should use the default RNG file.
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit("tests/guidelines_3.0_repo/data/fulda_dronke/__capitains__.xml")
+        unit.scheme = 'auto_rng'
+        results = [a for a in unit.capitain()]
+        self.assertEqual(results, [True])
+        self.assertIn('>>>>>> No RNG processing instruction found for tests/guidelines_3.0_repo/data/fulda_dronke/__capitains__.xml. Using default capitains.rng instead',
+                      unit.logs,
+                      'Warning that the default RNG was used should show up in the logs.')
+
+        # auto_rng with RNG processing instructions pointing to the wrong file. This should fail.
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit('tests/guidelines_3.0_repo/data/passau/__capitains__.xml')
+        unit.scheme = 'auto_rng'
+        results = [a for a in unit.capitain()]
+        self.assertEqual(results, [False])
+        self.assertEqual(len(unit.dtd_errors), 1, 'There should be only a single DTD error')
+        self.assertIn('No RNG was found at ',
+                      unit.dtd_errors[0],
+                      'Reason as to why this file failed the RNG test should be shown.')
+
+    def test_capitain_test_error(self):
+        """ Make sure that an error is thrown when the RNG test fails
+        """
+        unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit("tests/guidelines_3.0_repo/data/collected/__capitains__.xml")
+        unit.CAPITAINS_RNG = 'path/to/incorrect/file'
+        results = [a for a in unit.capitain()]
+        self.assertEqual(results, [False])
+        self.assertIn('>>>>>> fatal: file not found: /home/matt/HookTest/path/to/incorrect/file (No such file or directory) [In ]',
+                      unit.logs,
+                      'Logs should show the reason why the DTD test failed.')

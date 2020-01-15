@@ -16,7 +16,6 @@
          <parent>urn:cts:formulae:fulda_dronke.dronke0041</parent>
          <dc:title xml:lang="deu">Codex diplomaticus Fuldensis (Ed. Dronke) Nr. 41</dc:title>
          <dc:description xml:lang="deu"/>
-         <dc:language>lat</dc:language>
          <dc:type>cts:edition</dc:type>
          <dc:contributor>Prof. Dr. Philippe Depreux (Universität Hamburg)</dc:contributor>
          <dc:contributor>Franziska Quaas (Universität Hamburg)</dc:contributor>

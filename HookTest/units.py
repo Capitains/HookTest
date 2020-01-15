@@ -24,7 +24,7 @@ class TESTUnit(object):
     EPIDOC = pkg_resources.resource_filename("HookTest", "resources/epidoc.rng")
     TEI_ALL = pkg_resources.resource_filename("HookTest", "resources/tei.rng")
     JING = pkg_resources.resource_filename("jingtrang", "jing.jar")
-    RNG_ERROR = re.compile(r"([0-9]+):([0-9]+):(.*);")
+    RNG_ERROR = re.compile(r"([0-9]+):([0-9]+):(.*)")
     RNG_FAILURE = re.compile(r"([0-9]+):([0-9]+):(\s*fatal.*)")
     SPACE_REPLACER = re.compile(r"(\s{2,})")
     FORBIDDEN_CHAR = re.compile(r"[^\w\d]")

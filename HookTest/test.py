@@ -400,7 +400,10 @@ class Test(object):
         results = {}
         additional = []
         if filepath.endswith(self.guideline_options['metadata_names']):
-            unit = self.guideline_options['metadata_class'](filepath)
+            if self.guideline_options['metadata_names'] == '__capitains__.xml':
+                unit = HookTest.capitains_units.guidelines_3.V3Metadata_TestUnit(filepath)
+            else:
+                unit = HookTest.capitains_units.cts.CTSMetadata_TestUnit(filepath)
             texttype = "Metadata"
             logs.append(">>>> Testing " + filepath)
             for name, status, unitlogs in unit.test(scheme=self.scheme):
@@ -419,7 +422,10 @@ class Test(object):
             additional += unit.urns
 
         else:
-            unit = self.guideline_options['text_class'](filepath, countwords=self.countwords, timeout=self.timeout)
+            if self.guideline_options['metadata_names'] == '__capitains__.xml':
+                unit = HookTest.capitains_units.guidelines_3.V3Text_TestUnit(filepath, countwords=self.countwords, timeout=self.timeout)
+            else:
+                unit = HookTest.capitains_units.cts.CTSText_TestUnit(filepath, countwords=self.countwords, timeout=self.timeout)
             texttype = "Text"
             logs.append(">>>> Testing " + filepath.split("data")[-1])
             for name, status, unitlogs in unit.test(self.scheme, self.guidelines, self.rng, self.inventory):

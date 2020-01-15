@@ -12,7 +12,6 @@
    <dc:type>cts:work</dc:type>
    <members>
       <collection readable="true" path="./passau.heuwieser0073.lat002.xml">
-         <identifier>urn:cts:formulae:passau.heuwieser0073.lat002</identifier>
          <parent>urn:cts:formulae:passau.heuwieser0073</parent>
          <dc:title xml:lang="deu">Die Traditionen des Hochstifts Passau (Ed. Heuwieser) Nr. 73</dc:title>
          <dc:description xml:lang="deu">ZEUGENAUSSAGEN (AUFZEICHNUNGEN) ÜBER DEN DER PASSAUER KIRCHE GEHÖRIGEN BESITZ DER KLÖSTERCHEN ROTT (POSTMÜNSTER) UND RIMBACH, ZU UTTENDORF UND OBERBIERBACH (BAYERBACH).</dc:description>
@@ -103,7 +102,7 @@
             <dct:bibliographicCitation>Die Traditionen des Hochstifts Passau Nr. 73, in: Max Heuwieser, Die Traditionen des Hochstifts Passau, München 1930 1969, [URI: http://d-nb.info/458436127], S. 61-62.</dct:bibliographicCitation>
          </structured-metadata>
       </collection>
-      <collection readable="true" path="./passau.heuwieser0073.lat005.xml">
+      <collection readable="true" path="./some/strange/path">
          <identifier>urn:cts:formulae:passau.heuwieser0073.lat005</identifier>
          <parent>urn:cts:formulae:passau.heuwieser0073</parent>
          <dc:title xml:lang="deu">Die Traditionen des Hochstifts Passau (Ed. Heuwieser) Nr. 73</dc:title>
