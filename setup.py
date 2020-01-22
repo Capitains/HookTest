@@ -25,7 +25,7 @@ with open(path.join(here, 'requirements.txt'), encoding='utf-8') as f:
 
 setup(
     name='HookTest',
-    version="1.3.0",
+    version="1.3.1",
     description='Hook Test Script for GitHub/CapiTainS repositories based on MyCapytain 3.0.0 or higher',
     long_description=long_description,
     long_description_content_type="text/x-rst",
