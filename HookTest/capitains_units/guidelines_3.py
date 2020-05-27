@@ -139,6 +139,8 @@ class V3Metadata_TestUnit(TESTUnit):
 
 class V3Text_TestUnit(CTSText_TestUnit):
 
+    tests = [x for x in CTSText_TestUnit.tests if x != 'naming_convention']
+
     def language(self):
         """ Tests to make sure an xml:lang element is on the correct node
         """

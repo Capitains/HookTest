@@ -725,7 +725,7 @@ class CTSText_TestUnit(TESTUnit):
         """
         if inventory is not None:
             self.inv = inventory
-        tests = [] + CTSText_TestUnit.tests
+        tests = [] + self.tests
         if self.countwords:
             tests.append("count_words")
 
